@@ -100,11 +100,8 @@ fn fixed_tiny_vectors_are_stable() {
     assert_eq!(
         one.encode(),
         [
-            b'D', b'M', b'P', b'6', b'4', b'L', b'0', b'1',
-            1, 0,
-            0,
-            0, 0, 0, 0, 0,
-            1, 0, 0, 0, 0, 0, 0, 0,
+            b'D', b'M', b'P', b'6', b'4', b'L', b'0', b'1', 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0,
         ]
     );
     assert_eq!(one.decode_candidate().unwrap(), vec![1]);
