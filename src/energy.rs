@@ -432,9 +432,7 @@ impl EnergyDeltaMeter {
     /// its encoded row coefficients originated from a valid independent-uniform
     /// draw for that profile and were not adversarially substituted. CRC32C is
     /// only accidental-corruption detection.
-    pub fn decode_snapshot_assuming_uniform_rows(
-        bytes: &[u8],
-    ) -> Result<Self, SnapshotError> {
+    pub fn decode_snapshot_assuming_uniform_rows(bytes: &[u8]) -> Result<Self, SnapshotError> {
         Self::decode_snapshot_impl(bytes, true)
     }
 
