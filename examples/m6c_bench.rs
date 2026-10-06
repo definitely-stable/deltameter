@@ -51,15 +51,22 @@ fn main() {
         });
 
         for content in ["sequential", "full-width"] {
-            measure(samples, "update", profile_name, content, UPDATE_KEYS, || {
-                let mut meter = EnergyDeltaMeter::new(config.clone()).unwrap();
-                timed(|| {
-                    for ordinal in 0..UPDATE_KEYS {
-                        meter.add_unique(black_box(key(content, ordinal))).unwrap();
-                    }
-                    black_box(&meter);
-                })
-            });
+            measure(
+                samples,
+                "update",
+                profile_name,
+                content,
+                UPDATE_KEYS,
+                || {
+                    let mut meter = EnergyDeltaMeter::new(config.clone()).unwrap();
+                    timed(|| {
+                        for ordinal in 0..UPDATE_KEYS {
+                            meter.add_unique(black_box(key(content, ordinal))).unwrap();
+                        }
+                        black_box(&meter);
+                    })
+                },
+            );
         }
 
         let mut snapshot_meter = EnergyDeltaMeter::new(config.clone()).unwrap();
