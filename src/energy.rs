@@ -1,5 +1,7 @@
 use core::fmt;
 
+use crate::coverage::Coverage;
+
 /// Reduction constant for the irreducible polynomial
 /// x^64 + x^4 + x^3 + x + 1 over GF(2).
 ///
@@ -157,16 +159,6 @@ impl EnergyProfile {
             .checked_add(extra)
             .ok_or(EnergyError::CapacityOverflow)
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Coverage {
-    Proven {
-        failure_probability_upper_bound: f64,
-    },
-    Asymptotic {
-        relative_standard_error: f64,
-    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
