@@ -5,12 +5,18 @@ on:
     paths:
       - "Cargo.toml"
       - "src/**"
+      - "tests/**"
+      - "research/energy_profiles.py"
+      - "research/energy_profiles.csv"
       - ".github/workflows/ci.yml"
   push:
     branches: [main]
     paths:
       - "Cargo.toml"
       - "src/**"
+      - "tests/**"
+      - "research/energy_profiles.py"
+      - "research/energy_profiles.csv"
       - ".github/workflows/ci.yml"
   workflow_dispatch:
 
@@ -29,6 +35,9 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal --component rustfmt,clippy
           rustup default stable
+
+      - name: Verify theorem-derived Energy profiles
+        run: python3 research/energy_profiles.py --check-csv research/energy_profiles.csv
 
       - name: Format
         run: cargo fmt --all -- --check
