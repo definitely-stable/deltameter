@@ -14,31 +14,39 @@ const SOURCE_KEYS: usize = 8_192;
 const BUILD_SAMPLES: usize = 3;
 const MERGE_REPEATS: u64 = 4_096;
 const DECODE_SAMPLES: usize = 3;
-const OVER_CAPACITY_TRIALS: usize = 128;
+const OVER_CAPACITY_TRIALS: usize = 64;
 
 fn main() {
-    println!("format=deltameter.m6d1-perf.v1");
+    println!("format=deltameter.m6d1-perf.v2");
     println!("contract=private_lab_diagnostic_not_product_promise");
     println!("source_keys={SOURCE_KEYS}");
     println!("build_samples={BUILD_SAMPLES}");
     println!("merge_repeats={MERGE_REPEATS}");
     println!("decode_samples={DECODE_SAMPLES}");
     println!("over_capacity_trials={OVER_CAPACITY_TRIALS}");
-    println!("metric,capacity,d,operations,sample,total_ns,sketch_bytes,direct_set_payload_bytes");
+    println!("guard_field_bits=64");
+    println!("guard_extra_syndromes=1");
+    println!(
+        "metric,stored_capacity,max_elements,d,operations,sample,total_ns,sketch_bytes,direct_set_payload_bytes"
+    );
 
     let base = canonical_keys(SOURCE_KEYS, 0xD100_BA5E_0000_0001);
     let direct_bytes = 4 + base.len() * 8;
 
-    for capacity in [1_usize, 2, 4, 8] {
-        let sketch_bytes = PinSketch64Lab::encoded_len_for_capacity(capacity).unwrap();
+    for max_elements in [1_usize, 2, 4, 8] {
+        let stored_capacity = max_elements + 1;
+        let sketch_bytes = PinSketch64Lab::encoded_len_for_capacity(stored_capacity).unwrap();
 
         for sample in 0..BUILD_SAMPLES {
             let elapsed = timed(|| {
-                black_box(PinSketch64Lab::from_sorted_unique(capacity, black_box(&base)).unwrap());
+                black_box(
+                    PinSketch64Lab::from_sorted_unique(stored_capacity, black_box(&base)).unwrap(),
+                );
             });
             emit(
                 "cold_build",
-                capacity,
+                stored_capacity,
+                max_elements,
                 0,
                 base.len() as u64,
                 sample,
@@ -48,9 +56,9 @@ fn main() {
             );
         }
 
-        let left = PinSketch64Lab::from_sorted_unique(capacity, &base).unwrap();
-        assert_eq!(left.capacity(), capacity);
-        assert_eq!(left.odd_syndromes().len(), capacity);
+        let left = PinSketch64Lab::from_sorted_unique(stored_capacity, &base).unwrap();
+        assert_eq!(left.capacity(), stored_capacity);
+        assert_eq!(left.odd_syndromes().len(), stored_capacity);
         assert!(!left.zero_present());
 
         let encoded_left = left.encode();
@@ -65,7 +73,8 @@ fn main() {
             });
             emit(
                 "encode_state",
-                capacity,
+                stored_capacity,
+                max_elements,
                 0,
                 MERGE_REPEATS,
                 sample,
@@ -81,7 +90,8 @@ fn main() {
             });
             emit(
                 "decode_state",
-                capacity,
+                stored_capacity,
+                max_elements,
                 0,
                 MERGE_REPEATS,
                 sample,
@@ -93,14 +103,14 @@ fn main() {
 
         let mut right_keys = base.clone();
         right_keys.remove(0);
-        right_keys.push(splitmix64(0xF00D_0000_0000_0001 ^ capacity as u64));
+        right_keys.push(splitmix64(0xF00D_0000_0000_0001 ^ max_elements as u64));
         right_keys.sort_unstable();
         right_keys.dedup();
         assert_eq!(right_keys.len(), base.len());
-        let right = PinSketch64Lab::from_sorted_unique(capacity, &right_keys).unwrap();
+        let right = PinSketch64Lab::from_sorted_unique(stored_capacity, &right_keys).unwrap();
 
         for sample in 0..BUILD_SAMPLES {
-            let elapsed = timed(|| {
+            let merge_elapsed = timed(|| {
                 for _ in 0..MERGE_REPEATS {
                     let mut combined = left.clone();
                     combined.merge(black_box(&right)).unwrap();
@@ -109,11 +119,12 @@ fn main() {
             });
             emit(
                 "merge",
-                capacity,
+                stored_capacity,
+                max_elements,
                 2,
                 MERGE_REPEATS,
                 sample,
-                elapsed,
+                merge_elapsed,
                 sketch_bytes,
                 direct_bytes,
             );
@@ -128,7 +139,8 @@ fn main() {
             });
             emit(
                 "direct_diff",
-                capacity,
+                stored_capacity,
+                max_elements,
                 2,
                 MERGE_REPEATS,
                 sample,
@@ -138,17 +150,25 @@ fn main() {
             );
         }
 
-        for d in decode_sizes(capacity) {
-            let candidate = difference_sketch(capacity, d, 0xDEC0_DE00 ^ capacity as u64);
+        for d in decode_sizes(max_elements) {
+            let candidate = difference_sketch(
+                stored_capacity,
+                max_elements,
+                d,
+                0xDEC0_DE00 ^ max_elements as u64,
+            );
             for sample in 0..DECODE_SAMPLES {
                 let elapsed = timed(|| {
-                    let decoded = black_box(&candidate).decode_candidate().unwrap();
+                    let decoded = black_box(&candidate)
+                        .decode_candidate_with_limit(max_elements)
+                        .unwrap();
                     assert_eq!(decoded.len(), d);
                     black_box(decoded);
                 });
                 emit(
-                    "decode",
-                    capacity,
+                    "decode_guarded",
+                    stored_capacity,
+                    max_elements,
                     d,
                     1,
                     sample,
@@ -159,45 +179,61 @@ fn main() {
             }
         }
 
-        for d in over_capacity_sizes(capacity) {
-            inventory_over_capacity(capacity, d);
+        for d in over_capacity_sizes(max_elements) {
+            inventory_over_capacity("unguarded", max_elements, max_elements, d);
+            inventory_over_capacity("guarded", stored_capacity, max_elements, d);
         }
     }
 }
 
-fn decode_sizes(capacity: usize) -> Vec<usize> {
-    let mut values = vec![0, 1, capacity / 2, capacity];
+fn decode_sizes(max_elements: usize) -> Vec<usize> {
+    let mut values = vec![0, 1, max_elements / 2, max_elements];
     values.sort_unstable();
     values.dedup();
     values
 }
 
-fn difference_sketch(capacity: usize, d: usize, salt: u64) -> PinSketch64Lab {
+fn over_capacity_sizes(max_elements: usize) -> Vec<usize> {
+    let mut values = vec![max_elements + 1, max_elements + 2, max_elements * 2];
+    values.sort_unstable();
+    values.dedup();
+    values
+}
+
+fn difference_sketch(
+    stored_capacity: usize,
+    max_elements: usize,
+    d: usize,
+    salt: u64,
+) -> PinSketch64Lab {
     let keys = canonical_keys(d, salt);
-    let sketch = PinSketch64Lab::from_sorted_unique(capacity, &keys).unwrap();
-    let decoded = sketch.decode_candidate().unwrap();
+    let sketch = PinSketch64Lab::from_sorted_unique(stored_capacity, &keys).unwrap();
+    let decoded = sketch
+        .decode_candidate_with_limit(max_elements)
+        .unwrap();
     assert_eq!(decoded, keys);
     sketch
 }
 
-fn over_capacity_sizes(capacity: usize) -> Vec<usize> {
-    let mut values = vec![capacity + 1, capacity + 2, capacity * 2];
-    values.sort_unstable();
-    values.dedup();
-    values
-}
-
-fn inventory_over_capacity(capacity: usize, d: usize) {
+fn inventory_over_capacity(
+    mode: &str,
+    stored_capacity: usize,
+    max_elements: usize,
+    d: usize,
+) {
     let mut rejected = 0_usize;
     let mut false_success = 0_usize;
 
     for trial in 0..OVER_CAPACITY_TRIALS {
         let keys = canonical_keys(
             d,
-            0xBAD0_0000_0000_0000 ^ ((capacity as u64) << 32) ^ trial as u64,
+            0xBAD0_0000_0000_0000
+                ^ ((stored_capacity as u64) << 40)
+                ^ ((max_elements as u64) << 32)
+                ^ trial as u64,
         );
-        let sketch = PinSketch64Lab::from_sorted_unique(capacity, &keys).unwrap();
-        match sketch.decode_candidate() {
+        let sketch = PinSketch64Lab::from_sorted_unique(stored_capacity, &keys).unwrap();
+        match sketch.decode_candidate_with_limit(max_elements) {
             Ok(candidate) => {
                 assert_ne!(candidate, keys);
                 false_success += 1;
@@ -207,14 +243,15 @@ fn inventory_over_capacity(capacity: usize, d: usize) {
     }
 
     println!(
-        "inventory,capacity={capacity},d={d},trials={OVER_CAPACITY_TRIALS},rejected={rejected},false_success={false_success}"
+        "inventory,mode={mode},stored_capacity={stored_capacity},max_elements={max_elements},d={d},trials={OVER_CAPACITY_TRIALS},rejected={rejected},false_success={false_success}"
     );
 }
 
 #[allow(clippy::too_many_arguments)]
 fn emit(
     metric: &str,
-    capacity: usize,
+    stored_capacity: usize,
+    max_elements: usize,
     d: usize,
     operations: u64,
     sample: usize,
@@ -223,7 +260,7 @@ fn emit(
     direct_bytes: usize,
 ) {
     println!(
-        "{metric},{capacity},{d},{operations},{sample},{},{sketch_bytes},{direct_bytes}",
+        "{metric},{stored_capacity},{max_elements},{d},{operations},{sample},{},{sketch_bytes},{direct_bytes}",
         elapsed.as_nanos()
     );
 }
