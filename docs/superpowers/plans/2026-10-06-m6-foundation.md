@@ -68,4 +68,4 @@ Private interface: encode_envelope(backend: u8, payload_len: usize, write_payloa
 
 ## Completion record
 
-M6-0 candidate accepted on 2026-10-06. See [M6-0 evidence](../../M6-0-EVIDENCE.md). The measured production-code head is `68147d703d15d407ac3b29244699d40ac18c59d3`; subsequent PR commits are documentation/status handoff only.
+M6-0 candidate accepted on 2026-10-06. See [M6-0 evidence](../../M6-0-EVIDENCE.md). The measured production-code head is `79f1cdb73df4a994c080ac1adaa4c6e8817be86f`; subsequent PR commits are documentation/status handoff only.
