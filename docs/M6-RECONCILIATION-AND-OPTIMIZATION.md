@@ -1,6 +1,6 @@
 # M6 — Reconciliation value and compatible optimization
 
-Status: planned; M6-0 implementation in progress. Parent: [#14](https://github.com/definitely-stable/deltameter/issues/14).
+Status: M6-0 implementation and evidence complete in PR #20; pending merge. Parent: [#14](https://github.com/definitely-stable/deltameter/issues/14).
 Audit baseline: `1ae3be55df218421437c56271a7d9a9f660b0ff7` (2026-10-06).
 
 ## Decision and purpose
