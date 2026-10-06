@@ -8,11 +8,12 @@ use std::fmt;
 const GF64_REDUCTION: u64 = 0x1B;
 const LAB_MAGIC: [u8; 8] = *b"DMP64L01";
 const LAB_HEADER_LEN: usize = 16;
-pub const MAX_LAB_CAPACITY: usize = 8;
+pub const MAX_LAB_CAPACITY: usize = 9;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LabError {
     InvalidCapacity,
+    InvalidDecodeLimit,
     CapacityMismatch,
     InvalidEncoding,
     DuplicateInput,
@@ -24,7 +25,10 @@ pub enum LabError {
 impl fmt::Display for LabError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidCapacity => f.write_str("lab capacity must be in 1..=8"),
+            Self::InvalidCapacity => f.write_str("lab stored capacity must be in 1..=9"),
+            Self::InvalidDecodeLimit => {
+                f.write_str("decode limit must not exceed stored syndrome capacity")
+            }
             Self::CapacityMismatch => f.write_str("lab sketch capacities differ"),
             Self::InvalidEncoding => f.write_str("invalid PinSketch64 lab encoding"),
             Self::DuplicateInput => f.write_str("input must be a strictly increasing unique set"),
@@ -166,19 +170,42 @@ impl PinSketch64Lab {
         })
     }
 
-    /// Decode a candidate symmetric-difference set.
+    /// Decode using every stored syndrome as recoverable capacity.
     ///
-    /// This is not a final-verification API. If the true difference exceeds
-    /// capacity, a different set can in principle satisfy the same syndromes.
+    /// This is useful as a baseline, but provides no extra syndrome budget for
+    /// detecting over-capacity aliases.
     pub fn decode_candidate(&self) -> Result<Vec<u64>, LabError> {
-        let sequence = self.full_syndrome_sequence();
+        self.decode_candidate_with_limit(self.capacity)
+    }
+
+    /// Decode at most `max_elements` while using any additional stored
+    /// syndromes as algebraic consistency guards.
+    ///
+    /// The guard is not independent final verification, but mirrors the
+    /// Minisketch distinction between stored capacity and maximum decoded
+    /// elements. A production false-positive bound still requires a separately
+    /// justified contract.
+    pub fn decode_candidate_with_limit(
+        &self,
+        max_elements: usize,
+    ) -> Result<Vec<u64>, LabError> {
+        if max_elements > self.capacity {
+            return Err(LabError::InvalidDecodeLimit);
+        }
+
+        let zero_count = usize::from(self.zero_present);
+        if zero_count > max_elements {
+            return Err(LabError::CandidateExceedsCapacity);
+        }
+        let nonzero_limit = max_elements - zero_count;
+        let sequence = self.full_syndrome_sequence(nonzero_limit);
         let locator = berlekamp_massey(&sequence)?;
 
         if locator.is_empty() {
             return Err(LabError::DecodeFailure);
         }
         let degree = locator.len() - 1;
-        if degree > self.capacity {
+        if degree > nonzero_limit {
             return Err(LabError::DecodeFailure);
         }
 
@@ -203,10 +230,12 @@ impl PinSketch64Lab {
             roots.push(0);
             roots.sort_unstable();
         }
-        if roots.len() > self.capacity {
+        if roots.len() > max_elements {
             return Err(LabError::CandidateExceedsCapacity);
         }
 
+        // Rechecking all stored syndromes is an over-capacity guard, not an
+        // independent final verifier.
         let rebuilt = Self::from_sorted_unique(self.capacity, &roots)?;
         if rebuilt.odd_syndromes != self.odd_syndromes || rebuilt.zero_present != self.zero_present
         {
@@ -223,9 +252,10 @@ impl PinSketch64Lab {
         Ok(LAB_HEADER_LEN + capacity * 8)
     }
 
-    fn full_syndrome_sequence(&self) -> Vec<u64> {
-        let mut sequence = vec![0_u64; self.capacity * 2];
-        for exponent in 1..=self.capacity * 2 {
+    fn full_syndrome_sequence(&self, nonzero_limit: usize) -> Vec<u64> {
+        debug_assert!(nonzero_limit <= self.capacity);
+        let mut sequence = vec![0_u64; nonzero_limit * 2];
+        for exponent in 1..=nonzero_limit * 2 {
             sequence[exponent - 1] = if exponent % 2 == 1 {
                 self.odd_syndromes[(exponent - 1) / 2]
             } else {
