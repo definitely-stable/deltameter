@@ -5,7 +5,7 @@ Audit baseline: `1ae3be55df218421437c56271a7d9a9f660b0ff7` (2026-10-06).
 
 ## Decision and purpose
 
-Choose a bounded distributed **value experiment** before a production ExactSmallDelta/hybrid backend. This is a sequencing decision, not evidence that a distributed product wins. The deliverable must determine when a difference-size estimate changes a useful decision enough to pay for maintaining and exchanging it. A NO-GO result is acceptable.
+Choose a bounded distributed **estimator-assisted value experiment** before a production ExactSmallDelta/hybrid backend. This is a sequencing decision, not evidence that a distributed product wins. The deliverable must determine when a difference-size estimate changes a useful decision enough to pay for maintaining and exchanging it. A NO-GO result is acceptable.
 
 Energy remains the only theorem-backed backend, conditional on its documented assumptions. Parity remains experimental/asymptotic. Snapshot v1 is the current compatibility baseline. The user authorized format changes on 2026-10-06 when justified; M6-0 still preserves v1 because its optimization needs no format change. The first slice is M6-0: measurement and compatibility prerequisites, not a completed network workflow.
 
@@ -64,7 +64,7 @@ The freeze is not an absolute product constraint. A later slice may propose chan
 11. **Failure atomicity:** preserve checked counters/energies and transactional update behavior. No optimization may mutate the visible sketch on failure.
 12. **Performance claims:** scalar popcount lowering depends on the CPU/compiler. A reduced operation count or allocation site is not an observed speedup. Record named CPU/rustc, inputs, raw rounds and limitations.
 
-## M6-A experiment design and acceptance
+## M6-A estimator-assisted experiment design and acceptance
 
 Use two subprocess peers first, with a harness that owns exact oracle data outside the measured decision path. No public networking API, service, TLS stack or new runtime dependency. Define bounded framing and request identity in the example support layer.
 
@@ -93,11 +93,11 @@ Acceptance requires basis/linearity reasoning, Horner differential vectors inclu
 | Slice | Issue | Deliverable / gate |
 | --- | --- | --- |
 | M6-0 | [#15](https://github.com/definitely-stable/deltameter/issues/15) | Current docs, nonempty v1 fixtures, hosted serialization evidence, isolated single-buffer candidate |
-| M6-A | [#16](https://github.com/definitely-stable/deltameter/issues/16) | Two-process value experiment; GO/NO-GO before public workflow expansion |
+| M6-A | [#16](https://github.com/definitely-stable/deltameter/issues/16) | Two-process estimator-assisted decision experiment; GO/NO-GO before public workflow expansion |
 | M6-B | [#17](https://github.com/definitely-stable/deltameter/issues/17) | CRC/decoder improvements evaluated individually |
 | M6-C | [#18](https://github.com/definitely-stable/deltameter/issues/18) | Bit-equivalent sign optimization with setup and steady-state evidence |
 | M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | Pinned exact-lane audit and measured comparison; conditional adoption only |
 
-M6-B/C require M6-0 measurement and may proceed before M6-A completion if their independent evidence justifies it. M6-D adoption depends on product evidence, but read-only source research can start earlier. One coherent PR per slice. No automatic merge/release is implied.
+M6-B/C require M6-0 measurement and may proceed before M6-A completion if their independent evidence justifies it. After M6-0, M6-A and the read-only/source-audit portion of M6-D should proceed in parallel. M6-D production adoption still depends on M6-A product evidence, so research can inform the experiment without prematurely committing to an exact backend. One coherent PR per slice. No automatic merge/release is implied.
 
 The executable first-slice plan is [M6 foundation](superpowers/plans/2026-10-06-m6-foundation.md).
