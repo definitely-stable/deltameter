@@ -50,9 +50,7 @@ fn mutate(base: &[u64], remove: usize, add: usize, salt: u64, include_zero: bool
     assert!(remove <= base.len());
     let mut result = base[remove..].to_vec();
     for index in 0..add {
-        result.push(splitmix64(
-            salt ^ 0xA5A5_5A5A_1234_0000 ^ index as u64,
-        ));
+        result.push(splitmix64(salt ^ 0xA5A5_5A5A_1234_0000 ^ index as u64));
     }
     if include_zero {
         result.push(0);
@@ -121,7 +119,10 @@ fn serialization_is_separate_and_merge_stable() {
 
 #[test]
 fn capacity_and_input_contract_fail_closed() {
-    assert_eq!(PinSketch64Lab::new(0).unwrap_err(), LabError::InvalidCapacity);
+    assert_eq!(
+        PinSketch64Lab::new(0).unwrap_err(),
+        LabError::InvalidCapacity
+    );
     assert_eq!(
         PinSketch64Lab::from_sorted_unique(2, &[1, 1]).unwrap_err(),
         LabError::DuplicateInput
