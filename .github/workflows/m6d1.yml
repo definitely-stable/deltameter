@@ -7,7 +7,6 @@ on:
       - "examples/support/m6d_pinsketch64.rs"
       - "tests/m6d1_pinsketch64.rs"
       - "research/m6d1_summary.py"
-      - "docs/superpowers/plans/2026-10-07-m6d1-pinsketch64-lab.md"
       - ".github/workflows/m6d1.yml"
   workflow_dispatch:
 
