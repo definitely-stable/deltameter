@@ -54,19 +54,14 @@ impl fmt::Display for SnapshotError {
                 f.write_str("configuration cannot be represented by snapshot v1")
             }
             Self::InvalidPayload => f.write_str("snapshot payload is invalid"),
-            Self::NonCanonicalPadding => {
-                f.write_str("snapshot contains non-zero padding bits")
-            }
+            Self::NonCanonicalPadding => f.write_str("snapshot contains non-zero padding bits"),
         }
     }
 }
 
 impl std::error::Error for SnapshotError {}
 
-pub(crate) fn encode_envelope(
-    backend: u8,
-    payload: &[u8],
-) -> Result<Vec<u8>, SnapshotError> {
+pub(crate) fn encode_envelope(backend: u8, payload: &[u8]) -> Result<Vec<u8>, SnapshotError> {
     let payload_len = u64::try_from(payload.len()).map_err(|_| SnapshotError::LengthOverflow)?;
     let capacity = HEADER_LEN
         .checked_add(payload.len())
@@ -86,10 +81,7 @@ pub(crate) fn encode_envelope(
     Ok(encoded)
 }
 
-pub(crate) fn decode_envelope(
-    bytes: &[u8],
-    expected_backend: u8,
-) -> Result<&[u8], SnapshotError> {
+pub(crate) fn decode_envelope(bytes: &[u8], expected_backend: u8) -> Result<&[u8], SnapshotError> {
     if bytes.len() < HEADER_LEN + CHECKSUM_LEN {
         return Err(SnapshotError::TooShort);
     }
@@ -115,11 +107,7 @@ pub(crate) fn decode_envelope(
         return Err(SnapshotError::UnsupportedFlags(flags));
     }
 
-    let declared = u64::from_le_bytes(
-        bytes[12..20]
-            .try_into()
-            .expect("fixed-size envelope field"),
-    );
+    let declared = u64::from_le_bytes(bytes[12..20].try_into().expect("fixed-size envelope field"));
     let payload_len = usize::try_from(declared).map_err(|_| SnapshotError::LengthOverflow)?;
     let expected_total = HEADER_LEN
         .checked_add(payload_len)
