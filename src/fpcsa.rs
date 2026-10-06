@@ -17,6 +17,8 @@ pub enum FpcsaError {
     InvalidLevel(u8),
     IncompatibleConfig,
     MiddleRangeRequired { empty_rows: usize },
+    SnapshotWordCountMismatch { expected: usize, actual: usize },
+    NonCanonicalPadding,
 }
 
 impl fmt::Display for FpcsaError {
@@ -39,6 +41,15 @@ impl fmt::Display for FpcsaError {
                     f,
                     "Table 2 reference estimate is unavailable with {empty_rows} empty rows"
                 )
+            }
+            Self::SnapshotWordCountMismatch { expected, actual } => {
+                write!(
+                    f,
+                    "packed snapshot word count mismatch: expected {expected}, got {actual}"
+                )
+            }
+            Self::NonCanonicalPadding => {
+                f.write_str("packed snapshot contains non-zero padding bits")
             }
         }
     }
@@ -242,6 +253,37 @@ impl PublishedFpcsaF2 {
         let mut merged = self.clone();
         merged.xor_assign(other)?;
         Ok(merged)
+    }
+
+    pub(crate) fn snapshot_words(&self) -> &[u64] {
+        &self.words
+    }
+
+    pub(crate) fn from_snapshot_words(
+        config: PublishedFpcsaF2Config,
+        words: Vec<u64>,
+    ) -> Result<Self, FpcsaError> {
+        let expected = config.packed_state_words();
+        if words.len() != expected {
+            return Err(FpcsaError::SnapshotWordCountMismatch {
+                expected,
+                actual: words.len(),
+            });
+        }
+
+        let used_bits = config.logical_state_bits() % 64;
+        if used_bits != 0 {
+            let valid_mask = (1_u64 << used_bits) - 1;
+            let last = words.last().copied().unwrap_or_default();
+            if last & !valid_mask != 0 {
+                return Err(FpcsaError::NonCanonicalPadding);
+            }
+        }
+
+        Ok(Self {
+            config,
+            words: words.into_boxed_slice(),
+        })
     }
 
     #[cfg(test)]
