@@ -5,17 +5,17 @@ PR: #20. Issue: #15. Evidence date: 2026-10-06.
 
 ## Reproducible run
 
-Snapshot-performance run #11 (`37509992741`):
+Final snapshot-performance run #16 (`37510589462`):
 
 ~~~text
 base  1ae3be55df218421437c56271a7d9a9f660b0ff7
-head  68147d703d15d407ac3b29244699d40ac18c59d3
-CPU   AMD EPYC 7763 64-Core Processor
+head  79f1cdb73df4a994c080ac1adaa4c6e8817be86f
+CPU   AMD EPYC 9V74 80-Core Processor
 Rust  1.99.0
 order AB / BA / AB / BA
 ~~~
 
-Artifact: `snapshot-perf-37509992741-1`. It contains raw rounds, refs, CPU/compiler metadata, compatibility logs, source hashes and `summary.csv`.
+Artifact: `snapshot-perf-37510589462-1`. It contains raw rounds, refs, CPU/compiler metadata, compatibility logs, source hashes and `summary.csv`.
 
 Base and head both pass the injected snapshot-v1 compatibility suite: 13 passed, 0 failed.
 
@@ -25,13 +25,13 @@ Median paired deltas across the three content fixtures:
 
 | Path | Delta |
 | --- | ---: |
-| Energy default encode | about -0.27% |
-| Energy small encode | about -0.76% |
-| Parity Standard encode | about -2.47% |
-| Parity padded encode | about -21.7% |
+| Energy default encode | -0.65% to -0.84% |
+| Energy small encode | -0.52% to -1.16% |
+| Parity Standard encode | -3.32% to -3.37% |
+| Parity padded encode | -19.47% to -19.62% |
 | all decode controls | effectively unchanged |
 
-Default Energy encode is therefore **neutral**, not a speedup claim. The small Parity case has a large relative gain but tiny absolute cost.
+Default Energy encode remains a small hosted-runner improvement, but is still treated as **neutral for product claims** rather than a promised speedup. The small Parity case has a large relative gain but tiny absolute cost.
 
 ## Resource result
 
