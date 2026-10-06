@@ -6,6 +6,7 @@ on:
       - "Cargo.toml"
       - "src/**"
       - "examples/snapshot_bench.rs"
+      - "research/snapshot_perf_summary.py"
       - ".github/workflows/snapshot-perf.yml"
   workflow_dispatch:
 
@@ -34,7 +35,8 @@ jobs:
           printf 'base=%s\nhead=%s\n' "${BASE_SHA}" "${HEAD_SHA}" > "${RUNNER_TEMP}/snapshot-perf/refs.txt"
           cp examples/snapshot_bench.rs "${RUNNER_TEMP}/snapshot_bench.rs"
           cp tests/snapshot_v1.rs "${RUNNER_TEMP}/snapshot_v1.rs"
-          sha256sum "${RUNNER_TEMP}/snapshot_bench.rs" > "${RUNNER_TEMP}/snapshot-perf/harness-sha256.txt"
+          cp research/snapshot_perf_summary.py "${RUNNER_TEMP}/snapshot_perf_summary.py"
+          sha256sum             "${RUNNER_TEMP}/snapshot_bench.rs"             "${RUNNER_TEMP}/snapshot_v1.rs"             "${RUNNER_TEMP}/snapshot_perf_summary.py"             > "${RUNNER_TEMP}/snapshot-perf/sources-sha256.txt"
           for variant in base head; do
             if [ "${variant}" = base ]; then source_sha="${BASE_SHA}"; else source_sha="${HEAD_SHA}"; fi
             git worktree add --detach "${RUNNER_TEMP}/snapshot-${variant}" "${source_sha}"
@@ -53,6 +55,11 @@ jobs:
               "${RUNNER_TEMP}/snapshot-${variant}-bench" 5 16 > "${RUNNER_TEMP}/snapshot-perf/${round}-${variant}.txt"
             done
           done
+      - name: Summarize paired rounds
+        if: always()
+        run: |
+          python3 "${RUNNER_TEMP}/snapshot_perf_summary.py" "${RUNNER_TEMP}/snapshot-perf"             | tee "${RUNNER_TEMP}/snapshot-perf/summary.csv"
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
