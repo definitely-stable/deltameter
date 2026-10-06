@@ -179,7 +179,7 @@ fn main() {
             }
         }
 
-        for d in over_capacity_sizes(max_elements) {
+        for d in over_capacity_sizes(stored_capacity, max_elements) {
             inventory_over_capacity("unguarded", max_elements, max_elements, d);
             inventory_over_capacity("guarded", stored_capacity, max_elements, d);
         }
@@ -193,8 +193,13 @@ fn decode_sizes(max_elements: usize) -> Vec<usize> {
     values
 }
 
-fn over_capacity_sizes(max_elements: usize) -> Vec<usize> {
-    let mut values = vec![max_elements + 1, max_elements + 2, max_elements * 2];
+fn over_capacity_sizes(stored_capacity: usize, max_elements: usize) -> Vec<usize> {
+    let mut values = vec![
+        max_elements + 1,
+        max_elements + 2,
+        max_elements * 2,
+        stored_capacity * 2 + 1,
+    ];
     values.sort_unstable();
     values.dedup();
     values
