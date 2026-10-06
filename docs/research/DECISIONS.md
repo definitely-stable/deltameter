@@ -445,3 +445,36 @@ The next permitted implementation is a private pure-Rust reference with small fi
 Do not add Coverage::Exact. Decoder false-success, identifier mapping, final verification and any Energy estimate failure remain separate failure-budget terms.
 
 Canonical audit: docs/M6-D-EXACT-LANE-AUDIT.md.
+
+
+### D27 — Retain guarded PinSketch64 only as a private reference
+
+M6-D1 independently implemented the PinSketch/Minisketch odd-syndrome path in pure stable Rust for small audited limits.
+
+The reference uses exact nonzero u64 -> GF(2^64) identity mapping and one out-of-band XOR-composable zero bit. No hashing/truncation is used.
+
+The first design used `stored_capacity == max_elements`. Hosted over-capacity inventory found **306 false successful decodes in 896 deterministic cases**. That design is rejected.
+
+The corrected lab design separates the two quantities:
+
+~~~text
+stored_capacity = max_elements + 1
+decode_limit    = max_elements
+~~~
+
+The extra syndrome is used as an algebraic consistency guard after candidate recovery.
+
+The final hosted inventory recorded **0 false successes in 896 guarded deterministic cases**, including weights beyond the simple BCH minimum-distance exclusion region. This is empirical evidence only; DeltaMeter does not adopt a 2^-64 adversarial theorem from that observation.
+
+For max_elements 1/2/4/8 the guarded lab envelope is 32/40/56/88 bytes. On the hosted EPYC 7763 reference decoder, full-capacity decode ranges from ~8.9 us at d=1 to ~15.36 ms at d=8. Cold construction for an 8192-key source ranges from ~1.62 ms to ~5.47 ms.
+
+Therefore:
+
+- keep the implementation private and lab-only;
+- require explicit decode limits in every call;
+- reject the unguarded configuration;
+- do not add Coverage::Exact, snapshot-v1 integration or a public ExactSmallDelta API;
+- do not claim the guarded empirical result is independent final verification;
+- prefer the next experiment to test nested guarded syndrome prefixes rather than Energy-first sizing.
+
+Canonical evidence: docs/M6-D1-PINSKETCH64-EVIDENCE.md.
