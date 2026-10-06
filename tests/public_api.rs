@@ -22,6 +22,8 @@ fn supported_root_api_contract_smoke() {
     let custom_snapshot = difference.encode_snapshot().unwrap();
     let decoded_custom = EnergyDeltaMeter::decode_snapshot(&custom_snapshot).unwrap();
     assert_eq!(decoded_custom.config(), difference.config());
+    let _decode_proven: fn(&[u8]) -> Result<EnergyDeltaMeter, SnapshotError> =
+        EnergyDeltaMeter::decode_snapshot_assuming_uniform_rows;
     assert_eq!(
         difference.estimate(energy_profile),
         Err(EnergyError::ProfileMismatch)
