@@ -2,6 +2,7 @@
 
 pub mod energy;
 pub mod fpcsa;
+pub mod parity;
 
 pub use energy::{
     Coverage, EnergyConfig, EnergyDeltaMeter, EnergyError, EnergyEstimate, EnergyProfile,
@@ -11,4 +12,8 @@ pub use energy::{
 pub use fpcsa::{
     FpcsaError, FpcsaTable2ReferenceEstimate, FpcsaUpdate, PublishedFpcsaF2,
     PublishedFpcsaF2Config, PublishedFpcsaOracle,
+};
+
+pub use parity::{
+    ParityConfig, ParityDeltaMeter, ParityError, ParityEstimate, ParityProfile, ParityUpdate,
 };
