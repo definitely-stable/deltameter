@@ -9,6 +9,7 @@ use crate::coverage::Coverage;
 /// justify the pairwise/4-wise finite-field independence argument.
 const GF64_REDUCTION: u64 = 0x1B;
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EnergyError {
     BucketsMustBePowerOfTwo,
@@ -55,6 +56,7 @@ impl fmt::Display for EnergyError {
 
 impl std::error::Error for EnergyError {}
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RelativeError {
     FivePercent,
@@ -88,6 +90,7 @@ impl RelativeError {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FailureTarget {
     OneInThousand,
@@ -120,6 +123,10 @@ pub struct EnergyProfile {
 }
 
 impl EnergyProfile {
+    /// Balanced v0 strict default: 10% relative error at failure probability <= 1e-6.
+    pub const DEFAULT: Self =
+        Self::new(RelativeError::TenPercent, FailureTarget::OneInMillion);
+
     pub const fn new(relative_error: RelativeError, failure_target: FailureTarget) -> Self {
         Self {
             relative_error,
@@ -161,6 +168,13 @@ impl EnergyProfile {
     }
 }
 
+impl Default for EnergyProfile {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct EnergyEstimate {
     pub point: u128,
@@ -368,43 +382,74 @@ impl EnergyDeltaMeter {
     /// configuration, the resulting frequency vector is in {-1, 0, +1} and
     /// its F2 value equals the set symmetric-difference size.
     pub fn difference(&self, other: &Self) -> Result<Self, EnergyError> {
+        let mut result = self.clone();
+        result.subtract_assign(other)?;
+        Ok(result)
+    }
+
+    /// Subtracts a compatible sketch in place.
+    ///
+    /// Validation is transactional: all counter differences and row energies
+    /// are checked before any counter or cached energy is committed.
+    pub fn subtract_assign(&mut self, other: &Self) -> Result<(), EnergyError> {
         if self.config != other.config {
             return Err(EnergyError::IncompatibleConfig);
         }
 
-        let mut result = Self::new(self.config.clone())?;
+        let buckets = self.config.buckets();
+        let tables = self.config.tables();
 
-        for ((dst, left), right) in result
-            .counters
-            .iter_mut()
-            .zip(self.counters.iter())
-            .zip(other.counters.iter())
-        {
-            *dst = left
-                .checked_sub(*right)
-                .ok_or(EnergyError::CounterOverflow)?;
+        for row_index in 0..tables {
+            let start = row_index * buckets;
+            let end = start + buckets;
+            let mut energy = 0_i128;
+
+            for (&left, &right) in self.counters[start..end]
+                .iter()
+                .zip(other.counters[start..end].iter())
+            {
+                let counter = left
+                    .checked_sub(right)
+                    .ok_or(EnergyError::CounterOverflow)?;
+                let counter = i128::from(counter);
+                energy = energy
+                    .checked_add(counter * counter)
+                    .ok_or(EnergyError::EnergyOverflow)?;
+            }
+
+            self.pending[row_index].energy = energy;
         }
 
-        result.energies = recompute_energies(
-            &result.counters,
-            result.config.buckets(),
-            result.config.tables(),
-        )?;
+        for (left, &right) in self.counters.iter_mut().zip(other.counters.iter()) {
+            *left = left
+                .checked_sub(right)
+                .expect("counter subtraction was validated before commit");
+        }
+        for row_index in 0..tables {
+            self.energies[row_index] = self.pending[row_index].energy;
+        }
 
-        Ok(result)
-    }
-
-    pub fn subtract_assign(&mut self, other: &Self) -> Result<(), EnergyError> {
-        *self = self.difference(other)?;
         Ok(())
     }
 
     pub fn point_estimate(&self) -> u128 {
-        let mut values = self.energies.to_vec();
-        let middle = values.len() / 2;
-        let (_, median, _) = values.select_nth_unstable(middle);
-        debug_assert!(*median >= 0);
-        *median as u128
+        const MAX_BUILTIN_TABLES: usize = 35;
+
+        let middle = self.energies.len() / 2;
+        let median = if self.energies.len() <= MAX_BUILTIN_TABLES {
+            let mut values = [0_i128; MAX_BUILTIN_TABLES];
+            let active = &mut values[..self.energies.len()];
+            active.copy_from_slice(&self.energies);
+            let (_, median, _) = active.select_nth_unstable(middle);
+            *median
+        } else {
+            let mut values = self.energies.to_vec();
+            let (_, median, _) = values.select_nth_unstable(middle);
+            *median
+        };
+
+        debug_assert!(median >= 0);
+        median as u128
     }
 
     /// Returns the theorem-backed estimate for the exact profile used to
@@ -468,28 +513,6 @@ impl EnergyDeltaMeter {
 
         Ok(())
     }
-}
-
-fn recompute_energies(
-    counters: &[i64],
-    buckets: usize,
-    tables: usize,
-) -> Result<Box<[i128]>, EnergyError> {
-    let mut energies = vec![0_i128; tables];
-
-    for (row_index, row) in counters.chunks_exact(buckets).enumerate() {
-        let mut energy = 0_i128;
-        for &counter in row {
-            let counter = i128::from(counter);
-            let square = counter * counter;
-            energy = energy
-                .checked_add(square)
-                .ok_or(EnergyError::EnergyOverflow)?;
-        }
-        energies[row_index] = energy;
-    }
-
-    Ok(energies.into_boxed_slice())
 }
 
 const fn ceil_div(value: u128, divisor: u128) -> u128 {
