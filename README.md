@@ -13,21 +13,23 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-M0 research bootstrap is merged. M1 EnergyDeltaMeter reference implementation is active in PR #3.
+M0 research bootstrap, M1 EnergyDeltaMeter, and M2 published GF(2)-F-PCSA reproduction are complete.
 
 Current implementation direction:
 
 - **EnergyDeltaMeter** — first implementation and strict finite-sample backend.
-- **ParityDeltaMeter** — second implementation, experimental/asymptotic.
+- **PublishedFpcsaF2** — M2 faithful GF(2)-F-PCSA research reproduction.
+- **ParityDeltaMeter** — later M3 wrapper, experimental/asymptotic.
 - Gaussian/chi-square — research oracle only.
 - ExactSmallDelta — deferred.
 
-Q1 is resolved for v0: there is currently **no accepted strict finite-sample Parity profile**. The published F-PCSA construction will be reproduced first; a `g(v)=1` set-specialized variant is treated as a separate unproved estimator.
+Q1 is resolved for v0: there is currently **no accepted strict finite-sample Parity profile**. The published F-PCSA construction has been reproduced in M2; a `g(v)=1` set-specialized variant remains a separate unproved estimator.
 
 ## Documentation
 
 - [docs/research/README.md](docs/research/README.md) — research index and authority order.
 - [docs/research/Q1-FINITE-SAMPLE-PARITY.md](docs/research/Q1-FINITE-SAMPLE-PARITY.md) — current Q1 result.
+- [docs/research/M2-FPCSA-REPRODUCTION.md](docs/research/M2-FPCSA-REPRODUCTION.md) — M2 source/implementation boundary.
 - [docs/research/FOUNDATION.md](docs/research/FOUNDATION.md) — canonical mathematical/engineering synthesis.
 - [docs/research/DECISIONS.md](docs/research/DECISIONS.md) — current decisions.
 - [docs/research/NEW-INPUTS-AUDIT.md](docs/research/NEW-INPUTS-AUDIT.md) — reconciliation of the latest reports.
