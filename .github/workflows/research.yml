@@ -1,0 +1,47 @@
+name: research
+
+on:
+  pull_request:
+    paths:
+      - "README.md"
+      - "docs/**"
+      - "research/**"
+      - ".github/workflows/research.yml"
+  push:
+    branches: [main]
+    paths:
+      - "README.md"
+      - "docs/**"
+      - "research/**"
+      - ".github/workflows/research.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Compile research scripts
+        run: python -m compileall -q research
+
+      - name: Run research suite
+        run: python research/run_all.py --out research-out
+
+      - name: Show Energy profiles
+        run: cat research-out/energy-profiles.json
+
+      - name: Upload research results
+        uses: actions/upload-artifact@v4
+        with:
+          name: deltameter-research
+          path: research-out/
