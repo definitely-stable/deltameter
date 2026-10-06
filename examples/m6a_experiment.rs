@@ -706,11 +706,7 @@ fn run_control_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::R
 fn run_admission_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::Result<()> {
     let before = peer.counters();
     let started = Instant::now();
-    let estimate = request_estimate(
-        peer,
-        scenario.source_generation,
-        scenario.snapshot,
-    )?;
+    let estimate = request_estimate(peer, scenario.source_generation, scenario.snapshot)?;
     let exact_bytes = exact_exchange_bytes(scenario.source.len())?;
 
     let outcome = if estimate.admit {
