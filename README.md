@@ -22,7 +22,7 @@ Current implementation direction:
 - **ParityDeltaMeter** — M3 experimental/asymptotic wrapper over the published reproduction.
 - Gaussian/chi-square — research oracle only.
 - ExactSmallDelta — deferred pending the M6 value/failure-semantics audit.
-- M6 — evidence-gated reconciliation experiment and compatible optimization; [plan and issue map](docs/M6-RECONCILIATION-AND-OPTIMIZATION.md).
+- M6 — evidence-gated estimator-assisted distributed experiment and compatible optimization; [plan and issue map](docs/M6-RECONCILIATION-AND-OPTIMIZATION.md).
 
 Q1 is resolved more strongly after M3: there is **no accepted strict finite-sample profile for the published W_i Parity estimator, and that strict-W_i track is stopped** unless a new theorem changes the gate. A per-level `ParityLevelCounts` statistic remains research-only.
 
