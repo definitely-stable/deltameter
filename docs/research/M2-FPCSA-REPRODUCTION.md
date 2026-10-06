@@ -1,6 +1,6 @@
 # M2 — Published GF(2)-F-PCSA reproduction
 
-Status: implementation slice active  
+Status: complete; merged in PR #5  
 Primary source: Dingyu Wang, Probabilistic Counting in Generalized Turnstile Models, arXiv:2310.14977v1.
 
 ## Objective
