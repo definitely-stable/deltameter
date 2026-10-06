@@ -50,9 +50,18 @@ The reference implementation uses affine/cubic polynomials over GF(2^64) and acc
 
 Role: research reproduction.
 
-This must match the published finite-field GF(2) construction, including its coefficient randomness and level/register mapping.
+M2 implements the published finite-field GF(2) FIELDMAP state with:
 
-Its published asymptotic claims belong only to this reproduced construction.
+- packed one-bit field cells;
+- one-based geometric levels;
+- a separate uniform GF(2) coefficient bit;
+- explicit finite level boundary J;
+- XOR composition;
+- highest/rightmost non-zero level extraction.
+
+The implementation uses a deterministic pseudo-oracle for reproducibility. It is not claimed to instantiate the ideal random oracle assumed by the paper.
+
+The rounded Table 2 constants remain diagnostic/asymptotic only and do not create a finite-sample or Proven coverage contract.
 
 ### ParityPcsaSetV1
 
