@@ -30,7 +30,7 @@ impl fmt::Display for EnergyError {
                 write!(f, "row count mismatch: expected {expected}, got {actual}")
             }
             Self::ProfileMismatch => {
-                f.write_str("meter dimensions do not match the requested profile")
+                f.write_str("configuration is not bound to the requested proven profile")
             }
             Self::StateSizeOverflow => f.write_str("counter-state size overflow"),
             Self::CounterOverflow => f.write_str("counter overflow"),
@@ -108,10 +108,7 @@ pub struct EnergyProfile {
 }
 
 impl EnergyProfile {
-    pub const fn new(
-        relative_error: RelativeError,
-        failure_target: FailureTarget,
-    ) -> Self {
+    pub const fn new(relative_error: RelativeError, failure_target: FailureTarget) -> Self {
         Self {
             relative_error,
             failure_target,
@@ -140,7 +137,9 @@ impl EnergyProfile {
 
     pub fn recommended_capacity(self, point: u128) -> Result<u128, EnergyError> {
         let extra = ceil_div(point, self.relative_error.capacity_extra_denominator());
-        point.checked_add(extra).ok_or(EnergyError::CapacityOverflow)
+        point
+            .checked_add(extra)
+            .ok_or(EnergyError::CapacityOverflow)
     }
 }
 
@@ -165,12 +164,12 @@ pub struct EnergyRowHash {
 }
 
 impl EnergyRowHash {
-    /// Creates one theorem-facing row hash from explicit coefficients.
+    /// Creates one row hash from explicit GF(2^64) coefficients.
     ///
-    /// For the documented guarantees, each row's bucket coefficients must be
-    /// sampled independently and uniformly from GF(2^64), and the four sign
-    /// coefficients must also be sampled independently and uniformly from
-    /// GF(2^64), independently of the bucket family and of every other row.
+    /// This constructor does not prove that the coefficients were sampled
+    /// randomly. The Coverage::Proven contract is available only through
+    /// EnergyConfig::for_profile_assuming_uniform_rows, whose caller accepts
+    /// the documented uniform-independence precondition.
     pub const fn from_coefficients(
         bucket_coefficients: [u64; 2],
         sign_coefficients: [u64; 4],
@@ -186,18 +185,14 @@ impl EnergyRowHash {
             return 0;
         }
 
-        let value = gf64_mul(self.bucket_coefficients[0], key)
-            ^ self.bucket_coefficients[1];
+        let value = gf64_mul(self.bucket_coefficients[0], key) ^ self.bucket_coefficients[1];
         let bits = buckets.trailing_zeros();
         (value >> (64 - bits)) as usize
     }
 
     fn sign(self, key: u64) -> i64 {
         let [c0, c1, c2, c3] = self.sign_coefficients;
-        let value = gf64_mul(
-            gf64_mul(gf64_mul(c3, key) ^ c2, key) ^ c1,
-            key,
-        ) ^ c0;
+        let value = gf64_mul(gf64_mul(gf64_mul(c3, key) ^ c2, key) ^ c1, key) ^ c0;
 
         if value & 1 == 0 { 1 } else { -1 }
     }
@@ -207,27 +202,35 @@ impl EnergyRowHash {
 pub struct EnergyConfig {
     buckets: usize,
     rows: Box<[EnergyRowHash]>,
+    proven_profile: Option<EnergyProfile>,
 }
 
 impl EnergyConfig {
+    /// Creates a custom configuration for point-estimation/reference work.
+    ///
+    /// Custom configurations are deliberately not eligible for
+    /// Coverage::Proven.
     pub fn new(buckets: usize, rows: Vec<EnergyRowHash>) -> Result<Self, EnergyError> {
-        if buckets == 0 || !buckets.is_power_of_two() {
-            return Err(EnergyError::BucketsMustBePowerOfTwo);
-        }
-        if rows.is_empty() {
-            return Err(EnergyError::EmptyTables);
-        }
-        if rows.len() % 2 == 0 {
-            return Err(EnergyError::TablesMustBeOdd);
-        }
+        validate_dimensions(buckets, &rows)?;
 
         Ok(Self {
             buckets,
             rows: rows.into_boxed_slice(),
+            proven_profile: None,
         })
     }
 
-    pub fn for_profile(
+    /// Creates a theorem-profile configuration.
+    ///
+    /// # Randomness contract
+    ///
+    /// For every row, the two bucket coefficients must be sampled uniformly
+    /// and independently from GF(2^64). The four sign coefficients must also
+    /// be sampled uniformly and independently from GF(2^64), independently of
+    /// the bucket coefficients and independently across rows.
+    ///
+    /// The probability in Coverage::Proven is over that random draw.
+    pub fn for_profile_assuming_uniform_rows(
         profile: EnergyProfile,
         rows: Vec<EnergyRowHash>,
     ) -> Result<Self, EnergyError> {
@@ -238,7 +241,13 @@ impl EnergyConfig {
             });
         }
 
-        Self::new(profile.buckets(), rows)
+        validate_dimensions(profile.buckets(), &rows)?;
+
+        Ok(Self {
+            buckets: profile.buckets(),
+            rows: rows.into_boxed_slice(),
+            proven_profile: Some(profile),
+        })
     }
 
     pub const fn buckets(&self) -> usize {
@@ -252,6 +261,24 @@ impl EnergyConfig {
     pub fn rows(&self) -> &[EnergyRowHash] {
         &self.rows
     }
+
+    pub const fn proven_profile(&self) -> Option<EnergyProfile> {
+        self.proven_profile
+    }
+}
+
+fn validate_dimensions(buckets: usize, rows: &[EnergyRowHash]) -> Result<(), EnergyError> {
+    if buckets == 0 || !buckets.is_power_of_two() {
+        return Err(EnergyError::BucketsMustBePowerOfTwo);
+    }
+    if rows.is_empty() {
+        return Err(EnergyError::EmptyTables);
+    }
+    if rows.len().is_multiple_of(2) {
+        return Err(EnergyError::TablesMustBeOdd);
+    }
+
+    Ok(())
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -289,28 +316,44 @@ impl EnergyDeltaMeter {
         &self.config
     }
 
-    /// Adds one unique set element.
+    /// Adds one unique source-set element.
     ///
     /// The symmetric-difference interpretation requires callers to contribute
-    /// each set element at most once to a source sketch.
+    /// each set element at most once to each source sketch.
     pub fn add_unique(&mut self, key: u64) -> Result<(), EnergyError> {
         self.apply_unit(key, 1)
     }
 
-    /// Adds one unique element with coefficient -1.
+    /// Returns the linear difference self - other.
     ///
-    /// This is primarily useful for deterministic reference construction.
-    pub fn remove_unique(&mut self, key: u64) -> Result<(), EnergyError> {
-        self.apply_unit(key, -1)
-    }
-
+    /// If both operands were built from unique source sets using the same
+    /// configuration, the resulting frequency vector is in {-1, 0, +1} and
+    /// its F2 value equals the set symmetric-difference size.
     pub fn difference(&self, other: &Self) -> Result<Self, EnergyError> {
-        self.combine(other, LinearOp::Subtract)
-    }
+        if self.config != other.config {
+            return Err(EnergyError::IncompatibleConfig);
+        }
 
-    pub fn add_assign_linear(&mut self, other: &Self) -> Result<(), EnergyError> {
-        *self = self.combine(other, LinearOp::Add)?;
-        Ok(())
+        let mut result = Self::new(self.config.clone())?;
+
+        for ((dst, left), right) in result
+            .counters
+            .iter_mut()
+            .zip(self.counters.iter())
+            .zip(other.counters.iter())
+        {
+            *dst = left
+                .checked_sub(*right)
+                .ok_or(EnergyError::CounterOverflow)?;
+        }
+
+        result.energies = recompute_energies(
+            &result.counters,
+            result.config.buckets(),
+            result.config.tables(),
+        )?;
+
+        Ok(result)
     }
 
     pub fn subtract_assign(&mut self, other: &Self) -> Result<(), EnergyError> {
@@ -326,10 +369,10 @@ impl EnergyDeltaMeter {
         *median as u128
     }
 
+    /// Returns the theorem-backed estimate for the exact profile used to
+    /// create this configuration.
     pub fn estimate(&self, profile: EnergyProfile) -> Result<EnergyEstimate, EnergyError> {
-        if self.config.buckets() != profile.buckets()
-            || self.config.tables() != profile.tables()
-        {
+        if self.config.proven_profile() != Some(profile) {
             return Err(EnergyError::ProfileMismatch);
         }
 
@@ -343,6 +386,10 @@ impl EnergyDeltaMeter {
                 failure_probability_upper_bound: profile.failure_target().probability(),
             },
         })
+    }
+
+    fn remove_unique(&mut self, key: u64) -> Result<(), EnergyError> {
+        self.apply_unit(key, -1)
     }
 
     fn apply_unit(&mut self, key: u64, delta: i64) -> Result<(), EnergyError> {
@@ -382,41 +429,6 @@ impl EnergyDeltaMeter {
 
         Ok(())
     }
-
-    fn combine(&self, other: &Self, operation: LinearOp) -> Result<Self, EnergyError> {
-        if self.config != other.config {
-            return Err(EnergyError::IncompatibleConfig);
-        }
-
-        let mut result = Self::new(self.config.clone())?;
-
-        for ((dst, left), right) in result
-            .counters
-            .iter_mut()
-            .zip(self.counters.iter())
-            .zip(other.counters.iter())
-        {
-            *dst = match operation {
-                LinearOp::Add => left.checked_add(*right),
-                LinearOp::Subtract => left.checked_sub(*right),
-            }
-            .ok_or(EnergyError::CounterOverflow)?;
-        }
-
-        result.energies = recompute_energies(
-            &result.counters,
-            result.config.buckets(),
-            result.config.tables(),
-        )?;
-
-        Ok(result)
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-enum LinearOp {
-    Add,
-    Subtract,
 }
 
 fn recompute_energies(
@@ -494,8 +506,11 @@ mod tests {
     }
 
     fn meter(profile: EnergyProfile, salt: u64) -> EnergyDeltaMeter {
-        let config =
-            EnergyConfig::for_profile(profile, test_rows(profile.tables(), salt)).unwrap();
+        let config = EnergyConfig::for_profile_assuming_uniform_rows(
+            profile,
+            test_rows(profile.tables(), salt),
+        )
+        .unwrap();
         EnergyDeltaMeter::new(config).unwrap()
     }
 
@@ -527,10 +542,7 @@ mod tests {
 
     #[test]
     fn ten_percent_capacity_uses_ceiling() {
-        let profile = EnergyProfile::new(
-            RelativeError::TenPercent,
-            FailureTarget::OneInMillion,
-        );
+        let profile = EnergyProfile::new(RelativeError::TenPercent, FailureTarget::OneInMillion);
 
         assert_eq!(profile.recommended_capacity(0).unwrap(), 0);
         assert_eq!(profile.recommended_capacity(9).unwrap(), 10);
@@ -545,15 +557,14 @@ mod tests {
 
         assert_eq!(gf64_mul(a, 0), 0);
         assert_eq!(gf64_mul(a, 1), a);
+        assert_eq!(gf64_mul(a, b), gf64_mul(b, a));
         assert_eq!(gf64_mul(a, b ^ c), gf64_mul(a, b) ^ gf64_mul(a, c));
     }
 
     #[test]
     fn incremental_energy_matches_recomputation() {
-        let profile = EnergyProfile::new(
-            RelativeError::TwentyPercent,
-            FailureTarget::OneInThousand,
-        );
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
         let mut sketch = meter(profile, 1);
 
         for key in [1, 2, 3, 5, 8, 13, 21, 34] {
@@ -575,12 +586,10 @@ mod tests {
 
     #[test]
     fn sketch_difference_matches_direct_signed_difference() {
-        let profile = EnergyProfile::new(
-            RelativeError::TwentyPercent,
-            FailureTarget::OneInThousand,
-        );
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
         let rows = test_rows(profile.tables(), 7);
-        let config = EnergyConfig::for_profile(profile, rows).unwrap();
+        let config = EnergyConfig::for_profile_assuming_uniform_rows(profile, rows).unwrap();
 
         let mut left = EnergyDeltaMeter::new(config.clone()).unwrap();
         let mut right = EnergyDeltaMeter::new(config.clone()).unwrap();
@@ -606,10 +615,8 @@ mod tests {
 
     #[test]
     fn incompatible_configs_are_rejected() {
-        let profile = EnergyProfile::new(
-            RelativeError::TwentyPercent,
-            FailureTarget::OneInThousand,
-        );
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
         let left = meter(profile, 1);
         let right = meter(profile, 2);
 
@@ -620,15 +627,24 @@ mod tests {
     }
 
     #[test]
+    fn custom_config_cannot_claim_proven_profile() {
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+        let config = EnergyConfig::new(profile.buckets(), test_rows(profile.tables(), 1)).unwrap();
+        let sketch = EnergyDeltaMeter::new(config).unwrap();
+
+        assert_eq!(
+            sketch.estimate(profile).unwrap_err(),
+            EnergyError::ProfileMismatch
+        );
+    }
+
+    #[test]
     fn profile_mismatch_is_rejected() {
-        let stored = EnergyProfile::new(
-            RelativeError::TwentyPercent,
-            FailureTarget::OneInThousand,
-        );
-        let requested = EnergyProfile::new(
-            RelativeError::TenPercent,
-            FailureTarget::OneInThousand,
-        );
+        let stored =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+        let requested =
+            EnergyProfile::new(RelativeError::TenPercent, FailureTarget::OneInThousand);
         let sketch = meter(stored, 1);
 
         assert_eq!(
