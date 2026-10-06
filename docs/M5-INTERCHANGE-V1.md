@@ -1,6 +1,6 @@
 # M5 — Canonical sketch interchange v1
 
-Status: implementation in PR #13.  
+Status: complete; merged in PR #13 as `3f7581530114c991117de383d60ffe68305ee185`.  
 Issue: #12.  
 Format name: `deltameter.snapshot.v1`.
 
