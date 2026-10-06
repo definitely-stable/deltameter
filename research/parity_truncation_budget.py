@@ -57,6 +57,8 @@ def truncation_budget(d: int, stored_levels: int) -> Budget:
 
     p_signal = math.ldexp(1.0, -stored_levels)
     p_distortion = math.ldexp(1.0, -(stored_levels + 1))
+    if p_distortion * 2.0 != p_signal:
+        raise AssertionError("state-distortion probability must be half the signal probability")
 
     return Budget(
         d=d,
