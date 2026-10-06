@@ -32,7 +32,9 @@ impl fmt::Display for LabError {
             Self::CandidateExceedsCapacity => {
                 f.write_str("decoded candidate exceeds configured total capacity")
             }
-            Self::InvalidRoots => f.write_str("locator polynomial did not yield valid distinct roots"),
+            Self::InvalidRoots => {
+                f.write_str("locator polynomial did not yield valid distinct roots")
+            }
         }
     }
 }
@@ -204,8 +206,7 @@ impl PinSketch64Lab {
         }
 
         let rebuilt = Self::from_sorted_unique(self.capacity, &roots)?;
-        if rebuilt.odd_syndromes != self.odd_syndromes
-            || rebuilt.zero_present != self.zero_present
+        if rebuilt.odd_syndromes != self.odd_syndromes || rebuilt.zero_present != self.zero_present
         {
             return Err(LabError::DecodeFailure);
         }
@@ -353,10 +354,7 @@ fn poly_gcd(left: &[u64], right: &[u64]) -> Result<Vec<u64>, LabError> {
     Ok(a)
 }
 
-fn poly_div_rem(
-    dividend: &[u64],
-    divisor: &[u64],
-) -> Result<(Vec<u64>, Vec<u64>), LabError> {
+fn poly_div_rem(dividend: &[u64], divisor: &[u64]) -> Result<(Vec<u64>, Vec<u64>), LabError> {
     let mut remainder = dividend.to_vec();
     let mut divisor = divisor.to_vec();
     trim(&mut remainder);
