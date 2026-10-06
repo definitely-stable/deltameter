@@ -1,6 +1,7 @@
 use deltameter::{
     Coverage, EnergyConfig, EnergyDeltaMeter, EnergyError, EnergyProfile, EnergyRowHash,
     FailureTarget, ParityConfig, ParityDeltaMeter, ParityProfile, ParityUpdate, RelativeError,
+    SnapshotError,
 };
 
 #[test]
@@ -18,6 +19,9 @@ fn supported_root_api_contract_smoke() {
     left.add_unique(7).unwrap();
     let difference = left.difference(&right).unwrap();
     assert!(difference.point_estimate() > 0);
+    let custom_snapshot = difference.encode_snapshot().unwrap();
+    let decoded_custom = EnergyDeltaMeter::decode_snapshot(&custom_snapshot).unwrap();
+    assert_eq!(decoded_custom.config(), difference.config());
     assert_eq!(
         difference.estimate(energy_profile),
         Err(EnergyError::ProfileMismatch)
@@ -37,6 +41,11 @@ fn supported_root_api_contract_smoke() {
     }
 
     assert_eq!(parity.packed_state_bytes(), 2048);
+    let parity_snapshot = parity.encode_snapshot().unwrap();
+    let decoded_parity = ParityDeltaMeter::decode_snapshot(&parity_snapshot).unwrap();
+    assert_eq!(decoded_parity.config(), parity.config());
+
+    let _snapshot_error_type: Option<SnapshotError> = None;
 
     let coverage = Coverage::Asymptotic {
         relative_standard_error: parity_profile.asymptotic_relative_standard_error(),
