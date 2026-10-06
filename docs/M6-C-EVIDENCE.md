@@ -120,18 +120,18 @@ No change to:
 
 ## Paired performance evidence
 
-Final M6-C hosted run: **m6c-performance #6 / 37516957320**.
+Final M6-C hosted run: **m6c-performance #11 / 37517400587**.
 
 ~~~text
 base  ce0179652cd596b8b597210577f16ee0433181ee
-head  9952eea2760ca07cf2075cfde457a39b477930dc
+head  ee17c7e6d4620b223b4adfd3672a34926cdcdf2b
 CPU   AMD EPYC 9V74 80-Core Processor
 Rust  1.99.0 / LLVM 23.1.1
 rounds 4, order AB / BA / AB / BA
 samples per round 5
 ~~~
 
-Artifact: `m6c-perf-37516957320-1`.
+Artifact: `m6c-perf-37517400587-1`.
 
 Source hashes are recorded in the artifact.
 
@@ -141,10 +141,10 @@ Paired median deltas:
 
 | Profile | Content | Base ns/update | Head ns/update | Delta |
 | --- | --- | ---: | ---: | ---: |
-| default | full-width | 5431.817 | 1561.792 | -71.251% |
-| default | sequential | 5452.622 | 1562.366 | -71.339% |
-| small | full-width | 2107.603 | 671.759 | -68.140% |
-| small | sequential | 2111.549 | 670.051 | -68.312% |
+| default | full-width | 5431.635 | 1561.966 | -71.235% |
+| default | sequential | 5460.135 | 1560.851 | -71.414% |
+| small | full-width | 2106.601 | 673.222 | -68.083% |
+| small | sequential | 2105.925 | 670.255 | -68.168% |
 
 The gain is insensitive to sequential versus deterministic full-width keys in this harness.
 
@@ -152,10 +152,10 @@ The gain is insensitive to sequential versus deterministic full-width keys in th
 
 | Metric | Profile | Base ns/op | Head ns/op | Delta |
 | --- | --- | ---: | ---: | ---: |
-| construct | default | 5313 | 8342 | +56.5% |
-| construct | small | 581 | 2429 | +353.6% |
-| decode | default | 1,690,311 | 1,695,681 | +0.299% |
-| decode | small | 167,137 | 169,038 | +1.176% |
+| construct | default | 5,168 | 8,788 | +68.6% |
+| construct | small | 501 | 2,424 | +384.3% |
+| decode | default | 1,692,122 | 1,694,308 | +0.097% |
+| decode | small | 167,125 | 169,091 | +1.227% |
 
 Construction ratios look large because the baseline constructor is extremely small. Absolute added construction cost is about:
 
@@ -175,10 +175,10 @@ Therefore the accepted cache is effectively amortized immediately for ordinary n
 
 Paired medians remain near baseline:
 
-- default difference: +0.646%;
-- small difference: +0.240%;
-- default query: -0.857%;
-- small query: -2.141%.
+- default difference: -1.111%;
+- small difference: +0.311%;
+- default query: -1.349%;
+- small query: -2.873%.
 
 These controls are not performance claims; they show no material regression from the private cache.
 
