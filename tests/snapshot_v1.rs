@@ -219,7 +219,10 @@ fn negative_energy_fixed_vector_matches_independent_state_and_continues() {
     let mut restored = EnergyDeltaMeter::decode_snapshot(&bytes).unwrap();
     assert_eq!(restored.point_estimate(), 1);
     restored.add_unique(7).unwrap();
-    assert_eq!(restored.encode_snapshot().unwrap(), left.encode_snapshot().unwrap());
+    assert_eq!(
+        restored.encode_snapshot().unwrap(),
+        left.encode_snapshot().unwrap()
+    );
 }
 
 #[test]
@@ -236,23 +239,40 @@ fn nonempty_multiword_parity_fixed_vector_preserves_padding_and_updates() {
 
 #[test]
 fn every_energy_profile_preserves_snapshot_length_and_continuation() {
-    for error in [RelativeError::FivePercent, RelativeError::TenPercent, RelativeError::TwentyPercent] {
-        for failure in [FailureTarget::OneInThousand, FailureTarget::OneInMillion, FailureTarget::OneInBillion] {
+    for error in [
+        RelativeError::FivePercent,
+        RelativeError::TenPercent,
+        RelativeError::TwentyPercent,
+    ] {
+        for failure in [
+            FailureTarget::OneInThousand,
+            FailureTarget::OneInMillion,
+            FailureTarget::OneInBillion,
+        ] {
             let profile = EnergyProfile::new(error, failure);
             // Deterministic compatibility fixture, not evidence of uniform randomness.
-            let words: Vec<_> = (0..profile.uniform_words_required()).map(|i| splitmix64(i as u64)).collect();
+            let words: Vec<_> = (0..profile.uniform_words_required())
+                .map(|i| splitmix64(i as u64))
+                .collect();
             let config = EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap();
             let mut original = EnergyDeltaMeter::new(config).unwrap();
             original.add_unique(u64::MAX).unwrap();
             let bytes = original.encode_snapshot().unwrap();
-            assert_eq!(bytes.len(), 44 + 48 * profile.tables() + profile.counter_state_bytes());
-            let mut restored = EnergyDeltaMeter::decode_snapshot_assuming_uniform_rows(&bytes).unwrap();
+            assert_eq!(
+                bytes.len(),
+                44 + 48 * profile.tables() + profile.counter_state_bytes()
+            );
+            let mut restored =
+                EnergyDeltaMeter::decode_snapshot_assuming_uniform_rows(&bytes).unwrap();
             assert_eq!(restored.encode_snapshot().unwrap(), bytes);
             for key in [0, 1, 1 << 63] {
                 original.add_unique(key).unwrap();
                 restored.add_unique(key).unwrap();
             }
-            assert_eq!(restored.encode_snapshot().unwrap(), original.encode_snapshot().unwrap());
+            assert_eq!(
+                restored.encode_snapshot().unwrap(),
+                original.encode_snapshot().unwrap()
+            );
             assert_eq!(restored.estimate(profile), original.estimate(profile));
         }
     }
