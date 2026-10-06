@@ -4,6 +4,9 @@ use crate::coverage::Coverage;
 use crate::fpcsa::{
     FpcsaError, FpcsaUpdate, PublishedFpcsaF2, PublishedFpcsaF2Config, PublishedFpcsaOracle,
 };
+use crate::snapshot::{
+    BACKEND_PARITY, Cursor, SnapshotError, decode_envelope, encode_envelope, push_u32, push_u64,
+};
 
 const PARITY_RSE_COEFFICIENT: f64 = 1.638;
 const ROW_SEED_DOMAIN: u64 = 0x6A09_E667_F3BC_C909;
@@ -207,6 +210,67 @@ impl ParityDeltaMeter {
 
     pub fn config(&self) -> &ParityConfig {
         &self.config
+    }
+
+    /// Encodes this sketch as the canonical DeltaMeter snapshot v1 byte format.
+    ///
+    /// The deterministic seed and finite shape reconstruct the exact Parity
+    /// pseudo-oracle configuration; only the primary packed GF(2) state is
+    /// persisted.
+    pub fn encode_snapshot(&self) -> Result<Vec<u8>, SnapshotError> {
+        let mut payload = Vec::new();
+        push_u32(&mut payload, self.config.rows());
+        payload.push(self.config.stored_levels());
+        payload.extend_from_slice(&[0, 0, 0]);
+        push_u64(&mut payload, self.config.seed());
+
+        for &word in self.backend.snapshot_words() {
+            push_u64(&mut payload, word);
+        }
+
+        encode_envelope(BACKEND_PARITY, &payload)
+    }
+
+    /// Decodes a canonical DeltaMeter snapshot v1 Parity sketch.
+    ///
+    /// Unknown shapes, wrong lengths, checksum failures and non-zero padding
+    /// bits fail closed.
+    pub fn decode_snapshot(bytes: &[u8]) -> Result<Self, SnapshotError> {
+        let payload = decode_envelope(bytes, BACKEND_PARITY)?;
+        let mut cursor = Cursor::new(payload);
+
+        let rows = cursor.read_u32()?;
+        let stored_levels = cursor.read_u8()?;
+        if cursor.read_u8()? != 0 || cursor.read_u8()? != 0 || cursor.read_u8()? != 0 {
+            return Err(SnapshotError::InvalidPayload);
+        }
+        let seed = cursor.read_u64()?;
+
+        let config = ParityConfig::new(rows, stored_levels, seed)
+            .map_err(|_| SnapshotError::InvalidPayload)?;
+        let word_count = config.backend().packed_state_words();
+        let state_bytes = word_count
+            .checked_mul(core::mem::size_of::<u64>())
+            .ok_or(SnapshotError::LengthOverflow)?;
+        if cursor.remaining() != state_bytes {
+            return Err(SnapshotError::InvalidPayload);
+        }
+
+        let mut words = Vec::with_capacity(word_count);
+        for _ in 0..word_count {
+            words.push(cursor.read_u64()?);
+        }
+        if !cursor.is_finished() {
+            return Err(SnapshotError::InvalidPayload);
+        }
+
+        let backend = PublishedFpcsaF2::from_snapshot_words(config.backend().clone(), words)
+            .map_err(|error| match error {
+                FpcsaError::NonCanonicalPadding => SnapshotError::NonCanonicalPadding,
+                _ => SnapshotError::InvalidPayload,
+            })?;
+
+        Ok(Self { config, backend })
     }
 
     #[cfg(test)]

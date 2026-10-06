@@ -1,7 +1,7 @@
 # Decision record 0001 — pre-implementation baseline
 
-Status: **accepted and updated through the M4 implementation**  
-Updated: 2026-10-06 after the M4 performance/API freeze implementation.
+Status: **accepted and updated through the M5 implementation**  
+Updated: 2026-10-06 after selecting canonical sketch interchange as the post-M4 product boundary.
 
 ## Context
 
@@ -291,6 +291,31 @@ API/state stabilization is not evidence that persistence is required.
 
 M4 deliberately avoids a raw-state export or wire format. Persisted serialization, if needed, requires a separate compatibility/versioning decision after M4.
 
+### D23 — Add canonical interchange after the API freeze
+
+After M4, the missing product capability is cross-boundary sketch transfer.
+
+Reason:
+
+- if both full source sets are already co-resident, exact comparison is often available;
+- a compact mergeable sketch is most useful across process, host, storage or time boundaries;
+- therefore persistence is justified by the core use case rather than by serialization convenience.
+
+M5 uses a dependency-free canonical v1 envelope with:
+
+- explicit version, backend and u64-set domain tags;
+- little-endian fixed-width integers;
+- exact payload lengths;
+- CRC32C accidental-corruption detection;
+- self-contained backend configuration;
+- primary state only, with derived caches recomputed on decode.
+
+Energy serializes its exact hash coefficients because dimensions alone are insufficient to continue or compare the sketch. Parity serializes seed plus shape because that deterministically reconstructs its pseudo-oracle.
+
+A serialized Energy profile marker cannot self-certify the theorem's randomness assumption. The ordinary decoder rejects Proven snapshots; restoring Proven coverage requires an explicitly named decoder whose caller accepts the uniform-row provenance precondition.
+
+CRC32C is not authentication. No crypto, serde, compression, file or network abstraction is added.
+
 ## Immediate implementation sequence
 
 ```text
@@ -300,7 +325,7 @@ M0 research bootstrap
 -> experimental ParityDeltaMeter
 -> post-M3 strict-Parity stop gate
 -> performance/API freeze
--> separate persisted-format decision only if a product requirement exists
+-> canonical sketch interchange v1
 -> optional ParityLevelCounts / exact-small-d research
 ```
 

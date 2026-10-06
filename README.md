@@ -13,7 +13,7 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-M0–M3 are complete. Post-M3 research closes the current published-W_i strict-Parity track as NO-GO. M4 performance/API freeze is implemented in PR #11 and is awaiting merge.
+M0–M4 are complete. Post-M3 research closes the current published-W_i strict-Parity track as NO-GO. M5 canonical sketch interchange is the current implementation milestone in PR #13.
 
 Current implementation direction:
 
@@ -33,6 +33,7 @@ Q1 is resolved more strongly after M3: there is **no accepted strict finite-samp
 - [docs/research/M2-FPCSA-REPRODUCTION.md](docs/research/M2-FPCSA-REPRODUCTION.md) — M2 source/implementation boundary.
 - [docs/research/M3-PARITY-EXPERIMENTAL.md](docs/research/M3-PARITY-EXPERIMENTAL.md) — M3 API, profiles, guarantees and benchmark plan.
 - [docs/M4-PERFORMANCE-API-FREEZE.md](docs/M4-PERFORMANCE-API-FREEZE.md) — M4 defaults, paired performance evidence, rejected optimizations and frozen v0 API boundary.
+- [docs/M5-INTERCHANGE-V1.md](docs/M5-INTERCHANGE-V1.md) — canonical self-contained Energy/Parity snapshot v1 contract.
 - [docs/research/FOUNDATION.md](docs/research/FOUNDATION.md) — canonical mathematical/engineering synthesis.
 - [docs/research/DECISIONS.md](docs/research/DECISIONS.md) — current decisions.
 - [docs/research/NEW-INPUTS-AUDIT.md](docs/research/NEW-INPUTS-AUDIT.md) — reconciliation of the latest reports.
@@ -77,7 +78,7 @@ M4 v0 defaults are:
 - EnergyProfile::DEFAULT = 10% relative error with failure probability at most 1e-6, assuming the documented independent-uniform randomness contract;
 - ParityProfile::DEFAULT = Standard (m=256, J=64, asymptotic RSE about 10.2375%).
 
-No persisted state format is frozen.
+M4 did not freeze persistence. M5 now implements a deliberately narrow canonical snapshot v1 because cross-process/host interchange is the product boundary where a mergeable sketch becomes useful.
 
 ## Project principles
 

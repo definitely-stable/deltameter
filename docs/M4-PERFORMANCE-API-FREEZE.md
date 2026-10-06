@@ -1,6 +1,6 @@
 # M4 — Performance and API freeze
 
-Status: implemented in PR #11; acceptance checks green; pending merge.  
+Status: complete; merged in PR #11 as `4941b17a5fae5d74d629f97df3c03fff3c25c0b6`.  
 Issue: #10.  
 Evidence date: 2026-10-06.
 
@@ -197,7 +197,7 @@ A future persisted format requires a separate requirement and must version algor
 
 ## Acceptance verdict
 
-M4 is implementation-complete when PR #11 is merged with:
+M4 acceptance was completed and merged with:
 
 - Rust CI green;
 - paired performance workflow green;
