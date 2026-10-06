@@ -170,14 +170,6 @@ impl PinSketch64Lab {
         })
     }
 
-    /// Decode using every stored syndrome as recoverable capacity.
-    ///
-    /// This is useful as a baseline, but provides no extra syndrome budget for
-    /// detecting over-capacity aliases.
-    pub fn decode_candidate(&self) -> Result<Vec<u64>, LabError> {
-        self.decode_candidate_with_limit(self.capacity)
-    }
-
     /// Decode at most `max_elements` while using any additional stored
     /// syndromes as algebraic consistency guards.
     ///
@@ -584,14 +576,14 @@ mod tests {
     fn one_element_locator_recovers_root() {
         let key = 0xDEAD_BEEF_CAFE_BABE;
         let sketch = PinSketch64Lab::from_sorted_unique(1, &[key]).unwrap();
-        assert_eq!(sketch.decode_candidate().unwrap(), vec![key]);
+        assert_eq!(sketch.decode_candidate_with_limit(1).unwrap(), vec![key]);
     }
 
     #[test]
     fn zero_is_out_of_band_and_exact() {
         let sketch = PinSketch64Lab::from_sorted_unique(2, &[0, u64::MAX]).unwrap();
         assert!(sketch.zero_present());
-        assert_eq!(sketch.decode_candidate().unwrap(), vec![0, u64::MAX]);
+        assert_eq!(sketch.decode_candidate_with_limit(2).unwrap(), vec![0, u64::MAX]);
     }
 
     #[test]
