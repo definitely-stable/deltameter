@@ -24,7 +24,7 @@ This file maps the primary literature and upstream systems used by the DeltaMete
   - Caution: broader problem than DeltaMeter's GF(2) set-only promise.
 
 - *Tight Bounds for Low-Error Frequency Moment Estimation* and related low-error work.
-  - Role: dependence on (arepsilon,delta) in broader streaming models.
+  - Role: dependence on `epsilon` and `delta` in broader streaming models.
 
 - distinct-elements lower-bound/upper-bound literature, including low-failure-probability results.
   - Role: comparison point showing how promise/model changes the memory frontier.
