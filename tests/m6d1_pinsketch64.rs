@@ -163,7 +163,10 @@ fn serialization_is_separate_and_merge_stable() {
 
     let mut combined = left;
     combined.merge(&right).unwrap();
-    assert_eq!(combined.decode_candidate_with_limit(4).unwrap(), vec![0, 5, 7]);
+    assert_eq!(
+        combined.decode_candidate_with_limit(4).unwrap(),
+        vec![0, 5, 7]
+    );
 }
 
 #[test]
