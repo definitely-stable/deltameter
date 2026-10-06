@@ -20,6 +20,7 @@ pub enum SnapshotError {
     LengthOverflow,
     LengthMismatch { declared: u64, actual: usize },
     ChecksumMismatch,
+    ProvenanceRequired,
     UnsupportedConfig,
     InvalidPayload,
     NonCanonicalPadding,
@@ -50,6 +51,9 @@ impl fmt::Display for SnapshotError {
                 )
             }
             Self::ChecksumMismatch => f.write_str("snapshot CRC32C checksum mismatch"),
+            Self::ProvenanceRequired => {
+                f.write_str("snapshot carries an Energy Proven profile and requires an explicit uniform-row provenance assumption")
+            }
             Self::UnsupportedConfig => {
                 f.write_str("configuration cannot be represented by snapshot v1")
             }
