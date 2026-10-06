@@ -8,7 +8,8 @@ Initial domain:
 
 - key type: `u64`;
 - data model: sets;
-- set update operation: `toggle(key)`;
+- Energy source-set ingestion: `add_unique(key)`, then `difference(other)`;
+- Parity set update operation later: `toggle(key)`;
 - target output: point estimate plus explicitly labelled coverage information.
 
 No generic key codecs, distributed protocol, persistent wire format, keyed-security mode, exact-recovery subsystem, multi-crate workspace, plugin system or unsafe SIMD is required in the first implementation slice.
@@ -42,6 +43,8 @@ bucket hash: pairwise-uniform collisions
 sign hash:   4-wise independent signs
 independent families
 ```
+
+The reference implementation uses affine/cubic polynomials over GF(2^64) and accepts exactly six independent uniformly random `u64` words per row (two bucket coefficients + four sign coefficients). DeltaMeter does not ship a seeded PRNG in M1 because a small deterministic seed would not automatically satisfy the information-theoretic independence contract.
 
 ### PublishedFpcsaF2
 
