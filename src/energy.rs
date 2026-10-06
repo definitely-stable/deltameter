@@ -223,7 +223,34 @@ impl EnergyRowHash {
         (value >> (64 - bits)) as usize
     }
 
-    fn sign(self, key: u64) -> i64 {
+    fn sign_masks(self) -> [u64; 3] {
+        let [_, c1, c2, c3] = self.sign_coefficients;
+        [
+            lsb_multiplication_mask(c1),
+            lsb_multiplication_mask(c2),
+            lsb_multiplication_mask(c3),
+        ]
+    }
+
+    #[inline]
+    fn sign_from_masks(
+        self,
+        key: u64,
+        key_squared: u64,
+        key_cubed: u64,
+        masks: [u64; 3],
+    ) -> i64 {
+        let [c0, _, _, _] = self.sign_coefficients;
+        let bit = (c0 & 1)
+            ^ u64::from((masks[0] & key).count_ones() & 1)
+            ^ u64::from((masks[1] & key_squared).count_ones() & 1)
+            ^ u64::from((masks[2] & key_cubed).count_ones() & 1);
+
+        if bit == 0 { 1 } else { -1 }
+    }
+
+    #[cfg(test)]
+    fn sign_horner(self, key: u64) -> i64 {
         let [c0, c1, c2, c3] = self.sign_coefficients;
         let value = gf64_mul(gf64_mul(gf64_mul(c3, key) ^ c2, key) ^ c1, key) ^ c0;
 
@@ -350,21 +377,38 @@ pub struct EnergyDeltaMeter {
     counters: Box<[i64]>,
     energies: Box<[i128]>,
     pending: Box<[PendingUpdate]>,
+    sign_masks: Box<[[u64; 3]]>,
 }
 
 impl EnergyDeltaMeter {
     pub fn new(config: EnergyConfig) -> Result<Self, EnergyError> {
+        let sign_masks = config
+            .rows
+            .iter()
+            .copied()
+            .map(EnergyRowHash::sign_masks)
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
+        Self::new_with_sign_masks(config, sign_masks)
+    }
+
+    fn new_with_sign_masks(
+        config: EnergyConfig,
+        sign_masks: Box<[[u64; 3]]>,
+    ) -> Result<Self, EnergyError> {
         let counter_len = config
             .buckets()
             .checked_mul(config.tables())
             .ok_or(EnergyError::StateSizeOverflow)?;
         let tables = config.tables();
+        debug_assert_eq!(sign_masks.len(), tables);
 
         Ok(Self {
             config,
             counters: vec![0; counter_len].into_boxed_slice(),
             energies: vec![0; tables].into_boxed_slice(),
             pending: vec![PendingUpdate::default(); tables].into_boxed_slice(),
+            sign_masks,
         })
     }
 
@@ -557,7 +601,8 @@ impl EnergyDeltaMeter {
             return Err(EnergyError::IncompatibleConfig);
         }
 
-        let mut result = Self::new(self.config.clone())?;
+        let mut result =
+            Self::new_with_sign_masks(self.config.clone(), self.sign_masks.clone())?;
 
         for ((dst, left), right) in result
             .counters
@@ -618,12 +663,20 @@ impl EnergyDeltaMeter {
 
     fn apply_unit(&mut self, key: u64, delta: i64) -> Result<(), EnergyError> {
         let buckets = self.config.buckets();
+        let key_squared = gf64_mul(key, key);
+        let key_cubed = gf64_mul(key_squared, key);
 
         for row_index in 0..self.config.tables() {
             let row = self.config.rows[row_index];
             let bucket = row.bucket_index(key, buckets);
             let index = row_index * buckets + bucket;
-            let signed_delta = delta * row.sign(key);
+            let signed_delta = delta
+                * row.sign_from_masks(
+                    key,
+                    key_squared,
+                    key_cubed,
+                    self.sign_masks[row_index],
+                );
             let old_counter = self.counters[index];
             let new_counter = old_counter
                 .checked_add(signed_delta)
@@ -716,6 +769,19 @@ const fn ceil_div(value: u128, divisor: u128) -> u128 {
     } else {
         1 + (value - 1) / divisor
     }
+}
+
+fn lsb_multiplication_mask(coefficient: u64) -> u64 {
+    let mut mask = 0_u64;
+
+    for bit in 0..64 {
+        let basis = 1_u64 << bit;
+        if gf64_mul(coefficient, basis) & 1 != 0 {
+            mask |= basis;
+        }
+    }
+
+    mask
 }
 
 #[inline]
@@ -828,6 +894,125 @@ mod tests {
         assert_eq!(gf64_mul(a, 1), a);
         assert_eq!(gf64_mul(a, b), gf64_mul(b, a));
         assert_eq!(gf64_mul(a, b ^ c), gf64_mul(a, b) ^ gf64_mul(a, c));
+    }
+
+    #[test]
+    fn lsb_multiplication_mask_matches_direct_field_multiplication() {
+        let coefficients = [
+            0,
+            1,
+            1_u64 << 63,
+            u64::MAX,
+            0x0123_4567_89AB_CDEF,
+            0xDEAD_BEEF_CAFE_BABE,
+        ];
+        let values = [
+            0,
+            1,
+            2,
+            1_u64 << 63,
+            u64::MAX,
+            0xF0E1_D2C3_B4A5_9687,
+            0x1357_9BDF_2468_ACE0,
+        ];
+
+        for coefficient in coefficients {
+            let mask = lsb_multiplication_mask(coefficient);
+            for value in values {
+                assert_eq!(
+                    u64::from((mask & value).count_ones() & 1),
+                    gf64_mul(coefficient, value) & 1,
+                    "coefficient={coefficient:#018x} value={value:#018x}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn cached_sign_masks_match_horner_for_edge_coefficients_and_keys() {
+        let rows = [
+            EnergyRowHash::from_coefficients([0, 0], [0, 0, 0, 0]),
+            EnergyRowHash::from_coefficients([1, 1], [1, 1, 1, 1]),
+            EnergyRowHash::from_coefficients(
+                [1_u64 << 63, u64::MAX],
+                [1_u64 << 63, 1_u64 << 63, 1_u64 << 63, 1_u64 << 63],
+            ),
+            EnergyRowHash::from_coefficients(
+                [u64::MAX, 0],
+                [u64::MAX, u64::MAX, u64::MAX, u64::MAX],
+            ),
+            EnergyRowHash::from_coefficients(
+                [0x0123_4567_89AB_CDEF, 0xF0E1_D2C3_B4A5_9687],
+                [
+                    0xDEAD_BEEF_CAFE_BABE,
+                    0x1357_9BDF_2468_ACE0,
+                    0xAAAA_5555_F0F0_0F0F,
+                    0x8000_0000_0000_0001,
+                ],
+            ),
+        ];
+        let keys = [
+            0,
+            1,
+            2,
+            1_u64 << 63,
+            u64::MAX,
+            0x0123_4567_89AB_CDEF,
+            0xF0E1_D2C3_B4A5_9687,
+        ];
+
+        for row in rows {
+            let masks = row.sign_masks();
+            for key in keys {
+                let key_squared = gf64_mul(key, key);
+                let key_cubed = gf64_mul(key_squared, key);
+                assert_eq!(
+                    row.sign_from_masks(key, key_squared, key_cubed, masks),
+                    row.sign_horner(key),
+                    "key={key:#018x} row={row:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn cached_sign_masks_match_horner_for_every_profile_shape() {
+        for failure in [
+            FailureTarget::OneInThousand,
+            FailureTarget::OneInMillion,
+            FailureTarget::OneInBillion,
+        ] {
+            for error in [
+                RelativeError::FivePercent,
+                RelativeError::TenPercent,
+                RelativeError::TwentyPercent,
+            ] {
+                let profile = EnergyProfile::new(error, failure);
+                let sketch = meter(profile, 0xCACE_600D);
+                for (row, masks) in sketch
+                    .config
+                    .rows
+                    .iter()
+                    .copied()
+                    .zip(sketch.sign_masks.iter().copied())
+                {
+                    for key in [
+                        0,
+                        1,
+                        1_u64 << 63,
+                        u64::MAX,
+                        0xA5A5_5A5A_DEAD_BEEF,
+                    ] {
+                        let key_squared = gf64_mul(key, key);
+                        let key_cubed = gf64_mul(key_squared, key);
+                        assert_eq!(
+                            row.sign_from_masks(key, key_squared, key_cubed, masks),
+                            row.sign_horner(key)
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]
