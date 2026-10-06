@@ -50,5 +50,10 @@ jobs:
       - name: Test
         run: cargo test --all-targets
 
-      - name: Compile M3 comparison harness
-        run: cargo check --release --example m3_compare
+      - name: Documentation
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --no-deps
+
+      - name: Compile examples
+        run: cargo check --release --examples

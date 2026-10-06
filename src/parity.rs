@@ -10,6 +10,7 @@ const ROW_SEED_DOMAIN: u64 = 0x6A09_E667_F3BC_C909;
 const LEVEL_SEED_DOMAIN: u64 = 0xBB67_AE85_84CA_A73B;
 const COEFFICIENT_SEED_DOMAIN: u64 = 0x3C6E_F372_FE94_F82B;
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParityProfile {
     Compact,
@@ -18,6 +19,9 @@ pub enum ParityProfile {
 }
 
 impl ParityProfile {
+    /// Balanced v0 experimental default: m=256 rows with J=64 stored levels.
+    pub const DEFAULT: Self = Self::Standard;
+
     pub const fn rows(self) -> u32 {
         match self {
             Self::Compact => 64,
@@ -60,6 +64,13 @@ impl ParityProfile {
     }
 }
 
+impl Default for ParityProfile {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParityError {
     Backend(FpcsaError),
@@ -157,6 +168,7 @@ impl ParityConfig {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParityUpdate {
     Stored { row: u32, level: u8 },
@@ -174,6 +186,7 @@ impl From<FpcsaUpdate> for ParityUpdate {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ParityEstimate {
     pub point: f64,
@@ -196,7 +209,8 @@ impl ParityDeltaMeter {
         &self.config
     }
 
-    pub fn packed_words(&self) -> &[u64] {
+    #[cfg(test)]
+    fn packed_words(&self) -> &[u64] {
         self.backend.packed_words()
     }
 

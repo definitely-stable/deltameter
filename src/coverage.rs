@@ -5,6 +5,7 @@
 ///
 /// `Asymptotic` is weaker. Its relative standard error is model metadata from
 /// an asymptotic analysis and is not a finite-sample failure-probability bound.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Coverage {
     Proven {

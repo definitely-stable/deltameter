@@ -9,6 +9,7 @@ use crate::coverage::Coverage;
 /// justify the pairwise/4-wise finite-field independence argument.
 const GF64_REDUCTION: u64 = 0x1B;
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EnergyError {
     BucketsMustBePowerOfTwo,
@@ -55,6 +56,7 @@ impl fmt::Display for EnergyError {
 
 impl std::error::Error for EnergyError {}
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RelativeError {
     FivePercent,
@@ -88,6 +90,7 @@ impl RelativeError {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FailureTarget {
     OneInThousand,
@@ -120,6 +123,9 @@ pub struct EnergyProfile {
 }
 
 impl EnergyProfile {
+    /// Balanced v0 strict default: 10% relative error at failure probability <= 1e-6.
+    pub const DEFAULT: Self = Self::new(RelativeError::TenPercent, FailureTarget::OneInMillion);
+
     pub const fn new(relative_error: RelativeError, failure_target: FailureTarget) -> Self {
         Self {
             relative_error,
@@ -161,6 +167,13 @@ impl EnergyProfile {
     }
 }
 
+impl Default for EnergyProfile {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct EnergyEstimate {
     pub point: u128,
@@ -294,10 +307,6 @@ impl EnergyConfig {
 
     pub fn tables(&self) -> usize {
         self.rows.len()
-    }
-
-    pub fn rows(&self) -> &[EnergyRowHash] {
-        &self.rows
     }
 
     pub const fn proven_profile(&self) -> Option<EnergyProfile> {
@@ -481,9 +490,8 @@ fn recompute_energies(
         let mut energy = 0_i128;
         for &counter in row {
             let counter = i128::from(counter);
-            let square = counter * counter;
             energy = energy
-                .checked_add(square)
+                .checked_add(counter * counter)
                 .ok_or(EnergyError::EnergyOverflow)?;
         }
         energies[row_index] = energy;

@@ -104,17 +104,41 @@ A narrow `ParityLevelCounts` research track may continue post-v0, but it is not 
 
 ## M4 — Performance and API freeze
 
-Status: next implementation milestone after issue #8 research reconciliation.
+Status: implemented in PR #11; acceptance checks green; pending merge.
 
-After Energy and experimental Parity exist:
+Deliverables:
 
-- measure update/merge/query throughput;
-- choose default profile(s);
-- decide whether batch APIs matter;
-- optimize only demonstrated bottlenecks;
-- freeze the small public API.
+- paired base/head stable-Rust benchmark for update/merge/query on the same GitHub-hosted runner;
+- explicit v0 defaults:
+  - Energy = 10% relative error / failure probability <= 1e-6;
+  - experimental Parity = Standard (m=256, J=64);
+- no batch API in v0: current scalar backends expose no measured batch-specific amortization opportunity;
+- demonstrated Parity query optimization for J=64:
+  - no highest-level Vec allocation in estimate;
+  - one u64 highest-set-bit operation per row instead of scanning 64 levels;
+- rejected Energy merge and query micro-optimizations when paired measurements did not show a stable benefit;
+- root-only supported public API; published F-PCSA reproduction remains internal research machinery;
+- raw Parity packed words are not public, so an in-memory layout is not accidentally frozen as a wire format;
+- extensible public enums/result records marked non-exhaustive before the freeze;
+- integration compile contract for the supported root API;
+- rustdoc warnings denied in CI;
+- persisted serialization deliberately remains unfrozen.
 
-Only then decide whether persisted serialization is actually required.
+Acceptance:
+
+- cargo fmt --all -- --check;
+- cargo clippy --all-targets -- -D warnings;
+- cargo test --all-targets;
+- RUSTDOCFLAGS="-D warnings" cargo doc --no-deps;
+- release-mode examples compile;
+- GitHub-hosted paired performance workflow succeeds and uploads evidence;
+- Energy remains the only Coverage::Proven backend;
+- Parity remains Coverage::Asymptotic;
+- no unsafe, SIMD, nightly, new runtime dependency or self-hosted runner requirement.
+
+See docs/M4-PERFORMANCE-API-FREEZE.md for the freeze record and performance interpretation.
+
+Only after M4 is merged should a separate requirement decide whether persisted serialization is actually needed.
 
 ## Post-v0 candidates
 

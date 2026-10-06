@@ -88,7 +88,7 @@ fn bench_parity_update(keys: u64, config: ParityConfig) -> Duration {
         for key in 0..keys {
             black_box(meter.toggle(black_box(key)));
         }
-        black_box(meter.packed_words());
+        black_box(&meter);
     })
 }
 
