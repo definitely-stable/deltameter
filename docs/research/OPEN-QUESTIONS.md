@@ -6,11 +6,11 @@ The original five questions remain useful, but not all of them are implementatio
 
 ### v0 gate
 
-**Resolved: NO-GO for strict Parity `Coverage::Proven`.**
+**Resolved for the published W_i estimator: NO-GO for strict Parity `Coverage::Proven`; the current strict-W_i track is stopped.**
 
-The mathematical question remains open.
+The broader GF(2)-linear question remains open only through separate candidates such as `ParityLevelCounts`.
 
-See [Q1-FINITE-SAMPLE-PARITY.md](Q1-FINITE-SAMPLE-PARITY.md).
+See [STRICT-PARITY-POST-M3.md](STRICT-PARITY-POST-M3.md) and [Q1-FINITE-SAMPLE-PARITY.md](Q1-FINITE-SAMPLE-PARITY.md).
 
 ### Why
 
@@ -24,17 +24,30 @@ In particular, these are insufficient:
 - unproved independence assumptions;
 - saddlepoint approximations without rigorous remainder control.
 
-### Research continuation
+### Post-M3 status
 
-Focus only on:
+The optional research produced three useful exact results:
 
-1. faithful mathematical specification of the published FIELDMAP/rightmost-nonzero F-PCSA construction;
-2. exact small finite distributions on the actual F-PCSA state or a proved sufficient statistic;
-3. finite-level truncation/censoring accounting;
-4. Poissonization only after the exact category decomposition is written down;
-5. direct fixed-d analysis or de-Poissonization with verified theorem hypotheses and explicit remainder;
-6. one-sided test inversion;
-7. explicit width/power.
+1. exact tiny full-state enumeration and a direct W_i non-sufficiency witness;
+2. an exact finite-J truncation budget separating the implementation signal from state distortion;
+3. an exact unconditional Poissonized cell/row law.
+
+The remaining published-W_i gaps are not implementation blockers and are no longer an active proof program:
+
+- practical fixed-d de-Poissonization/coefficient extraction;
+- full-statistic stochastic monotonicity;
+- certified 1e-6/1e-9 one-sided inversion;
+- useful strict width/power.
+
+### Narrow continuation
+
+Only a separate `ParityLevelCounts` track is worth considering:
+
+~~~text
+S_j = popcount(FIELDMAP[:,j])
+~~~
+
+It must not become a public backend until a certified fixed-d tail and useful width exist.
 
 Canonical notation:
 
@@ -91,7 +104,7 @@ The repository chooses deferral because DeltaMeter's first product is an estimat
 - either C/C++ FFI or substantial pure-Rust BCH work;
 - additional API and CI surface.
 
-Minisketch remains the strongest future candidate if small-(d) exact recovery becomes a demonstrated product requirement.
+Minisketch remains a strong future candidate if small-(d) exact recovery becomes a demonstrated product requirement. Simple Set Sketching and IBLT-derived candidates were also raised in the post-M3 reports, but none is adopted before a separate primary-source/failure-semantics audit.
 
 ---
 
@@ -152,8 +165,8 @@ Research jobs:
 
 No self-hosted runners. No absolute nanosecond merge gate. No Monte Carlo claim of (10^{-9}) proof.
 
-## Remaining true blockers before M1
+## Current implementation blockers
 
-None at the research-architecture level.
+None from strict-Parity theory.
 
-M1 can start after M0/PR #1 is reviewed and merged.
+M4 performance/API work may proceed independently of the optional ParityLevelCounts or exact-small-d research tracks.
