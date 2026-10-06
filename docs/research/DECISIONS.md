@@ -1,7 +1,7 @@
 # Decision record 0001 — pre-implementation baseline
 
-Status: **accepted and updated through M3**  
-Updated: 2026-10-06 after the post-M3 strict-Parity research round.
+Status: **accepted and updated through the M4 implementation**  
+Updated: 2026-10-06 after the M4 performance/API freeze implementation.
 
 ## Context
 
@@ -232,6 +232,65 @@ In particular:
 
 M4 remains the next implementation milestone.
 
+### D18 — Freeze a root-only v0 API
+
+M4 freezes the supported external surface at the crate root.
+
+The published F-PCSA reproduction remains internal research machinery behind ParityDeltaMeter. Raw Parity packed words and Energy's internal row slice are not public contracts.
+
+Public enums/result records that may grow are marked #[non_exhaustive] before the freeze. A compile-level integration test exercises the supported root surface.
+
+### D19 — Freeze balanced v0 defaults without conflating guarantees
+
+The v0 defaults are:
+
+~~~text
+EnergyProfile::DEFAULT:
+    relative error = 10%
+    failure probability <= 1e-6
+    strict finite-sample Proven contract,
+    subject to the explicit independent-uniform randomness precondition
+
+ParityProfile::DEFAULT:
+    Standard
+    m = 256
+    J = 64
+    asymptotic RSE ~= 10.2375%
+    experimental Asymptotic contract
+~~~
+
+The similar nominal error scale does not make the guarantees equivalent.
+
+### D20 — Do not add a batch API in v0
+
+M4 does not freeze add_many, toggle_many, iterator ingestion or a batch trait.
+
+The current scalar implementations do not expose a measured batch-specific amortization opportunity. Moving a caller loop behind a new method would enlarge the compatibility surface without changing the algorithm.
+
+Revisit batching only with a concrete implementation advantage such as vectorized hashing, parallel lane processing or another measured amortization mechanism.
+
+### D21 — Performance changes require paired evidence
+
+The PR benchmark runs base and head sequentially on the same GitHub-hosted runner and records update/merge/query medians.
+
+Accepted:
+
+- Parity J=64 query fast path;
+- allocation-free direct accumulation of the published row statistic.
+
+Rejected and reverted:
+
+- Energy non-mutating merge rewrite;
+- Energy stack-scratch median query.
+
+Those Energy candidates did not show a stable paired benefit. Hosted-runner benchmark numbers remain diagnostic, not product promises.
+
+### D22 — M4 does not freeze serialization
+
+API/state stabilization is not evidence that persistence is required.
+
+M4 deliberately avoids a raw-state export or wire format. Persisted serialization, if needed, requires a separate compatibility/versioning decision after M4.
+
 ## Immediate implementation sequence
 
 ```text
@@ -241,6 +300,7 @@ M0 research bootstrap
 -> experimental ParityDeltaMeter
 -> post-M3 strict-Parity stop gate
 -> performance/API freeze
+-> separate persisted-format decision only if a product requirement exists
 -> optional ParityLevelCounts / exact-small-d research
 ```
 
