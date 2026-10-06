@@ -1,0 +1,49 @@
+name: m6a-value
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "src/**"
+      - "examples/m6a_experiment.rs"
+      - "docs/superpowers/plans/2026-10-06-m6a-value-experiment.md"
+      - ".github/workflows/m6a.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install stable Rust
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Record environment
+        run: |
+          mkdir -p "${RUNNER_TEMP}/m6a"
+          rustc +stable -Vv > "${RUNNER_TEMP}/m6a/rustc.txt"
+          lscpu > "${RUNNER_TEMP}/m6a/cpu.txt"
+          git rev-parse HEAD > "${RUNNER_TEMP}/m6a/head.txt"
+          sha256sum examples/m6a_experiment.rs > "${RUNNER_TEMP}/m6a/source-sha256.txt"
+
+      - name: Build release experiment
+        run: cargo +stable build --release --example m6a_experiment
+
+      - name: Run deterministic value experiment
+        run: |
+          ./target/release/examples/m6a_experiment > "${RUNNER_TEMP}/m6a/result.csv"
+
+      - name: Preserve output
+        run: cat "${RUNNER_TEMP}/m6a/result.csv"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6a-value-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/m6a/
+          if-no-files-found: error
