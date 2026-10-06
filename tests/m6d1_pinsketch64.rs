@@ -66,29 +66,52 @@ fn exact_merge_decode_grid_with_full_width_keys() {
         let left = base_set(24, 0xC001_D00D ^ capacity as u64);
 
         for difference in 0..=capacity {
-            let remove = difference / 2;
-            let add = difference - remove;
-            let right = mutate(
-                &left,
-                remove,
-                add,
-                0xD1FF_0000 ^ capacity as u64 ^ difference as u64,
-                false,
-            );
-            let expected = symmetric_difference(&left, &right);
-            assert_eq!(expected.len(), difference);
+            for case in 0_u64..4 {
+                let remove = difference / 2;
+                let add = difference - remove;
+                let right = mutate(
+                    &left,
+                    remove,
+                    add,
+                    0xD1FF_0000 ^ capacity as u64 ^ difference as u64 ^ case.rotate_left(17),
+                    false,
+                );
+                let expected = symmetric_difference(&left, &right);
+                assert_eq!(expected.len(), difference);
 
-            let mut combined = PinSketch64Lab::from_sorted_unique(capacity, &left).unwrap();
-            let other = PinSketch64Lab::from_sorted_unique(capacity, &right).unwrap();
-            combined.merge(&other).unwrap();
+                let mut combined = PinSketch64Lab::from_sorted_unique(capacity, &left).unwrap();
+                let other = PinSketch64Lab::from_sorted_unique(capacity, &right).unwrap();
+                combined.merge(&other).unwrap();
 
-            assert_eq!(
-                combined.decode_candidate().unwrap(),
-                expected,
-                "capacity={capacity} d={difference}"
-            );
+                assert_eq!(
+                    combined.decode_candidate().unwrap(),
+                    expected,
+                    "capacity={capacity} d={difference} case={case}"
+                );
+            }
         }
     }
+}
+
+#[test]
+fn fixed_tiny_vectors_are_stable() {
+    let one = PinSketch64Lab::from_sorted_unique(1, &[1]).unwrap();
+    assert_eq!(one.odd_syndromes(), &[1]);
+    assert_eq!(
+        one.encode(),
+        [
+            b'D', b'M', b'P', b'6', b'4', b'L', b'0', b'1',
+            1, 0,
+            0,
+            0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 0, 0, 0,
+        ]
+    );
+    assert_eq!(one.decode_candidate().unwrap(), vec![1]);
+
+    let two = PinSketch64Lab::from_sorted_unique(2, &[1, 2]).unwrap();
+    assert_eq!(two.odd_syndromes(), &[3, 9]);
+    assert_eq!(two.decode_candidate().unwrap(), vec![1, 2]);
 }
 
 #[test]
@@ -102,6 +125,33 @@ fn exact_merge_decode_handles_zero_and_high_bit_values() {
     combined.merge(&other).unwrap();
 
     assert_eq!(combined.decode_candidate().unwrap(), expected);
+}
+
+#[test]
+fn direction_is_derived_only_from_exact_local_membership() {
+    let local = vec![1, 2, 5, 8, 13];
+    let remote = vec![2, 3, 5, 13, 21];
+    let expected = symmetric_difference(&local, &remote);
+
+    let mut combined = PinSketch64Lab::from_sorted_unique(4, &local).unwrap();
+    let other = PinSketch64Lab::from_sorted_unique(4, &remote).unwrap();
+    combined.merge(&other).unwrap();
+    let recovered = combined.decode_candidate().unwrap();
+    assert_eq!(recovered, expected);
+
+    let local_only: Vec<_> = recovered
+        .iter()
+        .copied()
+        .filter(|key| local.binary_search(key).is_ok())
+        .collect();
+    let remote_only: Vec<_> = recovered
+        .iter()
+        .copied()
+        .filter(|key| local.binary_search(key).is_err())
+        .collect();
+
+    assert_eq!(local_only, vec![1, 8]);
+    assert_eq!(remote_only, vec![3, 21]);
 }
 
 #[test]
