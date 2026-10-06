@@ -13,7 +13,7 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-M0–M2 are complete. M3 experimental ParityDeltaMeter is active.
+M0–M3 are complete. M3 adds the experimental/asymptotic ParityDeltaMeter wrapper.
 
 Current implementation direction:
 
