@@ -10,8 +10,9 @@ This file maps the primary literature and upstream systems used by the DeltaMete
 - Moses Charikar, Kevin Chen, Martin Farach-Colton — *Finding Frequent Items in Data Streams*.
   - Role: CountSketch family; hash buckets plus random signs.
 
-- Dingyu Wang — *Probabilistic Counting in Generalized Turnstile Models*.
+- Dingyu Wang — *Probabilistic Counting in Generalized Turnstile Models*, arXiv:2310.14977.
   - Role: finite-field counting / F-PCSA; key prior art for GF(2) ParityDeltaMeter.
+  - Canonical caution: published relative-error constants are asymptotic and do not by themselves give fixed-d high-confidence coverage.
 
 - Kane, Nelson, Woodruff and related turnstile norm-estimation work.
   - Role: generic Fp/F2/L0 upper/lower-bound context.
@@ -37,6 +38,11 @@ This file maps the primary literature and upstream systems used by the DeltaMete
 
 ## Set similarity/cardinality references
 
+- Seth Pettie, Dingyu Wang — *Information Theoretic Limits of Cardinality Estimation: Fisher Meets Shannon*, arXiv:2007.08051.
+  - Role: Fish-number / information-efficiency context for classical cardinality sketches.
+  - Caution: this does not automatically transfer a sufficiency or finite-sample theorem to GF(2)-F-PCSA.
+
+
 - Broder/min-wise hashing literature.
   - Role: explains MinHash/Jaccard conditioning.
 
@@ -48,8 +54,9 @@ This file maps the primary literature and upstream systems used by the DeltaMete
 - Bitcoin Core minisketch.
   - Role: BCH-based set reconciliation and practical evidence that a difference-size oracle is useful.
 
-- *Simple Set Sketching*.
-  - Role: compact set-sketch/recovery reference for a possible future exact-small-d lane.
+- Jakob Bæk Tejs Houen, Rasmus Pagh, Stefan Walzer — *Simple Set Sketching*, arXiv:2211.03683 / SOSA 2023.
+  - Role: compact XOR-based set recovery with high-probability decoding below a random-hypergraph load threshold.
+  - Caution: exact recovery on successful decoding is not automatically unconditional `Coverage::Exact`.
 
 - IBLT and recent memory-improved IBLT literature.
   - Role: another possible future exact-small-d lane.
@@ -62,8 +69,9 @@ This file maps the primary literature and upstream systems used by the DeltaMete
 - Hardt and Woodruff — adaptive attacks on linear sketches for norm estimation.
   - Role: why repeated adaptive observation is a different threat model.
 
-- recent 2024–2026 work on adaptive attacks and robust turnstile streaming.
-  - Role: confirms that robust streaming is not obtained merely by renaming a seed “secret”.
+- *A Strong Separation for Adversarially Robust l0 Estimation* and related 2024–2026 work on adaptive attacks and robust turnstile streaming.
+  - Role: confirms that adaptive robustness is a separate threat model for linear sketches.
+  - Caution: DeltaMeter's accepted v0 theorem model is oblivious input, so adaptive attacks are not a v0 correctness blocker.
 
 ## Sequential inference
 
@@ -86,3 +94,10 @@ Role: optional future machine-checked proof tooling, not v0 merge-gate infrastru
 - GitHub Actions official documentation for hosted runners and artifacts.
 
 These should be checked at implementation time because toolchain/runner details can change.
+
+
+## Post-M3 source-verification notes
+
+The post-M3 reports introduced an IBLT quadratic/cardinality estimator claim tied to a 2026 identifier. That claim is not canonical until the primary source is independently verified and its confidence statement is checked for a genuinely finite-sample tail theorem rather than an asymptotic chi-square limit.
+
+The canonical mathematical conclusions in STRICT-PARITY-POST-M3.md do not depend on that unverified source.
