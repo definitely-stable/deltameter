@@ -164,6 +164,9 @@ pub enum Coverage {
     Proven {
         failure_probability_upper_bound: f64,
     },
+    Asymptotic {
+        relative_standard_error: f64,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -584,6 +587,16 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn energy_estimate_remains_proven_after_asymptotic_variant_is_added() {
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+        let sketch = meter(profile, 404);
+        let estimate = sketch.estimate(profile).unwrap();
+
+        assert!(matches!(estimate.coverage, Coverage::Proven { .. }));
     }
 
     #[test]
