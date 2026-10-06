@@ -527,10 +527,7 @@ fn harness_main() -> AppResult<()> {
     println!("frame_max={FRAME_MAX}");
     println!("rtt_model=round_trips_reported_separately_from_local_elapsed");
     println!("setup,arm,peer_setup_ns,ready_rx_bytes");
-    println!(
-        "setup,direct,{},{}",
-        direct.setup_ns, direct.rx_bytes
-    );
+    println!("setup,direct,{},{}", direct.setup_ns, direct.rx_bytes);
     println!(
         "setup,snapshot-control,{},{}",
         control.setup_ns, control.rx_bytes
@@ -666,7 +663,9 @@ fn run_direct_arm(
     let (header, response) = peer.request(KIND_EXACT_SET, source_generation, &body)?;
     let elapsed = nanos_u64(started.elapsed())?;
     if header.kind != KIND_EXACT_RESULT {
-        return Err(invalid_data("direct exact request did not return exact result"));
+        return Err(invalid_data(
+            "direct exact request did not return exact result",
+        ));
     }
     let returned = decode_exact_result(&response)?;
     if returned != exact_d {
@@ -708,7 +707,9 @@ fn run_control_arm(
     let (header, response) = peer.request(KIND_EXACT_SET, source_generation, &exact_body)?;
     let elapsed = nanos_u64(started.elapsed())?;
     if header.kind != KIND_EXACT_RESULT || decode_exact_result(&response)? != exact_d {
-        return Err(invalid_data("snapshot control exact result disagrees with oracle"));
+        return Err(invalid_data(
+            "snapshot control exact result disagrees with oracle",
+        ));
     }
     print_result(
         "snapshot-control",
@@ -795,7 +796,9 @@ fn request_estimate(
         )));
     }
     if header.kind != KIND_ESTIMATE {
-        return Err(invalid_data("snapshot request returned unexpected response"));
+        return Err(invalid_data(
+            "snapshot request returned unexpected response",
+        ));
     }
     decode_estimate(&response)
 }
@@ -912,10 +915,7 @@ fn assert_error(header: Header, body: &[u8], expected: u16) -> io::Result<()> {
     Ok(())
 }
 
-fn delta_counters(
-    before: (u64, u64, u64),
-    after: (u64, u64, u64),
-) -> io::Result<(u64, u64, u64)> {
+fn delta_counters(before: (u64, u64, u64), after: (u64, u64, u64)) -> io::Result<(u64, u64, u64)> {
     Ok((
         after
             .0
@@ -974,9 +974,7 @@ fn derive_source(peer: &[u64], remove: usize, add: usize) -> Vec<u64> {
     assert!(remove <= peer.len());
     let mut keys = Vec::with_capacity(peer.len() - remove + add);
     keys.extend_from_slice(&peer[remove..]);
-    keys.extend(
-        (0..add).map(|index| splitmix64(0x9000_0000_0000_0000_u64 + index as u64)),
-    );
+    keys.extend((0..add).map(|index| splitmix64(0x9000_0000_0000_0000_u64 + index as u64)));
     keys.sort_unstable();
     validate_canonical_set(&keys).expect("generated source set must be canonical");
     keys
@@ -1190,9 +1188,7 @@ fn read_frame(reader: &mut impl Read) -> io::Result<Option<(Vec<u8>, usize)>> {
     Ok(Some((payload, 4 + len)))
 }
 
-fn spawn_frame_reader(
-    stdout: std::process::ChildStdout,
-) -> Receiver<io::Result<(Vec<u8>, usize)>> {
+fn spawn_frame_reader(stdout: std::process::ChildStdout) -> Receiver<io::Result<(Vec<u8>, usize)>> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         let mut reader = BufReader::new(stdout);
@@ -1410,6 +1406,9 @@ mod tests {
         let keys = 10;
         let request = 4 + HEADER_LEN + 4 + keys * 8;
         let response = 4 + HEADER_LEN + 8;
-        assert_eq!(exact_exchange_bytes(keys).unwrap(), (request + response) as u64);
+        assert_eq!(
+            exact_exchange_bytes(keys).unwrap(),
+            (request + response) as u64
+        );
     }
 }
