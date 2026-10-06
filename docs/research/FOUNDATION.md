@@ -114,7 +114,7 @@ Relevant properties:
   ]
   bits for GF(2).
 
-For (V=2^{32}), this is about (4m) bytes:
+For `N = 2^32`, this is about `4m` bytes:
 
 | m | state | asymptotic RSE |
 |---:|---:|---:|
@@ -180,7 +180,7 @@ The repository research harness currently chooses convenient power-of-two (B) va
 | 0.10 | 2048 |
 | 0.20 | 512 |
 
-and then the minimum odd (R) for selected (delta):
+and then the minimum odd `R` for selected `delta`:
 
 | delta | R | bound |
 |---:|---:|---:|
@@ -305,11 +305,7 @@ C
 \right\rceil.
 ]
 
-For (arepsilon=0.1), the multiplicative factor is
-
-[
-\frac{1.1}{0.9}\approx1.2222.
-]
+For `epsilon = 0.1`, the multiplicative factor is about `1.2222`.
 
 This distinction matters:
 
