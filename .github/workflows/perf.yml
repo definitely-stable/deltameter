@@ -50,6 +50,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
+            rm -f examples/m4_bench.rs
             git checkout --detach "${HEAD_SHA}"
           fi
           cargo build --release --example m4_bench
