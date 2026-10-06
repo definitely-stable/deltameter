@@ -309,10 +309,6 @@ impl EnergyConfig {
         self.rows.len()
     }
 
-    pub fn rows(&self) -> &[EnergyRowHash] {
-        &self.rows
-    }
-
     pub const fn proven_profile(&self) -> Option<EnergyProfile> {
         self.proven_profile
     }
