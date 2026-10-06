@@ -173,10 +173,10 @@ Status: planned; M6-0 implementation in progress. Parent issue: #14.
 [Critical audit and design](M6-RECONCILIATION-AND-OPTIMIZATION.md) records the research constraints, corrections to the initial proposal and acceptance gates.
 
 - M6-0 / #15: snapshot compatibility fixtures, serialization evidence, single-buffer candidate.
-- M6-A / #16: two-process workflow and exact baseline; useful-decision GO/NO-GO.
+- M6-A / #16: two-process estimator-assisted decision experiment and exact baseline; useful-decision GO/NO-GO.
 - M6-B / #17: independently measured CRC/decoder resource candidates.
 - M6-C / #18: bit-equivalent Energy sign hashing, including setup cost.
-- M6-D / #19: ExactSmallDelta/hybrid source and failure-semantics audit; adoption only after evidence.
+- M6-D / #19: ExactSmallDelta/hybrid source and failure-semantics audit; read-only audit may run in parallel with M6-A, production adoption only after evidence.
 
 Snapshot plus an unchanged full-list exchange is an overhead control, not a demonstrated benefit. M6 may conclude that a proposed workflow is not worthwhile. No public networking API or strict Parity work is implied.
 
