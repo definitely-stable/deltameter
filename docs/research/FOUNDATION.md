@@ -85,6 +85,18 @@ A critical proof boundary now applies:
 
 The published asymptotic constants below belong only to the published construction. They must not be transferred automatically to the set-specialized variant.
 
+Published construction, in implementation-facing terms:
+
+~~~text
+FIELDMAP[i,j] in F
+h(v) -> (i,j), with probability mass (1/m) * 2^-j
+g(v) -> uniform element of F
+update: FIELDMAP[h(v)] += k * g(v)
+row statistic W_i: highest j with FIELDMAP[i,j] != 0
+~~~
+
+For DeltaMeter Parity, F = GF(2). Universe size and field size are separate parameters.
+
 Relevant properties:
 
 - linear over GF(2);
@@ -113,6 +125,8 @@ For (V=2^{32}), this is about (4m) bytes:
 | 4096 | 16 KiB | 2.56% |
 
 These RSE values are asymptotic point-estimation guidance, not strict tail guarantees.
+
+The published analysis explicitly uses a middle-range assumption: very small cardinalities and cardinalities near the universe size need separate treatment. This is one reason Q1 cannot simply promote the asymptotic constant to a full-domain strict profile.
 
 ### 3.2 EnergyDeltaMeter
 
@@ -353,6 +367,17 @@ The latest research adds three explicit exclusions:
 
 Poissonization, exact conditioning/de-Poissonization, small-case exact DP/enumeration and test inversion remain valid research directions.
 
+The newest attached report sharpened this further, but also required corrections:
+
+- Q1 must analyze the exact published FIELDMAP/rightmost-nonzero construction, not a classical-PCSA first-1-position surrogate;
+- use N for universe cardinality, m for rows, d for true Hamming weight, j for level, and J for finite stored level bound;
+- do not interpret GF(2)-F-PCSA as GF(2^V) hashing;
+- Poissonized independence must be derived for the exact category model;
+- the 2025 Poisson-Charlier de-Poissonization result is promising only after the target coefficient/tail sequence and its forward-difference bounds are established;
+- truncated multivariate-normal estimation is not a direct model for discrete F-PCSA level censoring;
+- the minimal capacity target is a one-sided level-delta test inversion, not a two-sided exact interval;
+- binary-search inversion requires proved monotonicity.
+
 ## 6. Small-d regime
 
 Relative error is awkward at
@@ -511,7 +536,7 @@ This is intentionally simpler than a three- or four-backend framework.
 
 ## 13. Latest-source reconciliation
 
-Four new attached reports and the latest Q1 Deep Research run are preserved under `archive/2026-10-06/`.
+Five new attached reports and the latest Q1 Deep Research run are preserved under `archive/2026-10-06/`.
 
 Their conflicting recommendations are reconciled in [NEW-INPUTS-AUDIT.md](NEW-INPUTS-AUDIT.md).
 
