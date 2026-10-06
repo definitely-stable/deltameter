@@ -13,7 +13,7 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-M0 research bootstrap is merged. M1 EnergyDeltaMeter reference implementation is active in Draft PR #3.
+M0 research bootstrap is merged. M1 EnergyDeltaMeter reference implementation is active in PR #3.
 
 Current implementation direction:
 
