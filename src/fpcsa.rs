@@ -10,7 +10,7 @@ const F2_TABLE2_RSE_COEFFICIENT: f64 = 1.638;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FpcsaError {
-    RowsTooSmall,
+    RowsMustBePositive,
     LevelsOutOfRange,
     StateSizeOverflow,
     InvalidRow { row: u32, rows: u32 },
@@ -22,7 +22,7 @@ pub enum FpcsaError {
 impl fmt::Display for FpcsaError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::RowsTooSmall => f.write_str("F-PCSA requires at least three rows"),
+            Self::RowsMustBePositive => f.write_str("F-PCSA requires at least one row"),
             Self::LevelsOutOfRange => {
                 f.write_str("stored level count must be in the inclusive range 1..=64")
             }
@@ -118,23 +118,23 @@ pub struct PublishedFpcsaF2Config {
 impl PublishedFpcsaF2Config {
     /// Creates a finite-state reproduction of Definition 6 for F = GF(2).
     ///
-    /// universe_bits = J stores levels 1..=J. For the full u64 key domain,
+    /// stored_levels = J stores levels 1..=J. For the full u64 key domain,
     /// use J = 64. Levels above J are explicit truncation events.
     pub fn new(
         rows: u32,
-        universe_bits: u8,
+        stored_levels: u8,
         oracle: PublishedFpcsaOracle,
     ) -> Result<Self, FpcsaError> {
-        if rows < 3 {
-            return Err(FpcsaError::RowsTooSmall);
+        if rows == 0 {
+            return Err(FpcsaError::RowsMustBePositive);
         }
-        if !(1..=64).contains(&universe_bits) {
+        if !(1..=64).contains(&stored_levels) {
             return Err(FpcsaError::LevelsOutOfRange);
         }
 
         let state_bits = usize::try_from(rows)
             .ok()
-            .and_then(|rows| rows.checked_mul(usize::from(universe_bits)))
+            .and_then(|rows| rows.checked_mul(usize::from(stored_levels)))
             .ok_or(FpcsaError::StateSizeOverflow)?;
         let state_words = state_bits
             .checked_add(63)
@@ -143,7 +143,7 @@ impl PublishedFpcsaF2Config {
 
         Ok(Self {
             rows,
-            levels: universe_bits,
+            levels: stored_levels,
             oracle,
             state_bits,
             state_words,
@@ -384,6 +384,22 @@ mod tests {
 
     fn config(rows: u32, levels: u8) -> PublishedFpcsaF2Config {
         PublishedFpcsaF2Config::new(rows, levels, PublishedFpcsaOracle::new(1, 2, 3)).unwrap()
+    }
+
+    #[test]
+    fn one_row_is_valid_for_definition_reproduction() {
+        let one = config(1, 1);
+        assert_eq!(one.rows(), 1);
+        assert_eq!(one.levels(), 1);
+        assert_eq!(one.logical_state_bits(), 1);
+    }
+
+    #[test]
+    fn zero_rows_are_rejected() {
+        assert_eq!(
+            PublishedFpcsaF2Config::new(0, 8, PublishedFpcsaOracle::new(1, 2, 3)).unwrap_err(),
+            FpcsaError::RowsMustBePositive
+        );
     }
 
     #[test]
