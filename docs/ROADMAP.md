@@ -142,7 +142,7 @@ Only after M4 is merged should a separate requirement decide whether persisted s
 
 ## M5 — Canonical sketch interchange v1
 
-Status: implementation in PR #13.
+Status: complete; merged in PR #13.
 
 Rationale:
 
