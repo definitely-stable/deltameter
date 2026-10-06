@@ -493,6 +493,51 @@ mod tests {
     use super::*;
 
     #[test]
+    fn gf64_multiplication_matches_energy_reference_vectors() {
+        let vectors = [
+            (
+                0x0123_4567_89AB_CDEF,
+                0xF0E1_D2C3_B4A5_9687,
+                0x287C_26FE_0540_0BC2,
+            ),
+            (
+                0xFFFF_FFFF_FFFF_FFFF,
+                0xFFFF_FFFF_FFFF_FFFF,
+                0x5555_5555_5555_5513,
+            ),
+            (
+                0x8000_0000_0000_0000,
+                0x0000_0000_0000_0002,
+                0x0000_0000_0000_001B,
+            ),
+            (
+                0xDEAD_BEEF_CAFE_BABE,
+                0x0123_4567_89AB_CDEF,
+                0xFBB6_7120_92FD_6A8C,
+            ),
+        ];
+
+        for (left, right, expected) in vectors {
+            assert_eq!(gf64_mul(left, right), expected);
+            assert_eq!(gf64_mul(right, left), expected);
+        }
+    }
+
+    #[test]
+    fn polynomial_division_and_gcd_recover_linear_factor() {
+        let a = 0x0123_4567_89AB_CDEF;
+        let b = 0xDEAD_BEEF_CAFE_BABE;
+        let left = vec![a, 1];
+        let right = vec![b, 1];
+        let product = vec![gf64_mul(a, b), a ^ b, 1];
+
+        let (quotient, remainder) = poly_div_rem(&product, &left).unwrap();
+        assert!(remainder.is_empty());
+        assert_eq!(quotient, right);
+        assert_eq!(poly_gcd(&product, &left).unwrap(), left);
+    }
+
+    #[test]
     fn field_inverse_round_trips_edge_values() {
         for value in [
             1,
