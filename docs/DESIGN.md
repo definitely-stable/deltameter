@@ -95,11 +95,64 @@ The convenience u64 seed is deterministically expanded into the M2 pseudo-oracle
 
 Strict `recommended_capacity(Proven)` is unavailable.
 
+## M4 v0 API freeze
+
+The supported library surface is the crate root. Research modules are implementation details.
+
+Frozen v0 root types:
+
+~~~text
+Coverage
+
+EnergyConfig
+EnergyDeltaMeter
+EnergyError
+EnergyEstimate
+EnergyProfile
+EnergyRowHash
+FailureTarget
+RelativeError
+
+ParityConfig
+ParityDeltaMeter
+ParityError
+ParityEstimate
+ParityProfile
+ParityUpdate
+~~~
+
+PublishedFpcsaF2 and its configuration/oracle/update types remain the M2 research reproduction used behind ParityDeltaMeter; they are not frozen as external API.
+
+ParityDeltaMeter does not expose raw packed words. EnergyConfig does not expose its internal row slice. State size metadata may be inspected, but no byte-level persistence contract exists.
+
+Public enums and result records that may need compatible extension are #[non_exhaustive]. Configuration and meter structs keep private fields.
+
+Default profile policy:
+
+~~~text
+EnergyProfile::DEFAULT
+    epsilon = 10%
+    failure probability <= 1e-6
+    Coverage::Proven, subject to the documented randomness precondition
+
+ParityProfile::DEFAULT
+    Standard
+    m = 256
+    J = 64
+    asymptotic RSE ~= 10.2375%
+    Coverage::Asymptotic
+~~~
+
+The defaults are not comparable guarantee classes and are not presented as equivalent accuracy promises.
+
+No batch update API is frozen in v0. Both backends already support ordinary caller loops, and M4 found no backend-specific batching mechanism that would justify additional API surface. A later SIMD/vectorized or amortized implementation may reopen that decision with measurements.
+
 ## Coverage model
 
-Illustrative direction:
+The frozen direction is:
 
 ```rust
+#[non_exhaustive]
 pub enum Coverage {
     Proven { failure_probability_upper_bound: f64 },
     Asymptotic { relative_standard_error: f64 },
@@ -141,6 +194,10 @@ correct scalar
 ```
 
 Nightly `std::simd` is not a baseline dependency.
+
+M4 retained only a demonstrated scalar optimization: for the built-in Parity J=64 layout, each row is one u64, so the highest non-zero level is obtained with leading_zeros and estimate accumulation is allocation-free. Candidate Energy merge and stack-scratch query rewrites were reverted because paired hosted-runner measurements did not show a stable benefit.
+
+Performance evidence is diagnostic. It may justify implementation choices, but it does not become a throughput/SLA promise.
 
 ## Verification policy
 
