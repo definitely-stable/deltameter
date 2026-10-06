@@ -158,7 +158,29 @@ research/manual/main:
 
 The public repository removes quota pressure, but it does not make billion-trial rare-event simulation a mathematically useful proof strategy.
 
-### D13 — Formal verification and FFI
+### D13 — M3 Parity public contract
+
+M3 may expose the published GF(2)-F-PCSA reproduction through an experimental public wrapper.
+
+Contract:
+
+~~~text
+Parity estimate:
+    point estimate
+    + Coverage::Asymptotic { relative_standard_error }
+
+Parity capacity:
+    no Coverage::Proven
+    no recommended_capacity
+~~~
+
+Built-in Parity profiles are engineering memory/RSE scales, not strict epsilon/delta profiles.
+
+The public u64 seed is a reproducibility input for the deterministic pseudo-oracle. It is not a cryptographic key and is not claimed to instantiate the paper's ideal random oracle.
+
+Energy/Parity memory comparisons must keep their guarantee mismatch explicit.
+
+### D14 — Formal verification and FFI
 
 Not v0 requirements.
 
