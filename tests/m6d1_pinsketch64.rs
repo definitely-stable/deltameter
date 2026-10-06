@@ -62,10 +62,11 @@ fn mutate(base: &[u64], remove: usize, add: usize, salt: u64, include_zero: bool
 
 #[test]
 fn exact_merge_decode_grid_with_full_width_keys() {
-    for capacity in [1, 2, 4, 8] {
-        let left = base_set(24, 0xC001_D00D ^ capacity as u64);
+    for max_elements in [1, 2, 4, 8] {
+        let stored_capacity = max_elements + 1;
+        let left = base_set(24, 0xC001_D00D ^ max_elements as u64);
 
-        for difference in 0..=capacity {
+        for difference in 0..=max_elements {
             for case in 0_u64..4 {
                 let remove = difference / 2;
                 let add = difference - remove;
@@ -73,20 +74,24 @@ fn exact_merge_decode_grid_with_full_width_keys() {
                     &left,
                     remove,
                     add,
-                    0xD1FF_0000 ^ capacity as u64 ^ difference as u64 ^ case.rotate_left(17),
+                    0xD1FF_0000 ^ max_elements as u64 ^ difference as u64 ^ case.rotate_left(17),
                     false,
                 );
                 let expected = symmetric_difference(&left, &right);
                 assert_eq!(expected.len(), difference);
 
-                let mut combined = PinSketch64Lab::from_sorted_unique(capacity, &left).unwrap();
-                let other = PinSketch64Lab::from_sorted_unique(capacity, &right).unwrap();
+                let mut combined =
+                    PinSketch64Lab::from_sorted_unique(stored_capacity, &left).unwrap();
+                let other =
+                    PinSketch64Lab::from_sorted_unique(stored_capacity, &right).unwrap();
                 combined.merge(&other).unwrap();
 
                 assert_eq!(
-                    combined.decode_candidate().unwrap(),
+                    combined
+                        .decode_candidate_with_limit(max_elements)
+                        .unwrap(),
                     expected,
-                    "capacity={capacity} d={difference} case={case}"
+                    "stored_capacity={stored_capacity} max_elements={max_elements} d={difference} case={case}"
                 );
             }
         }
@@ -181,6 +186,36 @@ fn capacity_and_input_contract_fail_closed() {
 }
 
 #[test]
+fn one_extra_syndrome_rejects_fixed_over_capacity_vectors() {
+    for max_elements in [1, 2, 4, 8] {
+        let stored_capacity = max_elements + 1;
+        for case in 0_u64..32 {
+            let keys = base_set(
+                max_elements + 1,
+                0x6A17_0000_0000_0000 ^ (max_elements as u64) << 32 ^ case,
+            );
+            let sketch =
+                PinSketch64Lab::from_sorted_unique(stored_capacity, &keys).unwrap();
+            assert!(
+                sketch
+                    .decode_candidate_with_limit(max_elements)
+                    .is_err(),
+                "guarded false success: max_elements={max_elements} case={case}"
+            );
+        }
+    }
+}
+
+#[test]
+fn decode_limit_must_fit_stored_capacity() {
+    let sketch = PinSketch64Lab::new(2).unwrap();
+    assert_eq!(
+        sketch.decode_candidate_with_limit(3).unwrap_err(),
+        LabError::InvalidDecodeLimit
+    );
+}
+
+#[test]
 fn over_capacity_never_becomes_oracle_success() {
     for capacity in [1, 2, 4] {
         let keys: Vec<u64> = (0..=capacity)
@@ -209,7 +244,7 @@ fn over_capacity_never_becomes_oracle_success() {
 
 #[test]
 fn encoded_size_is_fixed_by_capacity() {
-    for capacity in 1..=8 {
+    for capacity in 1..=9 {
         let sketch = PinSketch64Lab::new(capacity).unwrap();
         assert_eq!(sketch.capacity(), capacity);
         assert_eq!(sketch.odd_syndromes().len(), capacity);
