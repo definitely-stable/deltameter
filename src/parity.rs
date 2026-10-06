@@ -390,9 +390,8 @@ mod tests {
 
     #[test]
     fn empty_state_estimate_fails_closed_at_public_wrapper() {
-        let meter = ParityDeltaMeter::new(
-            ParityConfig::for_profile(ParityProfile::Compact, 40).unwrap(),
-        );
+        let meter =
+            ParityDeltaMeter::new(ParityConfig::for_profile(ParityProfile::Compact, 40).unwrap());
 
         assert_eq!(
             meter.estimate().unwrap_err(),
