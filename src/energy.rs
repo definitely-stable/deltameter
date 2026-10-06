@@ -556,8 +556,7 @@ mod tests {
 
     fn meter(profile: EnergyProfile, salt: u64) -> EnergyDeltaMeter {
         let words = test_uniform_words(profile.uniform_words_required(), salt);
-        let config =
-            EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap();
+        let config = EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap();
         EnergyDeltaMeter::new(config).unwrap()
     }
 
@@ -852,9 +851,8 @@ mod tests {
 
             for key in 0_u64..96 {
                 let left_member = splitmix64(key ^ case.rotate_left(7)) & 3 != 0;
-                let right_member = splitmix64(
-                    key ^ case.rotate_left(19) ^ 0xA5A5_A5A5_A5A5_A5A5,
-                ) & 3 != 0;
+                let right_member =
+                    splitmix64(key ^ case.rotate_left(19) ^ 0xA5A5_A5A5_A5A5_A5A5) & 3 != 0;
 
                 if left_member {
                     left.add_unique(key).unwrap();
