@@ -409,23 +409,11 @@ impl EnergyDeltaMeter {
     }
 
     pub fn point_estimate(&self) -> u128 {
-        const MAX_BUILTIN_TABLES: usize = 35;
-
-        let middle = self.energies.len() / 2;
-        let median = if self.energies.len() <= MAX_BUILTIN_TABLES {
-            let mut values = [0_i128; MAX_BUILTIN_TABLES];
-            let active = &mut values[..self.energies.len()];
-            active.copy_from_slice(&self.energies);
-            let (_, median, _) = active.select_nth_unstable(middle);
-            *median
-        } else {
-            let mut values = self.energies.to_vec();
-            let (_, median, _) = values.select_nth_unstable(middle);
-            *median
-        };
-
-        debug_assert!(median >= 0);
-        median as u128
+        let mut values = self.energies.to_vec();
+        let middle = values.len() / 2;
+        let (_, median, _) = values.select_nth_unstable(middle);
+        debug_assert!(*median >= 0);
+        *median as u128
     }
 
     /// Returns the theorem-backed estimate for the exact profile used to
