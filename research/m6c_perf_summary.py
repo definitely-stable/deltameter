@@ -21,6 +21,8 @@ def read_samples(path: str):
         raise SystemExit(f"{path}: benchmark CSV header missing") from error
 
     for row in csv.DictReader(lines[header:]):
+        if row["metric"] not in {"construct", "update", "decode", "difference", "query"}:
+            continue
         operations = int(row["operations"])
         if operations <= 0:
             raise SystemExit(f"{path}: operations must be positive")
