@@ -13,12 +13,12 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-M0–M3 are complete. Post-M3 research closes the current published-W_i strict-Parity track as NO-GO; M4 performance/API work is next.
+M0–M3 are complete. Post-M3 research closes the current published-W_i strict-Parity track as NO-GO. M4 performance/API freeze is implemented in PR #11 and is awaiting merge.
 
 Current implementation direction:
 
 - **EnergyDeltaMeter** — first implementation and strict finite-sample backend.
-- **PublishedFpcsaF2** — M2 faithful GF(2)-F-PCSA research reproduction.
+- **PublishedFpcsaF2** — M2 faithful GF(2)-F-PCSA research reproduction, retained as an internal research backend rather than frozen public API.
 - **ParityDeltaMeter** — M3 experimental/asymptotic wrapper over the published reproduction.
 - Gaussian/chi-square — research oracle only.
 - ExactSmallDelta — deferred.
@@ -32,6 +32,7 @@ Q1 is resolved more strongly after M3: there is **no accepted strict finite-samp
 - [docs/research/Q1-FINITE-SAMPLE-PARITY.md](docs/research/Q1-FINITE-SAMPLE-PARITY.md) — earlier Q1 proof program and historical boundary.
 - [docs/research/M2-FPCSA-REPRODUCTION.md](docs/research/M2-FPCSA-REPRODUCTION.md) — M2 source/implementation boundary.
 - [docs/research/M3-PARITY-EXPERIMENTAL.md](docs/research/M3-PARITY-EXPERIMENTAL.md) — M3 API, profiles, guarantees and benchmark plan.
+- [docs/M4-PERFORMANCE-API-FREEZE.md](docs/M4-PERFORMANCE-API-FREEZE.md) — M4 defaults, paired performance evidence, rejected optimizations and frozen v0 API boundary.
 - [docs/research/FOUNDATION.md](docs/research/FOUNDATION.md) — canonical mathematical/engineering synthesis.
 - [docs/research/DECISIONS.md](docs/research/DECISIONS.md) — current decisions.
 - [docs/research/NEW-INPUTS-AUDIT.md](docs/research/NEW-INPUTS-AUDIT.md) — reconciliation of the latest reports.
@@ -62,6 +63,21 @@ cargo run --release --example m3_compare -- 100000
 ~~~
 
 Its timing output is diagnostic only; Energy and Parity have different guarantee contracts.
+
+M4 repeatable diagnostic harness:
+
+~~~bash
+cargo run --release --example m4_bench -- 2000 5
+~~~
+
+The M4 pull-request workflow runs base and head on the same GitHub-hosted runner and uploads both outputs. Timing remains diagnostic only and is not a release promise.
+
+M4 v0 defaults are:
+
+- EnergyProfile::DEFAULT = 10% relative error with failure probability at most 1e-6, assuming the documented independent-uniform randomness contract;
+- ParityProfile::DEFAULT = Standard (m=256, J=64, asymptotic RSE about 10.2375%).
+
+No persisted state format is frozen.
 
 ## Project principles
 
