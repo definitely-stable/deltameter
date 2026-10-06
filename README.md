@@ -2,14 +2,14 @@
 
 DeltaMeter is a research-first Rust project for estimating the size of the symmetric difference between two sets.
 
-For sets (A,Bsubseteq[V]):
+For sets `A, B ⊆ [N]`:
 
 ```text
 z = A XOR B
 d = |A △ B| = ||z||_0
 ```
 
-The equivalent integer (F_2) representation remains useful, but the primary set-only model is GF(2) Hamming weight.
+The equivalent integer `F2` representation remains useful, but the primary set-only model is GF(2) Hamming weight.
 
 ## Status
 
