@@ -9,7 +9,7 @@
 
 ## Global Constraints
 
-- Snapshot v1 bytes and interpretation are frozen.
+- M6-0 preserves snapshot v1 bytes and interpretation; the user permits a separately justified format revision in a later slice.
 - Energy remains conditional Proven; Parity remains Asymptotic.
 - No unsafe, FFI, runtime dependency, profile or public API change.
 - GitHub-hosted runners only; no local performance/acceptance substitution.

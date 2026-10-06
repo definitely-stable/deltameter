@@ -70,10 +70,14 @@ impl fmt::Display for SnapshotError {
 
 impl std::error::Error for SnapshotError {}
 
-pub(crate) fn encode_envelope(backend: u8, payload: &[u8]) -> Result<Vec<u8>, SnapshotError> {
-    let payload_len = u64::try_from(payload.len()).map_err(|_| SnapshotError::LengthOverflow)?;
+pub(crate) fn encode_envelope(
+    backend: u8,
+    payload_len: usize,
+    write_payload: impl FnOnce(&mut Vec<u8>),
+) -> Result<Vec<u8>, SnapshotError> {
+    let declared = u64::try_from(payload_len).map_err(|_| SnapshotError::LengthOverflow)?;
     let capacity = HEADER_LEN
-        .checked_add(payload.len())
+        .checked_add(payload_len)
         .and_then(|value| value.checked_add(CHECKSUM_LEN))
         .ok_or(SnapshotError::LengthOverflow)?;
 
@@ -84,8 +88,11 @@ pub(crate) fn encode_envelope(backend: u8, payload: &[u8]) -> Result<Vec<u8>, Sn
     encoded.push(DOMAIN_U64_SET);
     encoded.push(0);
     encoded.extend_from_slice(&[0, 0, 0]);
-    encoded.extend_from_slice(&payload_len.to_le_bytes());
-    encoded.extend_from_slice(payload);
+    encoded.extend_from_slice(&declared.to_le_bytes());
+    write_payload(&mut encoded);
+    if encoded.len() != capacity - CHECKSUM_LEN {
+        return Err(SnapshotError::InvalidPayload);
+    }
 
     let checksum = crc32c(&encoded);
     encoded.extend_from_slice(&checksum.to_le_bytes());
@@ -280,7 +287,10 @@ mod tests {
 
     #[test]
     fn envelope_rejects_trailing_bytes() {
-        let mut bytes = encode_envelope(BACKEND_ENERGY, b"payload").unwrap();
+        let mut bytes = encode_envelope(BACKEND_ENERGY, 7, |output| {
+            output.extend_from_slice(b"payload");
+        })
+        .unwrap();
         bytes.push(0);
 
         assert!(matches!(
@@ -291,7 +301,10 @@ mod tests {
 
     #[test]
     fn envelope_rejects_corruption() {
-        let mut bytes = encode_envelope(BACKEND_ENERGY, b"payload").unwrap();
+        let mut bytes = encode_envelope(BACKEND_ENERGY, 7, |output| {
+            output.extend_from_slice(b"payload");
+        })
+        .unwrap();
         bytes[HEADER_LEN] ^= 1;
 
         assert_eq!(

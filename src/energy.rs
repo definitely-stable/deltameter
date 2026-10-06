@@ -381,38 +381,45 @@ impl EnergyDeltaMeter {
         let tables =
             u32::try_from(self.config.tables()).map_err(|_| SnapshotError::UnsupportedConfig)?;
 
-        let mut payload = Vec::new();
-        push_u64(&mut payload, buckets);
-        push_u32(&mut payload, tables);
+        let profile_tags = match self.config.proven_profile() {
+            None => [ENERGY_PROFILE_CUSTOM, 0, 0, 0],
+            Some(profile) => [
+                ENERGY_PROFILE_PROVEN,
+                relative_error_snapshot_tag(profile.relative_error())?,
+                failure_target_snapshot_tag(profile.failure_target())?,
+                0,
+            ],
+        };
+        let counter_bytes = self
+            .counters
+            .len()
+            .checked_mul(core::mem::size_of::<i64>())
+            .ok_or(SnapshotError::LengthOverflow)?;
+        let payload_len = self
+            .config
+            .tables()
+            .checked_mul(48)
+            .and_then(|bytes| bytes.checked_add(16))
+            .and_then(|bytes| bytes.checked_add(counter_bytes))
+            .ok_or(SnapshotError::LengthOverflow)?;
 
-        match self.config.proven_profile() {
-            None => {
-                payload.push(ENERGY_PROFILE_CUSTOM);
-                payload.push(0);
-                payload.push(0);
-            }
-            Some(profile) => {
-                payload.push(ENERGY_PROFILE_PROVEN);
-                payload.push(relative_error_snapshot_tag(profile.relative_error())?);
-                payload.push(failure_target_snapshot_tag(profile.failure_target())?);
-            }
-        }
-        payload.push(0);
+        encode_envelope(BACKEND_ENERGY, payload_len, |payload| {
+            push_u64(payload, buckets);
+            push_u32(payload, tables);
+            payload.extend_from_slice(&profile_tags);
 
-        for row in &self.config.rows {
-            for coefficient in row.bucket_coefficients {
-                push_u64(&mut payload, coefficient);
+            for row in &self.config.rows {
+                for coefficient in row.bucket_coefficients {
+                    push_u64(payload, coefficient);
+                }
+                for coefficient in row.sign_coefficients {
+                    push_u64(payload, coefficient);
+                }
             }
-            for coefficient in row.sign_coefficients {
-                push_u64(&mut payload, coefficient);
+            for &counter in &self.counters {
+                push_i64(payload, counter);
             }
-        }
-
-        for &counter in &self.counters {
-            push_i64(&mut payload, counter);
-        }
-
-        encode_envelope(BACKEND_ENERGY, &payload)
+        })
     }
 
     /// Decodes a canonical DeltaMeter snapshot v1 custom Energy sketch.

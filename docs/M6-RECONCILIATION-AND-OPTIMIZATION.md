@@ -7,7 +7,7 @@ Audit baseline: `1ae3be55df218421437c56271a7d9a9f660b0ff7` (2026-10-06).
 
 Choose a bounded distributed **value experiment** before a production ExactSmallDelta/hybrid backend. This is a sequencing decision, not evidence that a distributed product wins. The deliverable must determine when a difference-size estimate changes a useful decision enough to pay for maintaining and exchanging it. A NO-GO result is acceptable.
 
-Energy remains the only theorem-backed backend, conditional on its documented assumptions. Parity remains experimental/asymptotic. Snapshot v1 bytes and interpretation are frozen. The first slice is M6-0: measurement and compatibility prerequisites, not a completed network workflow.
+Energy remains the only theorem-backed backend, conditional on its documented assumptions. Parity remains experimental/asymptotic. Snapshot v1 is the current compatibility baseline. The user authorized format changes on 2026-10-06 when justified; M6-0 still preserves v1 because its optimization needs no format change. The first slice is M6-0: measurement and compatibility prerequisites, not a completed network workflow.
 
 ## Critical review of the preceding proposal
 
@@ -44,6 +44,10 @@ The authority is [DECISIONS](research/DECISIONS.md), [STRICT-PARITY-POST-M3](res
 - **Source hygiene:** the unverified 2026 IBLT estimator claim recorded in REFERENCES is not an accepted dependency or theorem. New candidates must pin primary source/version, model, theorem and matching implementation before adoption.
 
 Upstream navigation for M6-D: [Minisketch contract](https://github.com/bitcoin-core/minisketch/blob/master/include/minisketch.h), [PinSketch mathematics](https://github.com/bitcoin-core/minisketch/blob/master/doc/math.md), [Simple Set Sketching](https://arxiv.org/abs/2211.03683). These moving links are discovery pointers, not a completed pinned audit.
+
+## Format evolution policy
+
+The freeze is not an absolute product constraint. A later slice may propose changing the format when measured requirements justify it (for example configuration references, new backend semantics or a materially better representation). Record the requirement, alternatives, byte/CPU effect and migration cost first. Prefer a new version/backend tag when existing bytes would acquire a different meaning. A coordinated pre-release v1 correction is possible only after explicitly checking consumers/fixtures and recording the compatibility decision; the crate being unpublished is not proof that no snapshots exist. Keep reader compatibility or provide a converter, retain old golden vectors, and test unknown-version rejection and migration. Do not revise v1 merely to accommodate an internal cache.
 
 ## Missing boundaries now made explicit
 
