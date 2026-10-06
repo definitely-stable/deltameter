@@ -163,6 +163,9 @@ fn over_capacity_never_becomes_oracle_success() {
 #[test]
 fn encoded_size_is_fixed_by_capacity() {
     for capacity in 1..=8 {
+        let sketch = PinSketch64Lab::new(capacity).unwrap();
+        assert_eq!(sketch.capacity(), capacity);
+        assert_eq!(sketch.odd_syndromes().len(), capacity);
         assert_eq!(
             PinSketch64Lab::encoded_len_for_capacity(capacity).unwrap(),
             16 + capacity * 8
