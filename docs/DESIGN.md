@@ -244,7 +244,7 @@ Rare-event Monte Carlo is never a substitute for the theorem behind `Coverage::P
 - cryptographic key management;
 - Minisketch/IBLT integration;
 - FFI;
-- network protocol compatibility (snapshot v1 is frozen by M5);
+- public network protocol compatibility; existing snapshot v1 bytes/semantics stay stable unless a later explicit compatibility/migration decision introduces a versioned evolution;
 - AVX-512-specific code;
 - formal verification framework;
 - multiple packages for components that still fit in one crate.
