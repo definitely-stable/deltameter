@@ -8,6 +8,9 @@ use crate::snapshot::{
     BACKEND_PARITY, Cursor, SnapshotError, decode_envelope, encode_envelope, push_u32, push_u64,
 };
 
+const PARITY_SNAPSHOT_METADATA_LEN: usize = 16;
+const PARITY_SNAPSHOT_WORD_LEN: usize = core::mem::size_of::<u64>();
+
 const PARITY_RSE_COEFFICIENT: f64 = 1.638;
 const ROW_SEED_DOMAIN: u64 = 0x6A09_E667_F3BC_C909;
 const LEVEL_SEED_DOMAIN: u64 = 0xBB67_AE85_84CA_A73B;
@@ -221,8 +224,8 @@ impl ParityDeltaMeter {
         let words = self.backend.snapshot_words();
         let payload_len = words
             .len()
-            .checked_mul(core::mem::size_of::<u64>())
-            .and_then(|bytes| bytes.checked_add(16))
+            .checked_mul(PARITY_SNAPSHOT_WORD_LEN)
+            .and_then(|bytes| bytes.checked_add(PARITY_SNAPSHOT_METADATA_LEN))
             .ok_or(SnapshotError::LengthOverflow)?;
         encode_envelope(BACKEND_PARITY, payload_len, |payload| {
             push_u32(payload, self.config.rows());
