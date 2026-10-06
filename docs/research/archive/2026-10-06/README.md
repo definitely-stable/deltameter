@@ -2,7 +2,7 @@
 
 This register records the latest research inputs that were incorporated into the canonical documents.
 
-These are **source snapshots**. When they conflict with current decisions, [../../DECISIONS.md](../../DECISIONS.md) and [../../FOUNDATION.md](../../FOUNDATION.md) win.
+These are **source snapshots**. When they conflict with current decisions, [../../DECISIONS.md](../../DECISIONS.md), [../../STRICT-PARITY-POST-M3.md](../../STRICT-PARITY-POST-M3.md), and [../../FOUNDATION.md](../../FOUNDATION.md) win.
 
 ## Inputs
 
@@ -94,10 +94,66 @@ Audit result:
 
 Snapshot: [heuristic-to-proof-fpcsa.md](heuristic-to-proof-fpcsa.md).
 
+### 7. Gemini post-M3 strict-Parity report
+
+Important content:
+
+- NO-GO for strict published Parity;
+- exact Poissonized independence;
+- finite-J truncation analysis;
+- Simple Set Sketching hybrid recommendation.
+
+Audit result:
+
+- NO-GO and Poissonized decomposition retained;
+- whole-sketch truncation formula corrected;
+- full-statistic monotonicity inference rejected;
+- Simple Set Sketching kept as a future candidate rather than immediate Coverage::Exact.
+
+Snapshot: [gemini-post-m3-strict-parity.md](gemini-post-m3-strict-parity.md).
+
+### 8. Qwen post-M3 strict-Parity report
+
+Important content:
+
+- exact full-state Walsh law;
+- exact one-level PGF/moments;
+- W_i non-sufficiency;
+- exact Poissonized law;
+- narrow ParityLevelCounts proposal.
+
+Audit result:
+
+- this report provides most of the accepted post-M3 mathematical decomposition;
+- zero-observation floor corrected from 10/20/30 to the exact theorem-implied 9/19/29;
+- alternative-backend decisions remain conditional.
+
+Snapshot: [qwen-post-m3-strict-parity.md](qwen-post-m3-strict-parity.md).
+
+### 9. DeepSeek post-M3 strict-Parity report
+
+Important content:
+
+- NO-GO for published W_i;
+- hybrid Energy/IBLT/Minisketch recommendation;
+- cancellation/monotonicity claims;
+- adaptive-attack context.
+
+Audit result:
+
+- NO-GO retained;
+- generic cancellation is not accepted as a proof about the actual published scalar;
+- mean monotonicity is not stochastic monotonicity;
+- IBLT finite-sample-confidence claim requires primary-source verification;
+- Energy memory numbers are inconsistent with the repository profile oracle;
+- adaptive attacks remain outside the oblivious v0 theorem model.
+
+Snapshot: [deepseek-post-m3-strict-parity.md](deepseek-post-m3-strict-parity.md).
+
 ## Why the original PDFs are not normative
 
 The reports contain mutually contradictory implementation recommendations and several claims at different evidence levels.
 
 The repository therefore stores their findings as structured Markdown research snapshots and keeps a separate reconciliation layer.
 
-See [../../NEW-INPUTS-AUDIT.md](../../NEW-INPUTS-AUDIT.md).
+See [../../STRICT-PARITY-POST-M3.md](../../STRICT-PARITY-POST-M3.md) and [../../NEW-INPUTS-AUDIT.md](../../NEW-INPUTS-AUDIT.md).

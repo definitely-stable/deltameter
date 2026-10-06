@@ -90,18 +90,21 @@ Deliverables:
 - stable-Rust state/update/merge/query benchmark harness;
 - documented memory/guarantee comparison with Energy.
 
-Optional research:
+Post-M3 research status:
 
-- exact small finite enumeration/DP on the actual FIELDMAP state or a proved sufficient statistic;
-- finite-J truncation-budget checker;
-- fixed-d analysis;
-- Poissonized law only if the exact category independence is derived;
-- de-Poissonization only after its theorem hypotheses and forward-difference bounds are verified;
-- one-sided test inversion with monotonicity checks.
+- exact tiny full-state enumeration/DP: implemented for proof/regression-sized cases;
+- W_i non-sufficiency: established by a finite counterexample;
+- finite-J truncation budget: implemented, with signal and state-distortion events separated;
+- Poissonized cell/row law: derived and implemented as a research artifact;
+- fixed-d de-Poissonization/inversion: no practical certified bridge;
+- full published-statistic monotonicity: unresolved;
+- strict published-W_i path: **STOP / NO-GO**.
 
-Strict-Parity theory is **not** a v0 release blocker.
+A narrow `ParityLevelCounts` research track may continue post-v0, but it is not a release blocker and has no public `Coverage::Proven` contract.
 
 ## M4 — Performance and API freeze
+
+Status: next implementation milestone after issue #8 research reconciliation.
 
 After Energy and experimental Parity exist:
 
@@ -117,9 +120,9 @@ Only then decide whether persisted serialization is actually required.
 
 Only after evidence:
 
-- strict finite-sample Parity;
+- `ParityLevelCounts` strict finite-sample research, only if certified fixed-d tails become practical;
 - `ParityPcsaSetV1` with `g(v)=1`;
-- ExactSmallDelta via Minisketch/PinSketch or a pure-Rust alternative;
+- ExactSmallDelta via Minisketch/PinSketch, Simple Set Sketching, IBLT-derived methods or a pure-Rust alternative, only after a separate primary-source and failure-semantics audit;
 - persisted wire format;
 - SIMD/unsafe specialization;
 - formal verification of a narrow proof/code boundary.

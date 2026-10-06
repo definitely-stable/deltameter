@@ -182,3 +182,58 @@ The new inputs do **not** justify:
 - formal verification in CI;
 - nightly SIMD;
 - a large research orchestration layer.
+
+
+## Post-M3 Gemini / Qwen / DeepSeek round
+
+Three additional reports were received after M3. Their common high-level conclusion is NO-GO for making the current published W_i Parity estimator a strict backend. Their detailed mathematics and architecture recommendations conflict substantially.
+
+The canonical reconciliation is now [STRICT-PARITY-POST-M3.md](STRICT-PARITY-POST-M3.md).
+
+### New conflict matrix
+
+| Topic | Reports | Canonical decision |
+|---|---|---|
+| Published W_i strict backend | All three reports say NO-GO | **Accepted as a stop gate.** Energy remains the only Proven backend. |
+| Exact Poissonized law | Gemini/Qwen derive independent cells/rows | **Accepted.** Poisson splitting gives an exact unconditional Poissonized law. It is not a fixed-d theorem. |
+| Full-state exact law | Qwen gives a Walsh/Fourier formula; Gemini gives row Walsh calculations | **Accepted in principle.** Exact but exponential at target m,J. |
+| W_i sufficiency | Qwen gives a direct finite counterexample; other reports invoke richer PCSA estimators | **Accepted via the direct finite counterexample.** No transfer from classical-PCSA Fish-number work is required. |
+| Individual W_i monotonicity | Gemini/Qwen argue yes | **Accepted for one row** via a positive Walsh-sum CDF formula. |
+| sum_i W_i monotonicity | Gemini infers yes; DeepSeek says cancellation gives a counterexample; Qwen keeps it open | **OPEN.** Neither inference is accepted as a general theorem. |
+| Per-level S_j monotonicity | DeepSeek infers stochastic order from increasing expectation | **Rejected.** Mean monotonicity is not stochastic monotonicity. |
+| Truncation | Reports mix formulas with and without 1/m | **Corrected.** Whole-sketch signal: 2^-J per key. State distortion: 2^-(J+1). No 1/m after summing rows. |
+| Small-d zero floor | Qwen gives 10/20/30 for target deltas | **Corrected.** Exact theorem-implied floor is max{d:2^-d>delta}: 9/19/29. |
+| Simple Set Sketching | Gemini recommends immediate Coverage::Exact hybrid | **Candidate only.** High-probability exact recovery is not unconditional Coverage::Exact. |
+| IBLT quadratic estimator | DeepSeek recommends a Proven hybrid from exact moments + chi-square | **Not accepted.** Chi-square limit is asymptotic unless a finite-sample tail theorem is supplied; cited source requires verification. |
+| Minisketch | DeepSeek recommends immediate exact lane | **Still deferred.** Strong candidate, separate product/implementation scope. |
+| Energy memory Pareto | DeepSeek lists much smaller strict Energy states | **Rejected.** Canonical sizes come from research/energy_profiles.py and include all R tables. |
+| Adaptive attacks | DeepSeek treats them as a stop condition | **Context only.** Current theorem model is oblivious input. |
+| Richer FIELDMAP statistics | Reports propose level counts / occupancy information | **Research candidate.** Raw FIELDMAP remains XOR-mergeable; richer query statistics do not destroy mergeability. |
+
+### Source snapshots
+
+- [archive/2026-10-06/gemini-post-m3-strict-parity.md](archive/2026-10-06/gemini-post-m3-strict-parity.md)
+- [archive/2026-10-06/qwen-post-m3-strict-parity.md](archive/2026-10-06/qwen-post-m3-strict-parity.md)
+- [archive/2026-10-06/deepseek-post-m3-strict-parity.md](archive/2026-10-06/deepseek-post-m3-strict-parity.md)
+
+### Canonical effect
+
+The new round changes one thing materially: the repository no longer treats strict published-W_i Parity as an open proof program.
+
+Instead:
+
+~~~text
+published W_i strict track
+    STOP / NO-GO
+
+ParityLevelCounts
+    optional research-only track
+
+Energy
+    only current Coverage::Proven backend
+
+Parity
+    Coverage::Asymptotic
+~~~
+
+No new production backend is introduced by this research import.

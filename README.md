@@ -13,7 +13,7 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-M0–M3 are complete. M3 adds the experimental/asymptotic ParityDeltaMeter wrapper.
+M0–M3 are complete. Post-M3 research closes the current published-W_i strict-Parity track as NO-GO; M4 performance/API work is next.
 
 Current implementation direction:
 
@@ -23,12 +23,13 @@ Current implementation direction:
 - Gaussian/chi-square — research oracle only.
 - ExactSmallDelta — deferred.
 
-Q1 is resolved for v0: there is currently **no accepted strict finite-sample Parity profile**. The published F-PCSA construction has been reproduced in M2; a `g(v)=1` set-specialized variant remains a separate unproved estimator.
+Q1 is resolved more strongly after M3: there is **no accepted strict finite-sample profile for the published W_i Parity estimator, and that strict-W_i track is stopped** unless a new theorem changes the gate. A per-level `ParityLevelCounts` statistic remains research-only.
 
 ## Documentation
 
 - [docs/research/README.md](docs/research/README.md) — research index and authority order.
-- [docs/research/Q1-FINITE-SAMPLE-PARITY.md](docs/research/Q1-FINITE-SAMPLE-PARITY.md) — current Q1 result.
+- [docs/research/STRICT-PARITY-POST-M3.md](docs/research/STRICT-PARITY-POST-M3.md) — current post-M3 strict-Parity verdict and reconciled exact results.
+- [docs/research/Q1-FINITE-SAMPLE-PARITY.md](docs/research/Q1-FINITE-SAMPLE-PARITY.md) — earlier Q1 proof program and historical boundary.
 - [docs/research/M2-FPCSA-REPRODUCTION.md](docs/research/M2-FPCSA-REPRODUCTION.md) — M2 source/implementation boundary.
 - [docs/research/M3-PARITY-EXPERIMENTAL.md](docs/research/M3-PARITY-EXPERIMENTAL.md) — M3 API, profiles, guarantees and benchmark plan.
 - [docs/research/FOUNDATION.md](docs/research/FOUNDATION.md) — canonical mathematical/engineering synthesis.
@@ -47,6 +48,9 @@ Requires Python 3. No third-party packages are needed.
 ```bash
 python research/run_all.py --out research-out
 python research/energy_profiles.py --check-csv research/energy_profiles.csv
+python research/parity_truncation_budget.py
+python research/parity_poissonized.py
+python research/parity_full_exact_small.py
 ```
 
 The committed CSV is the machine-readable bridge between the theorem-derived Python profile generator and Rust profile tests.

@@ -1,8 +1,10 @@
 # Q1 — Finite-sample Parity capacity
 
-Status: **v0 decision resolved: NO-GO for Coverage::Proven**  
-Research status: **open**  
+Status: **published W_i decision resolved: NO-GO for Coverage::Proven**  
+Research status: **strict W_i track stopped; ParityLevelCounts remains optional research**  
 Date: 2026-10-06
+
+See [STRICT-PARITY-POST-M3.md](STRICT-PARITY-POST-M3.md) for the current canonical synthesis. This file preserves the earlier Q1 proof program and remains useful historical context.
 
 ## Question
 
@@ -28,7 +30,7 @@ for finite parameters, including d = 0 and small d, without unsupported asymptot
 
 ## v0 decision
 
-**No. Not yet.**
+**No for the current published W_i estimator. The repository now treats that strict path as stopped unless a new theorem changes the gate.**
 
 The repository still has no theorem-backed finite-sample construction that justifies strict Parity capacity at:
 
