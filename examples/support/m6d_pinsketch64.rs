@@ -185,10 +185,7 @@ impl PinSketch64Lab {
     /// Minisketch distinction between stored capacity and maximum decoded
     /// elements. A production false-positive bound still requires a separately
     /// justified contract.
-    pub fn decode_candidate_with_limit(
-        &self,
-        max_elements: usize,
-    ) -> Result<Vec<u64>, LabError> {
+    pub fn decode_candidate_with_limit(&self, max_elements: usize) -> Result<Vec<u64>, LabError> {
         if max_elements > self.capacity {
             return Err(LabError::InvalidDecodeLimit);
         }
