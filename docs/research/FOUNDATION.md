@@ -318,7 +318,7 @@ The public API must not merge those two claims.
 
 The v0 implementation gate is now resolved: **NO-GO for strict Parity `Coverage::Proven`**.
 
-The mathematical research question remains open. The most valuable remaining question is a strict finite-sample one-sided tail for the concrete published GF(2)-F-PCSA construction.
+The post-M3 research round closes the current strict published-W_i proof track. The broader GF(2)-linear question remains open only through separate candidate statistics such as per-level parity counts.
 
 The published asymptotic RSE curve does not itself justify
 
@@ -343,17 +343,9 @@ Var(S) =
 
 for that model.
 
-The missing strict path must address:
+The published-W_i strict path is stopped because the exact full-state law is exponential at target dimensions, W_i is not sufficient, the Poissonized exact law lacks a practical certified fixed-d bridge, and full-statistic monotonicity/inversion remain unresolved.
 
-- finite (m);
-- finite (V);
-- all (d), including very small (d);
-- level truncation;
-- dependence across cells/levels induced by the practical construction;
-- an invertible one-sided test or concentration inequality;
-- width/power, not only nominal coverage.
-
-Until this is solved, Parity can be a fast point-estimate backend but not a proof-grade capacity backend.
+Parity therefore remains a fast point-estimate backend but not a proof-grade capacity backend.
 
 The latest research adds three explicit exclusions:
 
@@ -361,14 +353,14 @@ The latest research adds three explicit exclusions:
 - empirical CDF fitting cannot by itself justify (10^{-6}) or (10^{-9}) `Proven` coverage;
 - median/group amplification only amplifies a failure bound that is already valid for each independent copy.
 
-Poissonization, exact conditioning/de-Poissonization, small-case exact DP/enumeration and test inversion remain valid research directions.
+Exact small-state enumeration, finite-J truncation budgeting and the unconditional Poissonized law are now executable research artifacts. Fixed-d de-Poissonization/inversion is no longer an active blocker for v0/M4. A narrow ParityLevelCounts track may continue separately.
 
 The newest attached report sharpened this further, but also required corrections:
 
 - Q1 must analyze the exact published FIELDMAP/rightmost-nonzero construction, not a classical-PCSA first-1-position surrogate;
 - use N for universe cardinality, m for rows, d for true Hamming weight, j for level, and J for finite stored level bound;
 - do not interpret GF(2)-F-PCSA as GF(2^V) hashing;
-- Poissonized independence must be derived for the exact category model;
+- Poissonized independence has now been derived for the exact category model; it applies only to the unconditional Poissonized law;
 - the 2025 Poisson-Charlier de-Poissonization result is promising only after the target coefficient/tail sequence and its forward-difference bounds are established;
 - truncated multivariate-normal estimation is not a direct model for discrete F-PCSA level censoring;
 - the minimal capacity target is a one-sided level-delta test inversion, not a two-sided exact interval;
