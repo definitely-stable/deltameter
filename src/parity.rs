@@ -307,8 +307,8 @@ mod tests {
 
         for (energy, parity) in cases {
             assert_eq!(
-                energy.counter_state_bytes() / parity.packed_state_bytes(),
-                184
+                energy.counter_state_bytes(),
+                parity.packed_state_bytes() * 184
             );
         }
     }
@@ -385,6 +385,18 @@ mod tests {
         assert_eq!(
             left.xor_merged(&right).unwrap_err(),
             ParityError::IncompatibleConfig
+        );
+    }
+
+    #[test]
+    fn empty_state_estimate_fails_closed_at_public_wrapper() {
+        let meter = ParityDeltaMeter::new(
+            ParityConfig::for_profile(ParityProfile::Compact, 40).unwrap(),
+        );
+
+        assert_eq!(
+            meter.estimate().unwrap_err(),
+            ParityError::EstimateUnavailable { empty_rows: 64 }
         );
     }
 
