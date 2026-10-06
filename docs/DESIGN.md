@@ -195,6 +195,8 @@ Common framing supplies magic, format version, backend tag, zero-reserved flags,
 
 CRC32C is accidental-corruption detection only. Authentication belongs to an outer trusted transport or a future explicit cryptographic layer.
 
+An Energy snapshot's theorem-profile marker is not self-authenticating. The ordinary decoder refuses to restore Coverage::Proven from bytes alone; the explicit decode_snapshot_assuming_uniform_rows path carries the same caller precondition as theorem-profile construction.
+
 No Rust struct layout, padding, enum discriminant or default Hash output is part of the format.
 
 ## Threat model
