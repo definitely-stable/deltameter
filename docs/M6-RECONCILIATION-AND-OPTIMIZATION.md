@@ -1,6 +1,6 @@
 # M6 — Reconciliation value and compatible optimization
 
-Status: M6-0 complete; merged in PR #20 as `7976d5493f24031b1ddd5e998e723b013dd4ea03`. Parent: [#14](https://github.com/definitely-stable/deltameter/issues/14).
+Status: M6-0 complete in PR #20; M6-A evidence complete in PR #21 with a generic-workflow NO-GO. Parent: [#14](https://github.com/definitely-stable/deltameter/issues/14).
 Audit baseline: `1ae3be55df218421437c56271a7d9a9f660b0ff7` (2026-10-06).
 
 ## Decision and purpose
@@ -77,6 +77,24 @@ Three arms use the same datasets and exact completion oracle:
 Cover |A|/|B| asymmetry, d=0,1,2,8,32,128, large d, disjoint sets, full-width keys, repeated comparisons, and cold/maintained snapshots. Count physical application bytes in both directions and model RTT separately; local subprocess timing is not WAN evidence. Production identity hashing/compression is not simulated as free.
 
 Acceptance: both successful paths reach the exact target set; malformed/replayed/stale messages never report success; timeouts kill/reap children; benchmark artifacts identify workload/SHAs; interpretation separates functional correctness, empirical cost and theorem assumptions. GO requires a named workload and useful cost reduction, otherwise retain estimator-only scope or prioritize the independent exact-lane audit.
+
+## M6-A measured outcome
+
+M6-A completed the bounded two-process experiment and recorded a **NO-GO** for a generic/public snapshot-admission workflow.
+
+Final hosted evidence run: `m6a-value #12 / 37514920381`.
+
+For the fixed 8192-element workload matrix:
+
+- direct exact: 722,356 application bytes;
+- snapshot control: 1,134,900 bytes;
+- snapshot admission: 937,896 bytes;
+- snapshot admission therefore costs +29.838% versus direct exact;
+- equal-size byte-only break-even requires >57.111% rejects, while the matrix rejected 3/11 comparisons.
+
+Cold on-demand sketch construction is also not competitive with the in-memory exact control. The only retained conditional case is an already-maintained sketch under a named reject-heavy or expensive-downstream workload.
+
+No public network/admission API is justified. See [M6-A evidence](M6-A-EVIDENCE.md).
 
 ## M6-C algebraic candidate
 
