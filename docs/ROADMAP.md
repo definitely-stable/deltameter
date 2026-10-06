@@ -26,7 +26,7 @@ Acceptance:
 
 ## M1 — Energy reference implementation
 
-Status: active in Draft PR #3 / issue #2.
+Status: active in PR #3 / issue #2.
 
 Build one Rust crate, not a workspace.
 
@@ -36,7 +36,7 @@ Deliverables:
 - explicit pairwise bucket + 4-wise sign randomness;
 - theorem-profile construction from 6R caller-supplied independent uniform u64 words, with no RNG dependency;
 - incremental energy maintenance;
-- compatible merge/subtract;
+- compatible source-sketch difference/subtract;
 - theorem-derived profiles;
 - deterministic and property tests.
 
