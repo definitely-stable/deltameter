@@ -1,6 +1,6 @@
 # M3 — Experimental ParityDeltaMeter
 
-Status: implementation active in issue #6 / branch `m3/experimental-parity`.
+Status: complete in PR #7.
 
 ## Objective
 
