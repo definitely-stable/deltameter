@@ -47,20 +47,26 @@ Acceptance:
 
 ## M2 — Published F-PCSA reproduction
 
-Do not start with the custom `g(v)=1` variant.
+Do not start with the custom g(v)=1 variant and do not substitute a classical-PCSA first-1-position model.
 
 Deliverables:
 
-- faithful reproduction of the published finite-field GF(2) construction;
+- faithful FIELDMAP[i,j] finite-field state;
+- published h row/level distribution;
+- published uniform field coefficient g;
+- rightmost-nonzero row statistic;
+- explicit finite level policy J;
 - packed state;
 - XOR composition;
-- finite-(d) moment regression;
+- finite-d moment regression where analytically justified;
 - asymptotic/middle-range reproduction.
 
 Acceptance:
 
 - observed behavior is consistent with the published construction;
+- the implementation documents the paper's middle-range limitation;
 - published and custom set-specialized variants are not conflated;
+- universe size N, row count m, Hamming weight d and level bound J are not overloaded;
 - no strict capacity claim.
 
 ## M3 — Experimental ParityDeltaMeter
@@ -76,9 +82,12 @@ Deliverables:
 
 Optional research:
 
-- exact small-(m,d) enumeration;
-- truncation-budget checker;
-- fixed-(d) / de-Poissonization investigation.
+- exact small finite enumeration/DP on the actual FIELDMAP state or a proved sufficient statistic;
+- finite-J truncation-budget checker;
+- fixed-d analysis;
+- Poissonized law only if the exact category independence is derived;
+- de-Poissonization only after its theorem hypotheses and forward-difference bounds are verified;
+- one-sided test inversion with monotonicity checks.
 
 Strict-Parity theory is **not** a v0 release blocker.
 
