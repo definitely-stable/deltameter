@@ -388,6 +388,7 @@ impl EnergyDeltaMeter {
         })
     }
 
+    #[cfg(test)]
     fn remove_unique(&mut self, key: u64) -> Result<(), EnergyError> {
         self.apply_unit(key, -1)
     }
