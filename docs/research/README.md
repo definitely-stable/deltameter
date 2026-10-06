@@ -9,13 +9,14 @@ Research is kept in layers so historical reports remain available without lettin
 When documents disagree, use this order:
 
 1. [DECISIONS.md](DECISIONS.md) — current implementation decisions.
-2. [Q1-FINITE-SAMPLE-PARITY.md](Q1-FINITE-SAMPLE-PARITY.md) — current Q1 gate and proof boundary.
-3. [FOUNDATION.md](FOUNDATION.md) — canonical technical synthesis.
-4. [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — remaining research and resolved gates.
-5. [NEW-INPUTS-AUDIT.md](NEW-INPUTS-AUDIT.md) — reconciliation of the latest reports.
-6. [SOURCE-AUDIT.md](SOURCE-AUDIT.md) — audit of the original F2-centric report.
-7. [archive/](archive/) — historical research snapshots; useful evidence, not normative.
-8. [REFERENCES.md](REFERENCES.md) — source map.
+2. [STRICT-PARITY-POST-M3.md](STRICT-PARITY-POST-M3.md) — canonical post-M3 strict-Parity synthesis and stop gate.
+3. [Q1-FINITE-SAMPLE-PARITY.md](Q1-FINITE-SAMPLE-PARITY.md) — original Q1 proof boundary and historical proof program.
+4. [FOUNDATION.md](FOUNDATION.md) — canonical technical synthesis.
+5. [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) — remaining research and resolved gates.
+6. [NEW-INPUTS-AUDIT.md](NEW-INPUTS-AUDIT.md) — reconciliation of research reports.
+7. [SOURCE-AUDIT.md](SOURCE-AUDIT.md) — audit of the original F2-centric report.
+8. [archive/](archive/) — historical research snapshots; useful evidence, not normative.
+9. [REFERENCES.md](REFERENCES.md) — source map.
 
 ## Current research position
 
@@ -41,9 +42,9 @@ Current implementation direction:
 
 The v0 implementation gate is resolved:
 
-> **NO-GO for strict Parity `Coverage::Proven` in v0.**
+> **NO-GO for strict published-W_i Parity `Coverage::Proven`; the current strict-W_i research track is stopped.**
 
-This does not mean strict Parity is impossible. It means the current research does not yet provide a valid finite-(m), finite-(V), all-(d) theorem with practical width.
+This is a stop decision, not a universal impossibility theorem for every GF(2)-linear estimator. A narrow per-level `ParityLevelCounts` track remains research-only.
 
 The latest reports additionally exposed a critical distinction:
 
@@ -78,17 +79,18 @@ Published constants must not be transferred between those constructions without 
 
 ### Still open
 
-- a useful strict finite-sample tail for the concrete published Parity construction;
+- certified fixed-d tails for a possible `ParityLevelCounts` statistic;
+- full-statistic stochastic monotonicity for the published `sum W_i` estimator;
+- a practical de-Poissonization/fixed-d bridge with explicit remainder;
 - a full analysis of the proposed `g(v)=1` set specialization;
 - tight lower bounds for the narrow GF(2)-linear, set-only, high-confidence model;
-- final Parity randomness requirements if strict tails are pursued;
-- whether ExactSmallDelta is worth adding after real measurements.
+- whether an exact-small-d lane is worth adding after measurements and a primary-source audit.
 
 ## Latest imported research
 
-See [archive/2026-10-06/README.md](archive/2026-10-06/README.md) for the latest Deep Research run and four attached reports.
+See [archive/2026-10-06/README.md](archive/2026-10-06/README.md) for the source register, including the post-M3 Gemini/Qwen/DeepSeek round.
 
-Their contradictory claims are reconciled in [NEW-INPUTS-AUDIT.md](NEW-INPUTS-AUDIT.md).
+Their contradictory claims are reconciled in [STRICT-PARITY-POST-M3.md](STRICT-PARITY-POST-M3.md) and [NEW-INPUTS-AUDIT.md](NEW-INPUTS-AUDIT.md).
 
 ## Repository policy
 
