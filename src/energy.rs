@@ -641,10 +641,8 @@ mod tests {
 
     #[test]
     fn profile_mismatch_is_rejected() {
-        let stored =
-            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
-        let requested =
-            EnergyProfile::new(RelativeError::TenPercent, FailureTarget::OneInThousand);
+        let stored = EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+        let requested = EnergyProfile::new(RelativeError::TenPercent, FailureTarget::OneInThousand);
         let sketch = meter(stored, 1);
 
         assert_eq!(
