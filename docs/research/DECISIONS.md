@@ -1,7 +1,7 @@
 # Decision record 0001 — pre-implementation baseline
 
-Status: **accepted and updated through the M5 implementation**  
-Updated: 2026-10-06 after M5 completion and the M6 evidence-gated sequencing decision.
+Status: **accepted and updated through M6-A evidence**  
+Updated: 2026-10-06 after the M6-A estimator-assisted workflow decision.
 
 ## Context
 
@@ -339,3 +339,41 @@ The post-M3 Gemini/Qwen/DeepSeek round strengthens the NO-GO decision for the pu
 Choose the bounded estimator-assisted value experiment before adopting ExactSmallDelta/hybrid. This does not establish economic superiority. Snapshot-plus-full-transfer is an overhead control; a useful decision policy and exact completion oracle are required. Keep the strict published-W_i NO-GO and all M5 compatibility/provenance rules.
 
 The [M6 critical audit/design](../M6-RECONCILIATION-AND-OPTIMIZATION.md) and parent #14 supersede stale post-M3 next-step text only; historical research findings are unchanged. M6-0 (#15) begins with snapshot compatibility/evidence. After M6-0, M6-A and the read-only/source-audit part of M6-D may proceed in parallel; production ExactSmallDelta/hybrid adoption remains gated on M6-A product evidence. M6-B/C/D are tracked in #17–#19.
+
+
+### D24 — Generic snapshot-admission workflow is NO-GO
+
+M6-A tested a bounded two-process estimator-assisted admission workflow with an exact completion oracle.
+
+The measured 8192-element deterministic matrix produced:
+
+~~~text
+direct exact total bytes       = 722,356
+snapshot control total bytes   = 1,134,900
+snapshot admission total bytes = 937,896
+~~~
+
+The snapshot-admission arm was therefore +29.838% application bytes versus direct exact for the fixed matrix.
+
+For equal-size 8192-element sets:
+
+~~~text
+direct exact exchange = 65,668 bytes
+snapshot-only reject  = 37,504 bytes
+~~~
+
+so byte-only break-even requires a reject fraction above 57.111%. The measured matrix rejected 3/11 comparisons.
+
+Cold one-shot use is also NO-GO: constructing the custom Energy state on each side costs roughly two orders of magnitude more local CPU time than the in-memory exact-transfer control.
+
+This does not prove that estimator-assisted admission is universally useless. It preserves a conditional future case for already-maintained sketches and a named reject-heavy or downstream-expensive workload. No such product workload is established today.
+
+Therefore:
+
+- do not add a public network/admission API;
+- do not call an estimator path exact reconciliation;
+- continue the independent exact-lane audit;
+- prioritize measured Energy update/build optimization;
+- keep any future admission policy workload-specific and explicit about provenance/error budgets.
+
+Canonical evidence: docs/M6-A-EVIDENCE.md.
