@@ -246,8 +246,8 @@ impl ParityDeltaMeter {
         }
         let seed = cursor.read_u64()?;
 
-        let config =
-            ParityConfig::new(rows, stored_levels, seed).map_err(|_| SnapshotError::InvalidPayload)?;
+        let config = ParityConfig::new(rows, stored_levels, seed)
+            .map_err(|_| SnapshotError::InvalidPayload)?;
         let word_count = config.backend().packed_state_words();
         let state_bytes = word_count
             .checked_mul(core::mem::size_of::<u64>())
