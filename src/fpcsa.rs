@@ -276,16 +276,20 @@ impl PublishedFpcsaF2 {
     /// Therefore this result is not Coverage::Proven and is not a strict
     /// finite-sample estimator.
     pub fn table2_reference_estimate(&self) -> Result<FpcsaTable2ReferenceEstimate, FpcsaError> {
-        let highest = self.highest_levels();
-        let empty_rows = highest.iter().filter(|level| level.is_none()).count();
+        let mut empty_rows = 0_usize;
+        let mut sum_levels = 0_u64;
+
+        for row in 0..self.config.rows {
+            match self.row_highest_level_unchecked(row) {
+                Some(level) => sum_levels += u64::from(level),
+                None => empty_rows += 1,
+            }
+        }
+
         if empty_rows != 0 {
             return Err(FpcsaError::MiddleRangeRequired { empty_rows });
         }
 
-        let sum_levels: u64 = highest
-            .into_iter()
-            .map(|level| u64::from(level.expect("empty rows rejected")))
-            .sum();
         let rows = f64::from(self.config.rows);
         let mean_level = sum_levels as f64 / rows;
 
@@ -331,6 +335,11 @@ impl PublishedFpcsaF2 {
     }
 
     fn row_highest_level_unchecked(&self, row: u32) -> Option<u8> {
+        if self.config.levels == 64 {
+            let word = self.words[row as usize];
+            return (word != 0).then(|| (64 - word.leading_zeros()) as u8);
+        }
+
         (1..=self.config.levels)
             .rev()
             .find(|&level| self.bit_is_set(row, level))
