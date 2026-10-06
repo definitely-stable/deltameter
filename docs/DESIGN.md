@@ -175,7 +175,27 @@ At minimum:
 - dimensions;
 - seed/randomness configuration.
 
-No persisted wire format is frozen yet.
+M4 froze no persisted format. M5 introduces the first explicit persisted contract: `deltameter.snapshot.v1`, documented in `docs/M5-INTERCHANGE-V1.md`.
+
+## M5 interchange boundary
+
+The persisted contract is deliberately narrower than Rust's in-memory representation.
+
+Snapshot v1 contains only primary state plus the exact configuration required to interpret and continue using that state:
+
+- Energy: dimensions, profile identity when applicable, all six GF(2^64) coefficients per row, and signed counters;
+- Parity: rows, stored levels, deterministic seed, and packed GF(2) cells.
+
+Derived state is rebuilt:
+
+- Energy cached row energies are recomputed with checked arithmetic;
+- Parity estimates are always recomputed from packed state.
+
+Common framing supplies magic, format version, backend tag, zero-reserved flags, exact payload length and CRC32C.
+
+CRC32C is accidental-corruption detection only. Authentication belongs to an outer trusted transport or a future explicit cryptographic layer.
+
+No Rust struct layout, padding, enum discriminant or default Hash output is part of the format.
 
 ## Threat model
 
