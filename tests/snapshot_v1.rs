@@ -90,30 +90,30 @@ fn wrong_backend_fails_closed() {
     let energy = hex_bytes(ENERGY_EMPTY_V1_HEX);
     let parity = hex_bytes(PARITY_EMPTY_V1_HEX);
 
-    assert_eq!(
+    assert!(matches!(
         EnergyDeltaMeter::decode_snapshot(&parity),
         Err(SnapshotError::BackendMismatch {
             expected: 1,
-            actual: 2,
+            actual: 2
         })
-    );
-    assert_eq!(
+    ));
+    assert!(matches!(
         ParityDeltaMeter::decode_snapshot(&energy),
         Err(SnapshotError::BackendMismatch {
             expected: 2,
-            actual: 1,
+            actual: 1
         })
-    );
+    ));
 }
 
 #[test]
 fn corruption_and_trailing_bytes_fail_closed() {
     let mut corrupt = hex_bytes(ENERGY_EMPTY_V1_HEX);
     corrupt[32] ^= 1;
-    assert_eq!(
+    assert!(matches!(
         EnergyDeltaMeter::decode_snapshot(&corrupt),
         Err(SnapshotError::ChecksumMismatch)
-    );
+    ));
 
     let mut trailing = hex_bytes(ENERGY_EMPTY_V1_HEX);
     trailing.push(0);
@@ -127,27 +127,27 @@ fn corruption_and_trailing_bytes_fail_closed() {
 fn unknown_version_and_flags_fail_closed() {
     let mut version = hex_bytes(ENERGY_EMPTY_V1_HEX);
     version[8] = 2;
-    assert_eq!(
+    assert!(matches!(
         EnergyDeltaMeter::decode_snapshot(&version),
         Err(SnapshotError::UnsupportedVersion(2))
-    );
+    ));
 
     let mut flags = hex_bytes(ENERGY_EMPTY_V1_HEX);
     flags[11] = 1;
-    assert_eq!(
+    assert!(matches!(
         EnergyDeltaMeter::decode_snapshot(&flags),
         Err(SnapshotError::UnsupportedFlags(1))
-    );
+    ));
 }
 
 #[test]
 fn parity_non_zero_padding_bits_are_rejected() {
     let bytes = hex_bytes(PARITY_NONCANONICAL_PADDING_V1_HEX);
 
-    assert_eq!(
+    assert!(matches!(
         ParityDeltaMeter::decode_snapshot(&bytes),
         Err(SnapshotError::NonCanonicalPadding)
-    );
+    ));
 }
 
 fn hex_bytes(hex: &str) -> Vec<u8> {
