@@ -246,6 +246,39 @@ mod tests {
     }
 
     #[test]
+    fn direct_payload_writer_rejects_short_and_long_payloads() {
+        for actual in [2, 4] {
+            assert_eq!(
+                encode_envelope(BACKEND_ENERGY, 3, |output| {
+                    output.extend(std::iter::repeat_n(0, actual));
+                }),
+                Err(SnapshotError::InvalidPayload)
+            );
+        }
+    }
+
+    #[test]
+    fn direct_payload_writer_checks_overflow_before_writing() {
+        assert_eq!(
+            encode_envelope(BACKEND_ENERGY, usize::MAX, |_| {
+                panic!("overflow must fail before invoking the writer");
+            }),
+            Err(SnapshotError::LengthOverflow)
+        );
+    }
+
+    #[test]
+    fn direct_payload_writer_round_trip_including_empty_payload() {
+        for payload in [b"".as_slice(), b"payload".as_slice()] {
+            let bytes = encode_envelope(BACKEND_ENERGY, payload.len(), |output| {
+                output.extend_from_slice(payload);
+            })
+            .unwrap();
+            assert_eq!(decode_envelope(&bytes, BACKEND_ENERGY).unwrap(), payload);
+        }
+    }
+
+    #[test]
     fn envelope_rejects_trailing_bytes() {
         let mut bytes = encode_envelope(BACKEND_ENERGY, b"payload").unwrap();
         bytes.push(0);
