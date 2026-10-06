@@ -382,9 +382,43 @@ impl EnergyDeltaMeter {
     /// configuration, the resulting frequency vector is in {-1, 0, +1} and
     /// its F2 value equals the set symmetric-difference size.
     pub fn difference(&self, other: &Self) -> Result<Self, EnergyError> {
-        let mut result = self.clone();
-        result.subtract_assign(other)?;
-        Ok(result)
+        if self.config != other.config {
+            return Err(EnergyError::IncompatibleConfig);
+        }
+
+        let buckets = self.config.buckets();
+        let tables = self.config.tables();
+        let mut counters = Vec::with_capacity(self.counters.len());
+        let mut energies = Vec::with_capacity(tables);
+
+        for row_index in 0..tables {
+            let start = row_index * buckets;
+            let end = start + buckets;
+            let mut energy = 0_i128;
+
+            for (&left, &right) in self.counters[start..end]
+                .iter()
+                .zip(other.counters[start..end].iter())
+            {
+                let counter = left
+                    .checked_sub(right)
+                    .ok_or(EnergyError::CounterOverflow)?;
+                let counter_i128 = i128::from(counter);
+                energy = energy
+                    .checked_add(counter_i128 * counter_i128)
+                    .ok_or(EnergyError::EnergyOverflow)?;
+                counters.push(counter);
+            }
+
+            energies.push(energy);
+        }
+
+        Ok(Self {
+            config: self.config.clone(),
+            counters: counters.into_boxed_slice(),
+            energies: energies.into_boxed_slice(),
+            pending: vec![PendingUpdate::default(); tables].into_boxed_slice(),
+        })
     }
 
     /// Subtracts a compatible sketch in place.
