@@ -649,7 +649,6 @@ fn relative_error_snapshot_tag(value: RelativeError) -> Result<u8, SnapshotError
         RelativeError::FivePercent => Ok(1),
         RelativeError::TenPercent => Ok(2),
         RelativeError::TwentyPercent => Ok(3),
-        _ => Err(SnapshotError::UnsupportedConfig),
     }
 }
 
@@ -667,7 +666,6 @@ fn failure_target_snapshot_tag(value: FailureTarget) -> Result<u8, SnapshotError
         FailureTarget::OneInThousand => Ok(1),
         FailureTarget::OneInMillion => Ok(2),
         FailureTarget::OneInBillion => Ok(3),
-        _ => Err(SnapshotError::UnsupportedConfig),
     }
 }
 
