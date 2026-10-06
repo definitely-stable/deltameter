@@ -191,7 +191,7 @@ Derived state is rebuilt:
 - Energy cached row energies are recomputed with checked arithmetic;
 - Parity estimates are always recomputed from packed state.
 
-Common framing supplies magic, format version, backend tag, zero-reserved flags, exact payload length and CRC32C.
+Common framing supplies magic, format version, backend tag, explicit u64-set domain tag, zero flags/reserved bytes, exact payload length and CRC32C.
 
 CRC32C is accidental-corruption detection only. Authentication belongs to an outer trusted transport or a future explicit cryptographic layer.
 
