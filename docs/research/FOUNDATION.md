@@ -74,9 +74,16 @@ In GF(2), two identical updates cancel. Therefore repeated `insert(x)` cannot be
 
 ## 3. Candidate constructions
 
-### 3.1 GF(2)-PCSA / finite-field counting
+### 3.1 Published GF(2)-F-PCSA / finite-field counting
 
-Finite-field PCSA is the strongest fast-path candidate found in the literature for the narrow set-only model.
+Finite-field PCSA is the strongest published fast-path candidate currently tracked for the narrow set-only direction.
+
+A critical proof boundary now applies:
+
+- the **published F-PCSA** construction includes its published finite-field coefficient/randomness model;
+- a proposed DeltaMeter-specific **`g(v)=1` / `cell ^= 1` specialization** is a different estimator.
+
+The published asymptotic constants below belong only to the published construction. They must not be transferred automatically to the set-specialized variant.
 
 Relevant properties:
 
@@ -299,7 +306,9 @@ The public API must not merge those two claims.
 
 ## 5. Finite-sample Parity problem
 
-The most valuable remaining mathematical question is not a new point estimator. It is a strict finite-sample one-sided tail for the practical GF(2)-PCSA construction.
+The v0 implementation gate is now resolved: **NO-GO for strict Parity `Coverage::Proven`**.
+
+The mathematical research question remains open. The most valuable remaining question is a strict finite-sample one-sided tail for the concrete published GF(2)-F-PCSA construction.
 
 The published asymptotic RSE curve does not itself justify
 
@@ -334,7 +343,15 @@ The missing strict path must address:
 - an invertible one-sided test or concentration inequality;
 - width/power, not only nominal coverage.
 
-Until this is solved, Parity can be a fast point-estimate backend but not the sole proof-grade capacity backend.
+Until this is solved, Parity can be a fast point-estimate backend but not a proof-grade capacity backend.
+
+The latest research adds three explicit exclusions:
+
+- asymptotic (1.638/\sqrt m) variance cannot be inserted into Chebyshev/Cantelli and relabelled finite-sample;
+- empirical CDF fitting cannot by itself justify (10^{-6}) or (10^{-9}) `Proven` coverage;
+- median/group amplification only amplifies a failure bound that is already valid for each independent copy.
+
+Poissonization, exact conditioning/de-Poissonization, small-case exact DP/enumeration and test inversion remain valid research directions.
 
 ## 6. Small-d regime
 
@@ -466,20 +483,43 @@ Absolute nanoseconds from hosted runners are not merge gates.
 
 ## 12. Current backend decision
 
-The current v0 direction is:
+After the latest Deep Research and attached-report audit, the current v0 direction is:
 
 ```text
 EnergyDeltaMeter
     = first Rust implementation
     = proof-grade conservative baseline
 
+PublishedFpcsaF2
+    = second Rust implementation/reproduction
+    = published asymptotic evidence applies only here
+
 ParityDeltaMeter
-    = second Rust implementation
-    = fast compact candidate
-    = strict capacity only after finite-sample proof
+    = experimental public fast path
+    = no strict capacity in v0
+
+ParityPcsaSetV1 (g(v)=1)
+    = later research candidate
+    = no inherited published error constant
 
 Gaussian / chi-square
     = research oracle only
 ```
 
 This is intentionally simpler than a three- or four-backend framework.
+
+
+## 13. Latest-source reconciliation
+
+Four new attached reports and the latest Q1 Deep Research run are preserved under `archive/2026-10-06/`.
+
+Their conflicting recommendations are reconciled in [NEW-INPUTS-AUDIT.md](NEW-INPUTS-AUDIT.md).
+
+The canonical simplifications are:
+
+- no Minisketch/FFI in v0;
+- no early persisted wire protocol;
+- no default cryptography;
+- Energy keeps pairwise bucket + 4-wise sign proof assumptions;
+- public CI can be used freely, but rare-event Monte Carlo remains diagnostic rather than proof;
+- formal verification remains post-v1 unless a narrow proof boundary justifies it.
