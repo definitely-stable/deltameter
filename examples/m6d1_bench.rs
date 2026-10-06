@@ -208,19 +208,12 @@ fn difference_sketch(
 ) -> PinSketch64Lab {
     let keys = canonical_keys(d, salt);
     let sketch = PinSketch64Lab::from_sorted_unique(stored_capacity, &keys).unwrap();
-    let decoded = sketch
-        .decode_candidate_with_limit(max_elements)
-        .unwrap();
+    let decoded = sketch.decode_candidate_with_limit(max_elements).unwrap();
     assert_eq!(decoded, keys);
     sketch
 }
 
-fn inventory_over_capacity(
-    mode: &str,
-    stored_capacity: usize,
-    max_elements: usize,
-    d: usize,
-) {
+fn inventory_over_capacity(mode: &str, stored_capacity: usize, max_elements: usize, d: usize) {
     let mut rejected = 0_usize;
     let mut false_success = 0_usize;
 
