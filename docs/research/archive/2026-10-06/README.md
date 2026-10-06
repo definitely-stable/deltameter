@@ -74,6 +74,26 @@ Audit result:
 
 Snapshot: [strict-gf2-pcsa-upper-bounds.md](strict-gf2-pcsa-upper-bounds.md).
 
+### 6. “От Эвристики к Доказательству: Теоретическое Обоснование Доверительных Границ для GF(2)-F-PCSA при Конечных Параметрах”
+
+Important content:
+
+- strongly rejects asymptotic RSE, empirical tails and median amplification as substitutes for a finite-sample theorem;
+- prioritizes exact small-parameter distributions, truncation, de-Poissonization, test inversion, and interval width/power;
+- highlights de-Poissonization with explicit remainder control as a promising direction.
+
+Audit result:
+
+- the high-level proof agenda is useful;
+- the report often analyzes classical PCSA instead of the exact published F-PCSA state/statistic;
+- notation overloads m and d;
+- the GF(2^V) interpretation is speculative;
+- truncated multivariate-normal statistics are not a direct model for finite-level F-PCSA censoring;
+- two-sided exact-test machinery is more than the one-sided capacity contract requires;
+- binary-search inversion is unsafe until monotonicity is proved.
+
+Snapshot: [heuristic-to-proof-fpcsa.md](heuristic-to-proof-fpcsa.md).
+
 ## Why the original PDFs are not normative
 
 The reports contain mutually contradictory implementation recommendations and several claims at different evidence levels.
