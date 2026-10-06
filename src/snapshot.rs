@@ -5,7 +5,8 @@ pub(crate) const BACKEND_PARITY: u8 = 2;
 
 const MAGIC: [u8; 8] = *b"DELTAMTR";
 const FORMAT_VERSION: u16 = 1;
-const HEADER_LEN: usize = 20;
+const DOMAIN_U64_SET: u8 = 1;
+const HEADER_LEN: usize = 24;
 const CHECKSUM_LEN: usize = 4;
 const CRC32C_REVERSED_POLYNOMIAL: u32 = 0x82F6_3B78;
 
@@ -17,6 +18,7 @@ pub enum SnapshotError {
     UnsupportedVersion(u16),
     UnsupportedFlags(u8),
     BackendMismatch { expected: u8, actual: u8 },
+    UnsupportedDomain(u8),
     LengthOverflow,
     LengthMismatch { declared: u64, actual: usize },
     ChecksumMismatch,
@@ -42,6 +44,9 @@ impl fmt::Display for SnapshotError {
                     f,
                     "snapshot backend mismatch: expected {expected}, got {actual}"
                 )
+            }
+            Self::UnsupportedDomain(domain) => {
+                write!(f, "unsupported snapshot domain {domain}")
             }
             Self::LengthOverflow => f.write_str("snapshot length cannot be represented"),
             Self::LengthMismatch { declared, actual } => {
@@ -76,7 +81,9 @@ pub(crate) fn encode_envelope(backend: u8, payload: &[u8]) -> Result<Vec<u8>, Sn
     encoded.extend_from_slice(&MAGIC);
     encoded.extend_from_slice(&FORMAT_VERSION.to_le_bytes());
     encoded.push(backend);
+    encoded.push(DOMAIN_U64_SET);
     encoded.push(0);
+    encoded.extend_from_slice(&[0, 0, 0]);
     encoded.extend_from_slice(&payload_len.to_le_bytes());
     encoded.extend_from_slice(payload);
 
@@ -106,12 +113,20 @@ pub(crate) fn decode_envelope(bytes: &[u8], expected_backend: u8) -> Result<&[u8
         });
     }
 
-    let flags = bytes[11];
+    let domain = bytes[11];
+    if domain != DOMAIN_U64_SET {
+        return Err(SnapshotError::UnsupportedDomain(domain));
+    }
+
+    let flags = bytes[12];
     if flags != 0 {
         return Err(SnapshotError::UnsupportedFlags(flags));
     }
+    if bytes[13..16] != [0, 0, 0] {
+        return Err(SnapshotError::InvalidPayload);
+    }
 
-    let declared = u64::from_le_bytes(bytes[12..20].try_into().expect("fixed-size envelope field"));
+    let declared = u64::from_le_bytes(bytes[16..24].try_into().expect("fixed-size envelope field"));
     let payload_len = usize::try_from(declared).map_err(|_| SnapshotError::LengthOverflow)?;
     let expected_total = HEADER_LEN
         .checked_add(payload_len)
