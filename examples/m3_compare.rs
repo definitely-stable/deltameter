@@ -17,7 +17,7 @@ fn main() {
     let energy_config =
         EnergyConfig::for_profile_assuming_uniform_words(energy_profile, &energy_words).unwrap();
 
-    let parity_config = ParityConfig::for_profile(ParityProfile::Standard, 0xA11C_E55).unwrap();
+    let parity_config = ParityConfig::for_profile(ParityProfile::Standard, 0x0A11_CE55).unwrap();
 
     println!("DeltaMeter M3 comparison harness");
     println!("keys={keys}");
