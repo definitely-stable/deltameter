@@ -583,7 +583,10 @@ mod tests {
     fn zero_is_out_of_band_and_exact() {
         let sketch = PinSketch64Lab::from_sorted_unique(2, &[0, u64::MAX]).unwrap();
         assert!(sketch.zero_present());
-        assert_eq!(sketch.decode_candidate_with_limit(2).unwrap(), vec![0, u64::MAX]);
+        assert_eq!(
+            sketch.decode_candidate_with_limit(2).unwrap(),
+            vec![0, u64::MAX]
+        );
     }
 
     #[test]
