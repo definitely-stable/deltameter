@@ -1,6 +1,6 @@
 # M6-C — Bit-equivalent Energy sign hashing plan
 
-Status: implementation in progress. Issue: #18. Parent: #14.
+Status: complete in PR #22; ACCEPT. Issue: #18. Parent: #14.
 
 ## Goal
 
@@ -110,3 +110,14 @@ No absolute CI latency threshold.
 - no batch API;
 - no new dependency;
 - no change to Coverage::Proven assumptions.
+
+
+## Completion record
+
+M6-C completed on 2026-10-06. Canonical evidence: [M6-C evidence](../../M6-C-EVIDENCE.md).
+
+Final measured implementation head: `9952eea2760ca07cf2075cfde457a39b477930dc`.
+
+Final hosted paired run: `m6c-performance #6 / 37516957320`.
+
+Verdict: **ACCEPT**. Energy update latency improves by about 68–71%; optimized cache construction amortizes after roughly 1–1.4 updates; snapshot-v1 bytes and public/theorem contracts are unchanged.
