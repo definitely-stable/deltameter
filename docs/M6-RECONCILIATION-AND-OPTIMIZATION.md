@@ -116,8 +116,26 @@ M6-C measured result: **ACCEPT**. Final paired hosted evidence reports about 68â
 | M6-A | [#16](https://github.com/definitely-stable/deltameter/issues/16) | Two-process estimator-assisted decision experiment; GO/NO-GO before public workflow expansion |
 | M6-B | [#17](https://github.com/definitely-stable/deltameter/issues/17) | CRC/decoder improvements evaluated individually |
 | M6-C | [#18](https://github.com/definitely-stable/deltameter/issues/18) | Bit-equivalent sign optimization with setup and steady-state evidence |
-| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | Pinned exact-lane audit and measured comparison; conditional adoption only |
+| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | Phase-1 audit selects pure-Rust PinSketch64 for private lab evaluation; production adoption remains gated |
 
 M6-B/C require M6-0 measurement and may proceed before M6-A completion if their independent evidence justifies it. After M6-0, M6-A and the read-only/source-audit portion of M6-D should proceed in parallel. M6-D production adoption still depends on M6-A product evidence, so research can inform the experiment without prematurely committing to an exact backend. One coherent PR per slice. No automatic merge/release is implied.
 
 The executable first-slice plan is [M6 foundation](superpowers/plans/2026-10-06-m6-foundation.md).
+
+
+## M6-D Phase-1 exact-lane decision
+
+The primary-source and failure-semantics audit is now recorded in [M6-D exact-lane audit](M6-D-EXACT-LANE-AUDIT.md).
+
+Verdict:
+
+- direct C/C++ Minisketch FFI: NO-GO under the current safe-Rust/no-FFI crate boundary;
+- public ExactSmallDelta API: NO-GO in Phase 1;
+- pure-Rust PinSketch64 reference: LAB-GO only;
+- Simple Set Sketching / classical IBLT: retained comparators, not selected;
+- Rateless IBLT: strongest unknown-d reconciliation comparator, but a different product direction;
+- Self-Sizing IBLT, CertainSync and XYZ-Sketch: current frontier inputs requiring independent reproduction before adoption.
+
+The lab mapping is exact over the complete u64 domain: nonzero keys map identically into GF(2^64), while key zero is carried by one separate XOR-composable presence bit.
+
+Successful decode is not final verification. The lab uses an exact oracle; any production verifier must be independent from the same syndrome equations.
