@@ -26,9 +26,9 @@ const RESPONSE_TIMEOUT: Duration = Duration::from_secs(5);
 const STALL_TIMEOUT: Duration = Duration::from_millis(150);
 const DEFAULT_PEER_SIZE: usize = 8192;
 const ADMISSION_THRESHOLD: u64 = 256;
-const DATASET_ID: u64 = 0xD3_17_A6_2026_0001;
+const DATASET_ID: u64 = 0xD317_A620_2600_0001;
 const PEER_GENERATION: u64 = 7;
-const CONFIG_ID: u64 = 0xE6_A0_0001_2026_1006;
+const CONFIG_ID: u64 = 0xE6A0_0001_2026_1006;
 const SESSION_BASE: u64 = 0x5E55_10A0_0000_0000;
 
 const KIND_SNAPSHOT: u8 = 1;
@@ -104,6 +104,16 @@ struct Workload {
     name: &'static str,
     remove: usize,
     add: usize,
+}
+
+struct ScenarioData<'a> {
+    name: &'a str,
+    source_generation: u64,
+    source: &'a [u64],
+    snapshot: &'a [u8],
+    peer_n: usize,
+    exact_d: u64,
+    source_build_ns: u64,
 }
 
 #[derive(Debug)]
@@ -397,11 +407,7 @@ fn peer_main(path: &Path, session_id: u64, mode: PeerMode) -> io::Result<()> {
     let mut last_request_id = 0_u64;
     let mut max_source_generation = 0_u64;
 
-    loop {
-        let Some((payload, _)) = read_frame(&mut reader)? else {
-            break;
-        };
-
+    while let Some((payload, _)) = read_frame(&mut reader)? {
         let (header, body) = match decode_message(&payload) {
             Ok(value) => value,
             Err(_) => break,
@@ -611,35 +617,18 @@ fn harness_main() -> AppResult<()> {
             .map_err(|error| other_error(format!("snapshot encode failed: {error}")))?;
         let source_build_ns = nanos_u64(build_started.elapsed())?;
 
-        run_direct_arm(
-            &mut direct,
-            workload.name,
+        let scenario = ScenarioData {
+            name: workload.name,
             source_generation,
-            &source,
-            peer_keys.len(),
+            source: &source,
+            snapshot: &snapshot,
+            peer_n: peer_keys.len(),
             exact_d,
             source_build_ns,
-        )?;
-        run_control_arm(
-            &mut control,
-            workload.name,
-            source_generation,
-            &source,
-            &snapshot,
-            peer_keys.len(),
-            exact_d,
-            source_build_ns,
-        )?;
-        run_admission_arm(
-            &mut admission,
-            workload.name,
-            source_generation,
-            &source,
-            &snapshot,
-            peer_keys.len(),
-            exact_d,
-            source_build_ns,
-        )?;
+        };
+        run_direct_arm(&mut direct, &scenario)?;
+        run_control_arm(&mut control, &scenario)?;
+        run_admission_arm(&mut admission, &scenario)?;
     }
 
     direct.close()?;
@@ -648,19 +637,15 @@ fn harness_main() -> AppResult<()> {
     Ok(())
 }
 
-fn run_direct_arm(
-    peer: &mut PeerProcess,
-    scenario: &str,
-    source_generation: u64,
-    source: &[u64],
-    peer_n: usize,
-    exact_d: u64,
-    source_build_ns: u64,
-) -> io::Result<()> {
+fn run_direct_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::Result<()> {
     let before = peer.counters();
-    let body = encode_exact_set(source)?;
+    let body = encode_exact_set(scenario.source)?;
     let started = Instant::now();
-    let (header, response) = peer.request(KIND_EXACT_SET, source_generation, &body)?;
+    let (header, response) = peer.request(
+        KIND_EXACT_SET,
+        scenario.source_generation,
+        &body,
+    )?;
     let elapsed = nanos_u64(started.elapsed())?;
     if header.kind != KIND_EXACT_RESULT {
         return Err(invalid_data(
@@ -668,21 +653,21 @@ fn run_direct_arm(
         ));
     }
     let returned = decode_exact_result(&response)?;
-    if returned != exact_d {
+    if returned != scenario.exact_d {
         return Err(invalid_data("direct exact result disagrees with oracle"));
     }
     print_result(
         "direct-exact",
-        scenario,
-        source.len(),
-        peer_n,
-        exact_d,
+        scenario.name,
+        scenario.source.len(),
+        scenario.peer_n,
+        scenario.exact_d,
         "",
         "",
         "exact",
         delta_counters(before, peer.counters())?,
         elapsed,
-        source_build_ns,
+        scenario.source_build_ns,
         0,
         false,
         false,
@@ -690,65 +675,67 @@ fn run_direct_arm(
     Ok(())
 }
 
-fn run_control_arm(
-    peer: &mut PeerProcess,
-    scenario: &str,
-    source_generation: u64,
-    source: &[u64],
-    snapshot: &[u8],
-    peer_n: usize,
-    exact_d: u64,
-    source_build_ns: u64,
-) -> io::Result<()> {
+fn run_control_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::Result<()> {
     let before = peer.counters();
     let started = Instant::now();
-    let estimate = request_estimate(peer, source_generation, snapshot)?;
-    let exact_body = encode_exact_set(source)?;
-    let (header, response) = peer.request(KIND_EXACT_SET, source_generation, &exact_body)?;
+    let estimate = request_estimate(
+        peer,
+        scenario.source_generation,
+        scenario.snapshot,
+    )?;
+    let exact_body = encode_exact_set(scenario.source)?;
+    let (header, response) = peer.request(
+        KIND_EXACT_SET,
+        scenario.source_generation,
+        &exact_body,
+    )?;
     let elapsed = nanos_u64(started.elapsed())?;
-    if header.kind != KIND_EXACT_RESULT || decode_exact_result(&response)? != exact_d {
+    if header.kind != KIND_EXACT_RESULT
+        || decode_exact_result(&response)? != scenario.exact_d
+    {
         return Err(invalid_data(
             "snapshot control exact result disagrees with oracle",
         ));
     }
     print_result(
         "snapshot-control",
-        scenario,
-        source.len(),
-        peer_n,
-        exact_d,
+        scenario.name,
+        scenario.source.len(),
+        scenario.peer_n,
+        scenario.exact_d,
         &estimate.point.to_string(),
         if estimate.admit { "admit" } else { "reject" },
         "exact",
         delta_counters(before, peer.counters())?,
         elapsed,
-        source_build_ns,
+        scenario.source_build_ns,
         0,
-        estimate.admit && exact_d > ADMISSION_THRESHOLD,
-        !estimate.admit && exact_d <= ADMISSION_THRESHOLD,
+        estimate.admit && scenario.exact_d > ADMISSION_THRESHOLD,
+        !estimate.admit && scenario.exact_d <= ADMISSION_THRESHOLD,
     );
     Ok(())
 }
 
-fn run_admission_arm(
-    peer: &mut PeerProcess,
-    scenario: &str,
-    source_generation: u64,
-    source: &[u64],
-    snapshot: &[u8],
-    peer_n: usize,
-    exact_d: u64,
-    source_build_ns: u64,
-) -> io::Result<()> {
+fn run_admission_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::Result<()> {
     let before = peer.counters();
     let started = Instant::now();
-    let estimate = request_estimate(peer, source_generation, snapshot)?;
-    let exact_bytes = exact_exchange_bytes(source.len())?;
+    let estimate = request_estimate(
+        peer,
+        scenario.source_generation,
+        scenario.snapshot,
+    )?;
+    let exact_bytes = exact_exchange_bytes(scenario.source.len())?;
 
     let outcome = if estimate.admit {
-        let exact_body = encode_exact_set(source)?;
-        let (header, response) = peer.request(KIND_EXACT_SET, source_generation, &exact_body)?;
-        if header.kind != KIND_EXACT_RESULT || decode_exact_result(&response)? != exact_d {
+        let exact_body = encode_exact_set(scenario.source)?;
+        let (header, response) = peer.request(
+            KIND_EXACT_SET,
+            scenario.source_generation,
+            &exact_body,
+        )?;
+        if header.kind != KIND_EXACT_RESULT
+            || decode_exact_result(&response)? != scenario.exact_d
+        {
             return Err(invalid_data("admitted exact result disagrees with oracle"));
         }
         "exact"
@@ -759,19 +746,19 @@ fn run_admission_arm(
 
     print_result(
         "snapshot-admission",
-        scenario,
-        source.len(),
-        peer_n,
-        exact_d,
+        scenario.name,
+        scenario.source.len(),
+        scenario.peer_n,
+        scenario.exact_d,
         &estimate.point.to_string(),
         if estimate.admit { "admit" } else { "reject" },
         outcome,
         delta_counters(before, peer.counters())?,
         elapsed,
-        source_build_ns,
+        scenario.source_build_ns,
         if estimate.admit { 0 } else { exact_bytes },
-        estimate.admit && exact_d > ADMISSION_THRESHOLD,
-        !estimate.admit && exact_d <= ADMISSION_THRESHOLD,
+        estimate.admit && scenario.exact_d > ADMISSION_THRESHOLD,
+        !estimate.admit && scenario.exact_d <= ADMISSION_THRESHOLD,
     );
     Ok(())
 }
@@ -1098,10 +1085,10 @@ fn read_fixture(path: &Path) -> io::Result<Fixture> {
         return Err(invalid_data("fixture has trailing bytes"));
     }
     let mut keys = Vec::with_capacity(count);
-    for chunk in raw.chunks_exact(8) {
-        keys.push(u64::from_le_bytes(
-            chunk.try_into().expect("chunks_exact returned eight bytes"),
-        ));
+    let (chunks, remainder) = raw.as_chunks::<8>();
+    debug_assert!(remainder.is_empty());
+    for chunk in chunks {
+        keys.push(u64::from_le_bytes(*chunk));
     }
     validate_canonical_set(&keys)?;
     Ok(Fixture {
