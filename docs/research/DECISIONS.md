@@ -1,7 +1,7 @@
 # Decision record 0001 — pre-implementation baseline
 
-Status: **accepted and updated through M6-A evidence**  
-Updated: 2026-10-06 after the M6-A estimator-assisted workflow decision.
+Status: **accepted and updated through M6-C evidence**  
+Updated: 2026-10-06 after accepting the bit-equivalent Energy sign-mask optimization.
 
 ## Context
 
@@ -377,3 +377,38 @@ Therefore:
 - keep any future admission policy workload-specific and explicit about provenance/error budgets.
 
 Canonical evidence: docs/M6-A-EVIDENCE.md.
+
+
+### D25 — Accept bit-equivalent Energy sign-mask caching
+
+M6-C replaces the cubic sign hash's per-row field multiplications with an exact GF(2)-linear functional cache.
+
+For fixed c:
+
+~~~text
+mask(c)[i] = L(c * x^i)
+L(c*y) = parity(mask(c) & y)
+~~~
+
+where L extracts bit zero in the existing polynomial basis.
+
+The cubic sign remains exactly:
+
+~~~text
+L(c0)
+xor parity(mask(c1) & x)
+xor parity(mask(c2) & x^2)
+xor parity(mask(c3) & x^3)
+~~~
+
+x^2 and x^3 are computed once per key. Bucket hashing is unchanged.
+
+The accepted mask builder walks c*x^i with the existing multiply-by-x reduction recurrence rather than performing 64 full gf64_mul calls per mask.
+
+Paired hosted evidence on the final measured implementation shows roughly 68–71% lower Energy update latency. Construction/decode overhead amortizes after about 1–1.4 updates. Difference/query controls show no material regression.
+
+The cache is private derived meter state (24R bytes), is never serialized, and is cloned/reused by difference.
+
+No coefficient, field polynomial, profile, randomness/provenance, public API, snapshot-v1 byte or Coverage contract changes.
+
+Canonical evidence: docs/M6-C-EVIDENCE.md.
