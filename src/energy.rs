@@ -8,6 +8,8 @@ use crate::snapshot::{
 
 const ENERGY_PROFILE_CUSTOM: u8 = 0;
 const ENERGY_PROFILE_PROVEN: u8 = 1;
+const ENERGY_SNAPSHOT_METADATA_LEN: usize = 16;
+const ENERGY_SNAPSHOT_ROW_LEN: usize = 6 * core::mem::size_of::<u64>();
 
 /// Reduction constant for the irreducible polynomial
 /// x^64 + x^4 + x^3 + x + 1 over GF(2).
@@ -398,8 +400,8 @@ impl EnergyDeltaMeter {
         let payload_len = self
             .config
             .tables()
-            .checked_mul(48)
-            .and_then(|bytes| bytes.checked_add(16))
+            .checked_mul(ENERGY_SNAPSHOT_ROW_LEN)
+            .and_then(|bytes| bytes.checked_add(ENERGY_SNAPSHOT_METADATA_LEN))
             .and_then(|bytes| bytes.checked_add(counter_bytes))
             .ok_or(SnapshotError::LengthOverflow)?;
 
