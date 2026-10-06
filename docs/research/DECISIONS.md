@@ -303,7 +303,7 @@ Reason:
 
 M5 uses a dependency-free canonical v1 envelope with:
 
-- explicit version and backend tags;
+- explicit version, backend and u64-set domain tags;
 - little-endian fixed-width integers;
 - exact payload lengths;
 - CRC32C accidental-corruption detection;
