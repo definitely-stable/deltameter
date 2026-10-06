@@ -4,7 +4,7 @@ The roadmap is intentionally linear. One developer should be able to understand 
 
 ## M0 — Research bootstrap
 
-Status: current PR.
+Status: complete; merged in PR #1.
 
 Deliverables:
 
@@ -26,14 +26,17 @@ Acceptance:
 
 ## M1 — Energy reference implementation
 
+Status: active in PR #3 / issue #2.
+
 Build one Rust crate, not a workspace.
 
 Deliverables:
 
 - `EnergyDeltaMeter`;
 - explicit pairwise bucket + 4-wise sign randomness;
+- theorem-profile construction from 6R caller-supplied independent uniform u64 words, with no RNG dependency;
 - incremental energy maintenance;
-- compatible merge/subtract;
+- compatible source-sketch difference/subtract;
 - theorem-derived profiles;
 - deterministic and property tests.
 

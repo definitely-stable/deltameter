@@ -1,0 +1,49 @@
+name: rust
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "src/**"
+      - "tests/**"
+      - "research/energy_profiles.py"
+      - "research/energy_profiles.csv"
+      - ".github/workflows/ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "src/**"
+      - "tests/**"
+      - "research/energy_profiles.py"
+      - "research/energy_profiles.csv"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+
+      - name: Verify theorem-derived Energy profiles
+        run: python3 research/energy_profiles.py --check-csv research/energy_profiles.csv
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --all-targets

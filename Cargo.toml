@@ -1,0 +1,12 @@
+[package]
+name = "deltameter"
+version = "0.0.0"
+edition = "2024"
+description = "Composable sketches for estimating set symmetric-difference size"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[lints.rust]
+unsafe_code = "forbid"

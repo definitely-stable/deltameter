@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Derive conservative EnergyDeltaMeter profiles.
+"""Derive and verify conservative EnergyDeltaMeter profiles.
 
 Model:
     E[T]   = d
@@ -14,13 +14,28 @@ exact binomial upper tail.
 
 from __future__ import annotations
 
+import argparse
+import csv
+import io
 import json
 import math
 from dataclasses import asdict, dataclass
+from pathlib import Path
 
 EPSILONS = (0.05, 0.10, 0.20)
 DELTAS = (1e-3, 1e-6, 1e-9)
 TARGET_SINGLE_TABLE_FAILURE = 0.10
+
+CSV_HEADER = (
+    "epsilon",
+    "delta",
+    "buckets",
+    "tables",
+    "single_table_failure_bound",
+    "median_failure_bound",
+    "counters",
+    "state_bytes_i64",
+)
 
 
 @dataclass(frozen=True)
@@ -100,8 +115,52 @@ def build_payload() -> dict:
     }
 
 
+def build_csv() -> str:
+    output = io.StringIO()
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow(CSV_HEADER)
+
+    for profile in derive_profiles():
+        writer.writerow(
+            (
+                format(profile.epsilon, ".17g"),
+                format(profile.delta, ".17g"),
+                profile.buckets,
+                profile.tables,
+                format(profile.single_table_failure_bound, ".17g"),
+                format(profile.median_failure_bound, ".17g"),
+                profile.counters,
+                profile.state_bytes_i64,
+            )
+        )
+
+    return output.getvalue()
+
+
+def check_csv(path: Path) -> None:
+    expected = build_csv()
+    actual = path.read_text(encoding="utf-8")
+    if actual != expected:
+        raise SystemExit(
+            f"{path} is stale; regenerate with "
+            f"'python research/energy_profiles.py --write-csv {path}'"
+        )
+
+
 def main() -> None:
-    print(json.dumps(build_payload(), indent=2, sort_keys=True))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--write-csv", type=Path)
+    parser.add_argument("--check-csv", type=Path)
+    args = parser.parse_args()
+
+    if args.write_csv is not None:
+        args.write_csv.write_text(build_csv(), encoding="utf-8")
+
+    if args.check_csv is not None:
+        check_csv(args.check_csv)
+
+    if args.write_csv is None and args.check_csv is None:
+        print(json.dumps(build_payload(), indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":
