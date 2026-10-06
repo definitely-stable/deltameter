@@ -233,13 +233,7 @@ impl EnergyRowHash {
     }
 
     #[inline]
-    fn sign_from_masks(
-        self,
-        key: u64,
-        key_squared: u64,
-        key_cubed: u64,
-        masks: [u64; 3],
-    ) -> i64 {
+    fn sign_from_masks(self, key: u64, key_squared: u64, key_cubed: u64, masks: [u64; 3]) -> i64 {
         let [c0, _, _, _] = self.sign_coefficients;
         let bit = (c0 & 1)
             ^ u64::from((masks[0] & key).count_ones() & 1)
@@ -601,8 +595,7 @@ impl EnergyDeltaMeter {
             return Err(EnergyError::IncompatibleConfig);
         }
 
-        let mut result =
-            Self::new_with_sign_masks(self.config.clone(), self.sign_masks.clone())?;
+        let mut result = Self::new_with_sign_masks(self.config.clone(), self.sign_masks.clone())?;
 
         for ((dst, left), right) in result
             .counters
@@ -670,13 +663,8 @@ impl EnergyDeltaMeter {
             let row = self.config.rows[row_index];
             let bucket = row.bucket_index(key, buckets);
             let index = row_index * buckets + bucket;
-            let signed_delta = delta
-                * row.sign_from_masks(
-                    key,
-                    key_squared,
-                    key_cubed,
-                    self.sign_masks[row_index],
-                );
+            let signed_delta =
+                delta * row.sign_from_masks(key, key_squared, key_cubed, self.sign_masks[row_index]);
             let old_counter = self.counters[index];
             let new_counter = old_counter
                 .checked_add(signed_delta)
@@ -996,13 +984,7 @@ mod tests {
                     .copied()
                     .zip(sketch.sign_masks.iter().copied())
                 {
-                    for key in [
-                        0,
-                        1,
-                        1_u64 << 63,
-                        u64::MAX,
-                        0xA5A5_5A5A_DEAD_BEEF,
-                    ] {
+                    for key in [0, 1, 1_u64 << 63, u64::MAX, 0xA5A5_5A5A_DEAD_BEEF] {
                         let key_squared = gf64_mul(key, key);
                         let key_cubed = gf64_mul(key_squared, key);
                         assert_eq!(
