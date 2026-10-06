@@ -168,7 +168,7 @@ The exact format and compatibility rules are in docs/M5-INTERCHANGE-V1.md.
 
 ## M6 — Evidence-gated workflow and compatible optimization
 
-Status: planned; M6-0 implementation in progress. Parent issue: #14.
+Status: M6-0 implementation and evidence complete in PR #20; pending merge. Parent issue: #14.
 
 [Critical audit and design](M6-RECONCILIATION-AND-OPTIMIZATION.md) records the research constraints, corrections to the initial proposal and acceptance gates.
 
@@ -180,7 +180,7 @@ Status: planned; M6-0 implementation in progress. Parent issue: #14.
 
 Snapshot plus an unchanged full-list exchange is an overhead control, not a demonstrated benefit. M6 may conclude that a proposed workflow is not worthwhile. No public networking API or strict Parity work is implied.
 
-[First-slice implementation plan](superpowers/plans/2026-10-06-m6-foundation.md).
+[First-slice implementation plan](superpowers/plans/2026-10-06-m6-foundation.md). M6-0 measured verdict: [evidence](M6-0-EVIDENCE.md).
 
 ## Post-v0 candidates
 
