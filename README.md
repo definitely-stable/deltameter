@@ -2,38 +2,40 @@
 
 DeltaMeter is a research-first Rust project for estimating the size of the symmetric difference between two sets.
 
-For sets (A,B\subseteq[V]), the set-only model is:
+For sets (A,Bsubseteq[V]):
 
 ```text
 z = A XOR B
 d = |A △ B| = ||z||_0
 ```
 
-That is the primary model for this repository. The equivalent integer (F_2) view is useful as a reference, but it is intentionally not treated as the only or automatically optimal formulation.
+The equivalent integer (F_2) representation remains useful, but the primary set-only model is GF(2) Hamming weight.
 
 ## Status
 
-Pre-implementation. The repository currently contains the research harness and initial design notes. No production Rust API is frozen yet.
+Pre-implementation. Research bootstrap is in PR #1.
 
-The current implementation direction is deliberately small:
+Current implementation direction:
 
-- **EnergyDeltaMeter** — proof-friendly reference/strict backend.
-- **ParityDeltaMeter** — fast GF(2) research backend; finite-sample strict coverage is not claimed yet.
-- Gaussian/chi-square constructions remain test or research oracles only.
+- **EnergyDeltaMeter** — first implementation and strict finite-sample backend.
+- **ParityDeltaMeter** — second implementation, experimental/asymptotic.
+- Gaussian/chi-square — research oracle only.
+- ExactSmallDelta — deferred.
 
-We are explicitly **not** starting with a large framework, multiple crates, adaptive-adversary machinery, secret-key infrastructure, FFI, or hand-written SIMD. Those are only added if measurements or a concrete product requirement justify them.
+Q1 is resolved for v0: there is currently **no accepted strict finite-sample Parity profile**. The published F-PCSA construction will be reproduced first; a `g(v)=1` set-specialized variant is treated as a separate unproved estimator.
 
 ## Documentation
 
 - [docs/research/README.md](docs/research/README.md) — research index and authority order.
+- [docs/research/Q1-FINITE-SAMPLE-PARITY.md](docs/research/Q1-FINITE-SAMPLE-PARITY.md) — current Q1 result.
 - [docs/research/FOUNDATION.md](docs/research/FOUNDATION.md) — canonical mathematical/engineering synthesis.
-- [docs/research/DECISIONS.md](docs/research/DECISIONS.md) — current pre-implementation decisions.
-- [docs/research/OPEN-QUESTIONS.md](docs/research/OPEN-QUESTIONS.md) — five implementation-blocking deep-research questions.
-- [docs/research/SOURCE-AUDIT.md](docs/research/SOURCE-AUDIT.md) — audit of the earlier F2-centric report.
-- [docs/DESIGN.md](docs/DESIGN.md) — minimal v0 design constraints.
-- [docs/ROADMAP.md](docs/ROADMAP.md) — implementation order for one developer.
+- [docs/research/DECISIONS.md](docs/research/DECISIONS.md) — current decisions.
+- [docs/research/NEW-INPUTS-AUDIT.md](docs/research/NEW-INPUTS-AUDIT.md) — reconciliation of the latest reports.
+- [docs/research/OPEN-QUESTIONS.md](docs/research/OPEN-QUESTIONS.md) — remaining research.
+- [docs/research/archive/2026-10-06/README.md](docs/research/archive/2026-10-06/README.md) — latest Deep Research + attached-report register.
+- [docs/DESIGN.md](docs/DESIGN.md) — minimal v0 design.
+- [docs/ROADMAP.md](docs/ROADMAP.md) — implementation sequence.
 - [research/](research/) — dependency-free executable research scripts.
-- [research workflow](.github/workflows/research.yml) — reproducible GitHub-hosted research run.
 
 ## Run the research harness
 
@@ -43,17 +45,17 @@ Requires Python 3. No third-party packages are needed.
 python research/run_all.py --out research-out
 ```
 
-The run writes machine-readable JSON for the conservative Energy profiles and finite-(d) F-PCSA level-moment checks.
-
 ## Project principles
 
-1. Keep set semantics explicit: parity/toggle is not generic insert/remove semantics.
-2. Do not label asymptotic or calibrated intervals as proven finite-sample coverage.
+1. Set/toggle semantics stay explicit.
+2. `Proven`, `Asymptotic` and `Empirical` are different contracts.
 3. Prefer a small correct baseline over speculative infrastructure.
-4. Stable Rust first; scalar code first; optimize after profiling.
-5. Public GitHub-hosted CI is part of the normal development path, not a scarce resource.
-6. Persisted formats and compatibility rules are frozen only after the state layout earns them.
-7. Historical research is preserved, but current decisions have an explicit authority order.
+4. One crate, stable Rust, scalar first.
+5. Public GitHub-hosted CI is used normally; no self-hosted runner requirement.
+6. No default crypto/key-management subsystem.
+7. No FFI/exact-recovery subsystem until a concrete need is demonstrated.
+8. Persisted formats are frozen only after estimator state/API stabilization.
+9. Historical research is preserved, but current decisions have an explicit authority order.
 
 ## License / release
 
