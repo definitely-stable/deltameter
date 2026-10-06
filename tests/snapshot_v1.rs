@@ -80,7 +80,7 @@ fn parity_round_trip_preserves_config_state_and_merge_behavior() {
     }
 
     let encoded = meter.encode_snapshot().unwrap();
-    let decoded = ParityDeltaMeter::decode_snapshot(&encoded).unwrap();
+    let mut decoded = ParityDeltaMeter::decode_snapshot(&encoded).unwrap();
 
     assert_eq!(decoded.config(), meter.config());
     assert_eq!(decoded.encode_snapshot().unwrap(), encoded);
@@ -90,6 +90,16 @@ fn parity_round_trip_preserves_config_state_and_merge_behavior() {
         cancelled.estimate(),
         Err(ParityError::EstimateUnavailable { empty_rows: 17 })
     ));
+
+    // A paired single update checks continued oracle/config interpretation;
+    // double toggles alone would pass even if both updates were no-ops.
+    for key in [0, 1 << 63, u64::MAX] {
+        assert_eq!(meter.toggle(key), decoded.toggle(key));
+        assert_eq!(
+            decoded.encode_snapshot().unwrap(),
+            meter.encode_snapshot().unwrap()
+        );
+    }
 }
 
 #[test]

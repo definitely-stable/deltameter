@@ -33,11 +33,14 @@ jobs:
           lscpu > "${RUNNER_TEMP}/snapshot-perf/cpu.txt"
           printf 'base=%s\nhead=%s\n' "${BASE_SHA}" "${HEAD_SHA}" > "${RUNNER_TEMP}/snapshot-perf/refs.txt"
           cp examples/snapshot_bench.rs "${RUNNER_TEMP}/snapshot_bench.rs"
+          cp tests/snapshot_v1.rs "${RUNNER_TEMP}/snapshot_v1.rs"
           sha256sum "${RUNNER_TEMP}/snapshot_bench.rs" > "${RUNNER_TEMP}/snapshot-perf/harness-sha256.txt"
           for variant in base head; do
             if [ "${variant}" = base ]; then source_sha="${BASE_SHA}"; else source_sha="${HEAD_SHA}"; fi
             git worktree add --detach "${RUNNER_TEMP}/snapshot-${variant}" "${source_sha}"
             cp "${RUNNER_TEMP}/snapshot_bench.rs" "${RUNNER_TEMP}/snapshot-${variant}/examples/snapshot_bench.rs"
+            cp "${RUNNER_TEMP}/snapshot_v1.rs" "${RUNNER_TEMP}/snapshot-${variant}/tests/snapshot_v1.rs"
+            (cd "${RUNNER_TEMP}/snapshot-${variant}" && cargo +stable test --test snapshot_v1) 2>&1 | tee "${RUNNER_TEMP}/snapshot-perf/${variant}-compatibility.txt"
             (cd "${RUNNER_TEMP}/snapshot-${variant}" && cargo +stable build --release --example snapshot_bench)
             cp "${RUNNER_TEMP}/snapshot-${variant}/target/release/examples/snapshot_bench" "${RUNNER_TEMP}/snapshot-${variant}-bench"
           done

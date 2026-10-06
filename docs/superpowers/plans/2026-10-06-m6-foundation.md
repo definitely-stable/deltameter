@@ -48,7 +48,7 @@ Interface: cargo run --release --example snapshot_bench -- [samples] [repeats]; 
 Files: src/snapshot.rs, src/energy.rs, src/parity.rs.
 Private interface: encode_envelope(backend: u8, payload_len: usize, write_payload: impl FnOnce(&mut Vec<u8>)) -> Result<Vec<u8>, SnapshotError>.
 
-- [ ] Add tests for exact/incorrect closure payload length and usize::MAX envelope overflow, observing the missing-interface failure in hosted CI before implementation.
+- [ ] Add tests for exact/incorrect closure payload length and usize::MAX envelope overflow, observing the missing-interface failure in hosted CI before implementation (compile-stage RED, not a behavioral assertion failure).
 - [ ] Check total length and u64 conversion, reserve one output buffer, write header/payload, validate actual payload length and append unchanged CRC32C.
 - [ ] Calculate Energy payload as 16+48R+8BR and Parity as 16+8*word_count with checked operations; write unchanged fields directly into the envelope.
 - [ ] Run whole Rust suite, rustdoc, lint, examples and paired snapshot workflow. Preserve byte fixtures and decode behavior.
