@@ -11,7 +11,6 @@ pub use energy::{
     FailureTarget, RelativeError,
 };
 
-
 pub use parity::{
     ParityConfig, ParityDeltaMeter, ParityError, ParityEstimate, ParityProfile, ParityUpdate,
 };
