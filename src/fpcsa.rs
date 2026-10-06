@@ -171,11 +171,6 @@ impl PublishedFpcsaF2Config {
     }
 
     #[cfg(test)]
-    pub const fn oracle(&self) -> PublishedFpcsaOracle {
-        self.oracle
-    }
-
-    #[cfg(test)]
     fn sample_key(&self, key: u64) -> FpcsaSample {
         self.oracle.sample(key, self.rows)
     }
@@ -213,11 +208,6 @@ impl PublishedFpcsaF2 {
             words: vec![0; config.packed_state_words()].into_boxed_slice(),
             config,
         }
-    }
-
-    #[cfg(test)]
-    pub fn config(&self) -> &PublishedFpcsaF2Config {
-        &self.config
     }
 
     #[cfg(test)]
