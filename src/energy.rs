@@ -455,6 +455,9 @@ impl EnergyDeltaMeter {
         if cursor.read_u8()? != 0 {
             return Err(SnapshotError::InvalidPayload);
         }
+        if profile_kind == ENERGY_PROFILE_PROVEN && !allow_proven_profile {
+            return Err(SnapshotError::ProvenanceRequired);
+        }
 
         let row_bytes = table_count
             .checked_mul(6)
@@ -485,9 +488,6 @@ impl EnergyDeltaMeter {
                 EnergyConfig::new(buckets, rows).map_err(|_| SnapshotError::InvalidPayload)?
             }
             ENERGY_PROFILE_PROVEN => {
-                if !allow_proven_profile {
-                    return Err(SnapshotError::ProvenanceRequired);
-                }
                 let profile = EnergyProfile::new(
                     relative_error_from_snapshot_tag(relative_tag)?,
                     failure_target_from_snapshot_tag(failure_tag)?,
