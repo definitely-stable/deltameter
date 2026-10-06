@@ -81,6 +81,25 @@ One active key flips that cell with probability q_c/2.
 
 The implementation uses one-based levels. Research formulas must not silently switch to zero-based indexing.
 
+### Randomness/proof boundary
+
+All probability theorems in this document are statements about the published idealized randomness model: active keys receive the required independent row/level/category draws and uniform GF(2) coefficients.
+
+The Rust M2/M3 implementation deliberately uses a deterministic pseudo-oracle for reproducibility. That implementation reproduces the state machine, but a fixed 64-bit pseudo-oracle seed is not itself a proof-grade instantiation of an ideal random oracle.
+
+Therefore:
+
+~~~text
+mathematical law under ideal h/g randomness
+    theorem about the model
+
+deterministic PublishedFpcsaOracle / ParityConfig seed
+    engineering reproduction
+    not automatically covered by that theorem
+~~~
+
+This distinction is another reason no new `Coverage::Proven` path is introduced by the post-M3 research.
+
 ## Accepted finite-state results
 
 ### 1. Full-state Fourier law
