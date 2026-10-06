@@ -2,8 +2,8 @@ use std::hint::black_box;
 use std::time::{Duration, Instant};
 
 use deltameter::{
-    EnergyConfig, EnergyDeltaMeter, EnergyProfile, FailureTarget, ParityConfig, ParityDeltaMeter,
-    ParityProfile, RelativeError,
+    EnergyConfig, EnergyDeltaMeter, EnergyProfile, EnergyRowHash, FailureTarget, ParityConfig,
+    ParityDeltaMeter, ParityProfile, RelativeError,
 };
 
 fn main() {
@@ -13,16 +13,14 @@ fn main() {
         .unwrap_or(10_000);
 
     let energy_profile = EnergyProfile::new(RelativeError::TenPercent, FailureTarget::OneInMillion);
-    let energy_words = pseudo_uniform_words(energy_profile.uniform_words_required(), 0xE11E);
-    let energy_config =
-        EnergyConfig::for_profile_assuming_uniform_words(energy_profile, &energy_words).unwrap();
+    let energy_config = energy_benchmark_config(energy_profile, 0xE11E);
 
     let parity_config = ParityConfig::for_profile(ParityProfile::Standard, 0x0A11_CE55).unwrap();
 
     println!("DeltaMeter M3 comparison harness");
     println!("keys={keys}");
     println!(
-        "Energy state={} bytes; guarantee=Proven(epsilon=10%, delta=1e-6)",
+        "Energy state={} bytes; theorem profile=Proven(epsilon=10%, delta=1e-6)",
         energy_profile.counter_state_bytes()
     );
     println!(
@@ -31,6 +29,7 @@ fn main() {
         parity_config.asymptotic_relative_standard_error() * 100.0
     );
     println!("WARNING: these guarantees are not equivalent.");
+    println!("Benchmark Energy coefficients are deterministic timing inputs, not theorem randomness.");
 
     let energy_update = bench_energy_update(keys, energy_config.clone());
     let parity_update = bench_parity_update(keys, parity_config.clone());
@@ -142,6 +141,21 @@ fn nanos_per_item(duration: Duration, items: u64) -> f64 {
         return 0.0;
     }
     duration.as_nanos() as f64 / items as f64
+}
+
+fn energy_benchmark_config(profile: EnergyProfile, salt: u64) -> EnergyConfig {
+    let words = pseudo_uniform_words(profile.uniform_words_required(), salt);
+    let rows = words
+        .chunks(6)
+        .map(|chunk| {
+            EnergyRowHash::from_coefficients(
+                [chunk[0], chunk[1]],
+                [chunk[2], chunk[3], chunk[4], chunk[5]],
+            )
+        })
+        .collect();
+
+    EnergyConfig::new(profile.buckets(), rows).unwrap()
 }
 
 fn pseudo_uniform_words(count: usize, salt: u64) -> Vec<u64> {
