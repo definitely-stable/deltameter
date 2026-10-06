@@ -117,7 +117,7 @@ Counters are encoded in the implementation's logical table-major order: all B co
 
 Cached row energies and pending-update scratch state are not serialized. They are recomputed from decoded counters with checked arithmetic.
 
-Preserving a `Proven` profile marker preserves the original configuration contract; decoding does not prove that the original row coefficients were sampled according to the documented independent-uniform precondition.
+The encoded `Proven` profile marker is metadata, not proof. The ordinary decoder refuses to promote that marker into `Coverage::Proven`. Restoring it requires the explicit `decode_snapshot_assuming_uniform_rows` API and its documented caller precondition.
 
 ## Parity payload
 
@@ -151,12 +151,18 @@ M5 adds:
 ~~~rust
 EnergyDeltaMeter::encode_snapshot(&self) -> Result<Vec<u8>, SnapshotError>
 EnergyDeltaMeter::decode_snapshot(bytes: &[u8]) -> Result<Self, SnapshotError>
+EnergyDeltaMeter::decode_snapshot_assuming_uniform_rows(bytes: &[u8])
+    -> Result<Self, SnapshotError>
 
 ParityDeltaMeter::encode_snapshot(&self) -> Result<Vec<u8>, SnapshotError>
 ParityDeltaMeter::decode_snapshot(bytes: &[u8]) -> Result<Self, SnapshotError>
 ~~~
 
 `SnapshotError` is exported from the crate root.
+
+For Energy, the ordinary decoder accepts custom snapshots only. If a snapshot carries a theorem-profile marker it returns `SnapshotError::ProvenanceRequired`.
+
+The explicit `decode_snapshot_assuming_uniform_rows` path restores the Proven profile only when the caller accepts the same theorem-facing precondition as construction: the encoded row coefficients originated from a valid independent-uniform draw for that profile and were not adversarially substituted.
 
 No generic serde trait, file helper or network helper is added.
 
@@ -171,6 +177,7 @@ A v1 decoder fails closed when any of the following occurs:
 - flags are non-zero;
 - declared payload length does not exactly match input length;
 - CRC32C differs;
+- a Proven Energy profile is decoded without the explicit uniform-row provenance assumption;
 - a reserved byte is non-zero;
 - profile tags are invalid;
 - Energy profile dimensions disagree with the encoded profile;
@@ -202,6 +209,8 @@ Adding a new public Rust API does not by itself require a new snapshot version i
 The decoder treats bytes as untrusted with respect to structural correctness and corruption.
 
 CRC32C does not provide authenticity. If snapshots cross an adversarial boundary, authentication or a secure outer transport is required.
+
+This matters directly for Energy guarantees: an unauthenticated byte stream can claim a Proven profile while containing adversarial coefficients. Snapshot v1 therefore never lets the ordinary decoder self-certify `Coverage::Proven`.
 
 M5 does not add cryptographic signing, MACs, encryption or secret seeds.
 
