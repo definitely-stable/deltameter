@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::energy::Coverage;
+use crate::coverage::Coverage;
 use crate::fpcsa::{
     FpcsaError, FpcsaUpdate, PublishedFpcsaF2, PublishedFpcsaF2Config, PublishedFpcsaOracle,
 };
@@ -263,6 +263,7 @@ fn mix64(mut value: u64) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{EnergyProfile, FailureTarget, RelativeError};
 
     #[test]
     fn built_in_profiles_match_published_rse_scale_and_state_sizes() {
@@ -284,6 +285,31 @@ mod tests {
             assert_eq!(config.packed_state_bytes(), bytes);
             assert_eq!(config.profile(), Some(profile));
             assert!((config.asymptotic_relative_standard_error() - rse).abs() < 1e-15);
+        }
+    }
+
+    #[test]
+    fn selected_energy_parity_state_comparison_is_machine_checked() {
+        let cases = [
+            (
+                EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInMillion),
+                ParityProfile::Compact,
+            ),
+            (
+                EnergyProfile::new(RelativeError::TenPercent, FailureTarget::OneInMillion),
+                ParityProfile::Standard,
+            ),
+            (
+                EnergyProfile::new(RelativeError::FivePercent, FailureTarget::OneInMillion),
+                ParityProfile::Accurate,
+            ),
+        ];
+
+        for (energy, parity) in cases {
+            assert_eq!(
+                energy.counter_state_bytes() / parity.packed_state_bytes(),
+                184
+            );
         }
     }
 
