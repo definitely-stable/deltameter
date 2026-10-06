@@ -21,7 +21,8 @@ Current implementation direction:
 - **PublishedFpcsaF2** — M2 faithful GF(2)-F-PCSA research reproduction, retained as an internal research backend rather than frozen public API.
 - **ParityDeltaMeter** — M3 experimental/asymptotic wrapper over the published reproduction.
 - Gaussian/chi-square — research oracle only.
-- ExactSmallDelta — deferred.
+- ExactSmallDelta — deferred pending the M6 value/failure-semantics audit.
+- M6 — evidence-gated reconciliation experiment and compatible optimization; [plan and issue map](docs/M6-RECONCILIATION-AND-OPTIMIZATION.md).
 
 Q1 is resolved more strongly after M3: there is **no accepted strict finite-sample profile for the published W_i Parity estimator, and that strict-W_i track is stopped** unless a new theorem changes the gate. A per-level `ParityLevelCounts` statistic remains research-only.
 
@@ -94,4 +95,4 @@ M4 did not freeze persistence. M5 now implements a deliberately narrow canonical
 
 ## License / release
 
-Not decided in this bootstrap slice.
+The repository contains the Apache-2.0 license. The crate remains unpublished (`publish = false`); release preparation is outside M6-0.

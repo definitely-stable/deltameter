@@ -332,3 +332,10 @@ M0 research bootstrap
 Strict Parity theory is no longer a blocker for beginning the useful Rust crate.
 
 The post-M3 Gemini/Qwen/DeepSeek round strengthens the NO-GO decision for the published W_i strict track. Exact Poissonized and truncation results are retained as research artifacts; alternative backends require separate audits.
+
+
+## M6 sequencing decision (2026-10-06)
+
+Choose the bounded reconciliation value experiment before adopting ExactSmallDelta/hybrid. This does not establish economic superiority. Snapshot-plus-full-transfer is an overhead control; a useful decision policy and exact completion oracle are required. Keep the strict published-W_i NO-GO and all M5 compatibility/provenance rules.
+
+The [M6 critical audit/design](../M6-RECONCILIATION-AND-OPTIMIZATION.md) and parent #14 supersede stale post-M3 next-step text only; historical research findings are unchanged. M6-0 (#15) begins with snapshot compatibility/evidence. M6-A/B/C/D are tracked in #16–#19.
