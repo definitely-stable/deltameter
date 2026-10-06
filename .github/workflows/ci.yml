@@ -6,6 +6,7 @@ on:
       - "Cargo.toml"
       - "src/**"
       - "tests/**"
+      - "examples/**"
       - "research/energy_profiles.py"
       - "research/energy_profiles.csv"
       - ".github/workflows/ci.yml"
@@ -15,6 +16,7 @@ on:
       - "Cargo.toml"
       - "src/**"
       - "tests/**"
+      - "examples/**"
       - "research/energy_profiles.py"
       - "research/energy_profiles.csv"
       - ".github/workflows/ci.yml"
@@ -47,3 +49,6 @@ jobs:
 
       - name: Test
         run: cargo test --all-targets
+
+      - name: Compile M3 comparison harness
+        run: cargo check --release --example m3_compare
