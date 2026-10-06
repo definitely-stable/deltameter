@@ -168,7 +168,7 @@ The exact format and compatibility rules are in docs/M5-INTERCHANGE-V1.md.
 
 ## M6 — Evidence-gated workflow and compatible optimization
 
-Status: M6-0 implementation and evidence complete in PR #20; pending merge. Parent issue: #14.
+Status: M6-0 complete; merged in PR #20. Parent issue: #14.
 
 [Critical audit and design](M6-RECONCILIATION-AND-OPTIMIZATION.md) records the research constraints, corrections to the initial proposal and acceptance gates.
 
