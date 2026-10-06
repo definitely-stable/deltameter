@@ -168,9 +168,7 @@ impl From<FpcsaUpdate> for ParityUpdate {
     fn from(value: FpcsaUpdate) -> Self {
         match value {
             FpcsaUpdate::Stored { row, level } => Self::Stored { row, level },
-            FpcsaUpdate::ZeroCoefficient { row, level } => {
-                Self::ZeroCoefficient { row, level }
-            }
+            FpcsaUpdate::ZeroCoefficient { row, level } => Self::ZeroCoefficient { row, level },
             FpcsaUpdate::Truncated { row } => Self::Truncated { row },
         }
     }
@@ -325,9 +323,8 @@ mod tests {
         let config = ParityConfig::new(4, 1, 29).unwrap();
         let mut meter = ParityDeltaMeter::new(config);
 
-        let saw_truncation = (0..1024).any(|key| {
-            matches!(meter.toggle(key), ParityUpdate::Truncated { .. })
-        });
+        let saw_truncation =
+            (0..1024).any(|key| matches!(meter.toggle(key), ParityUpdate::Truncated { .. }));
 
         assert!(saw_truncation);
     }
@@ -354,12 +351,10 @@ mod tests {
 
     #[test]
     fn incompatible_configs_fail_closed() {
-        let left = ParityDeltaMeter::new(
-            ParityConfig::for_profile(ParityProfile::Compact, 37).unwrap(),
-        );
-        let right = ParityDeltaMeter::new(
-            ParityConfig::for_profile(ParityProfile::Compact, 38).unwrap(),
-        );
+        let left =
+            ParityDeltaMeter::new(ParityConfig::for_profile(ParityProfile::Compact, 37).unwrap());
+        let right =
+            ParityDeltaMeter::new(ParityConfig::for_profile(ParityProfile::Compact, 38).unwrap());
 
         assert_eq!(
             left.xor_merged(&right).unwrap_err(),
