@@ -663,8 +663,8 @@ impl EnergyDeltaMeter {
             let row = self.config.rows[row_index];
             let bucket = row.bucket_index(key, buckets);
             let index = row_index * buckets + bucket;
-            let signed_delta =
-                delta * row.sign_from_masks(key, key_squared, key_cubed, self.sign_masks[row_index]);
+            let signed_delta = delta
+                * row.sign_from_masks(key, key_squared, key_cubed, self.sign_masks[row_index]);
             let old_counter = self.counters[index];
             let new_counter = old_counter
                 .checked_add(signed_delta)
