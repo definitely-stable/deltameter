@@ -48,7 +48,16 @@ Parity may not expose a proven high-confidence capacity API until a concrete fin
 
 ### D4 — Published F-PCSA and set-specialized parity are separate
 
-The first Parity implementation must reproduce the **published finite-field construction**.
+The first Parity implementation must reproduce the **published finite-field construction**:
+
+~~~text
+FIELDMAP[i,j] in F
+h(v) chooses row/level with published probability mass
+g(v) is uniform over F
+row statistic = highest non-zero level
+~~~
+
+Classical PCSA first-1/bitmap models are intuition only, not the proof object.
 
 A proposed specialization with `g(v)=1` / `cell ^= 1` is a separate research algorithm, tentatively named `ParityPcsaSetV1`.
 
@@ -167,3 +176,5 @@ M0 research bootstrap
 ```
 
 Strict Parity theory is no longer a blocker for beginning the useful Rust crate.
+
+The newest “От Эвристики к Доказательству” report does not change this decision. It sharpens the future proof program, especially exact-state analysis and rigorous de-Poissonization, while also confirming that asymptotic/empirical shortcuts are not enough.
