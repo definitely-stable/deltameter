@@ -1,6 +1,13 @@
 use core::fmt;
 
 use crate::coverage::Coverage;
+use crate::snapshot::{
+    BACKEND_ENERGY, Cursor, SnapshotError, decode_envelope, encode_envelope, push_i64, push_u32,
+    push_u64,
+};
+
+const ENERGY_PROFILE_CUSTOM: u8 = 0;
+const ENERGY_PROFILE_PROVEN: u8 = 1;
 
 /// Reduction constant for the irreducible polynomial
 /// x^64 + x^4 + x^3 + x + 1 over GF(2).
@@ -363,6 +370,144 @@ impl EnergyDeltaMeter {
         &self.config
     }
 
+    /// Encodes this sketch as the canonical DeltaMeter snapshot v1 byte format.
+    ///
+    /// The snapshot includes the exact hash-row configuration and primary
+    /// counters. Cached row energies are intentionally omitted and recomputed
+    /// during decoding.
+    pub fn encode_snapshot(&self) -> Result<Vec<u8>, SnapshotError> {
+        let buckets =
+            u64::try_from(self.config.buckets()).map_err(|_| SnapshotError::UnsupportedConfig)?;
+        let tables =
+            u32::try_from(self.config.tables()).map_err(|_| SnapshotError::UnsupportedConfig)?;
+
+        let mut payload = Vec::new();
+        push_u64(&mut payload, buckets);
+        push_u32(&mut payload, tables);
+
+        match self.config.proven_profile() {
+            None => {
+                payload.push(ENERGY_PROFILE_CUSTOM);
+                payload.push(0);
+                payload.push(0);
+            }
+            Some(profile) => {
+                payload.push(ENERGY_PROFILE_PROVEN);
+                payload.push(relative_error_snapshot_tag(profile.relative_error())?);
+                payload.push(failure_target_snapshot_tag(profile.failure_target())?);
+            }
+        }
+        payload.push(0);
+
+        for row in &self.config.rows {
+            for coefficient in row.bucket_coefficients {
+                push_u64(&mut payload, coefficient);
+            }
+            for coefficient in row.sign_coefficients {
+                push_u64(&mut payload, coefficient);
+            }
+        }
+
+        for &counter in &self.counters {
+            push_i64(&mut payload, counter);
+        }
+
+        encode_envelope(BACKEND_ENERGY, &payload)
+    }
+
+    /// Decodes a canonical DeltaMeter snapshot v1 Energy sketch.
+    ///
+    /// The decoder is fail-closed: the envelope, checksum, configuration,
+    /// exact payload length and derived energy cache must all validate.
+    pub fn decode_snapshot(bytes: &[u8]) -> Result<Self, SnapshotError> {
+        let payload = decode_envelope(bytes, BACKEND_ENERGY)?;
+        let mut cursor = Cursor::new(payload);
+
+        let buckets_u64 = cursor.read_u64()?;
+        let buckets =
+            usize::try_from(buckets_u64).map_err(|_| SnapshotError::UnsupportedConfig)?;
+        let table_count_u32 = cursor.read_u32()?;
+        let table_count =
+            usize::try_from(table_count_u32).map_err(|_| SnapshotError::UnsupportedConfig)?;
+
+        let profile_kind = cursor.read_u8()?;
+        let relative_tag = cursor.read_u8()?;
+        let failure_tag = cursor.read_u8()?;
+        if cursor.read_u8()? != 0 {
+            return Err(SnapshotError::InvalidPayload);
+        }
+
+        let row_bytes = table_count
+            .checked_mul(6)
+            .and_then(|count| count.checked_mul(core::mem::size_of::<u64>()))
+            .ok_or(SnapshotError::LengthOverflow)?;
+        if cursor.remaining() < row_bytes {
+            return Err(SnapshotError::InvalidPayload);
+        }
+
+        let mut rows = Vec::with_capacity(table_count);
+        for _ in 0..table_count {
+            rows.push(EnergyRowHash::from_coefficients(
+                [cursor.read_u64()?, cursor.read_u64()?],
+                [
+                    cursor.read_u64()?,
+                    cursor.read_u64()?,
+                    cursor.read_u64()?,
+                    cursor.read_u64()?,
+                ],
+            ));
+        }
+
+        let config = match profile_kind {
+            ENERGY_PROFILE_CUSTOM => {
+                if relative_tag != 0 || failure_tag != 0 {
+                    return Err(SnapshotError::InvalidPayload);
+                }
+                EnergyConfig::new(buckets, rows).map_err(|_| SnapshotError::InvalidPayload)?
+            }
+            ENERGY_PROFILE_PROVEN => {
+                let profile = EnergyProfile::new(
+                    relative_error_from_snapshot_tag(relative_tag)?,
+                    failure_target_from_snapshot_tag(failure_tag)?,
+                );
+                if buckets != profile.buckets() {
+                    return Err(SnapshotError::InvalidPayload);
+                }
+                EnergyConfig::for_profile_assuming_uniform_rows(profile, rows)
+                    .map_err(|_| SnapshotError::InvalidPayload)?
+            }
+            _ => return Err(SnapshotError::InvalidPayload),
+        };
+
+        let counter_len = config
+            .buckets()
+            .checked_mul(config.tables())
+            .ok_or(SnapshotError::LengthOverflow)?;
+        let counter_bytes = counter_len
+            .checked_mul(core::mem::size_of::<i64>())
+            .ok_or(SnapshotError::LengthOverflow)?;
+        if cursor.remaining() != counter_bytes {
+            return Err(SnapshotError::InvalidPayload);
+        }
+
+        let mut meter = Self::new(config).map_err(|_| SnapshotError::InvalidPayload)?;
+        for counter in &mut meter.counters {
+            *counter = cursor.read_i64()?;
+        }
+        if !cursor.is_finished() {
+            return Err(SnapshotError::InvalidPayload);
+        }
+
+        meter.energies = recompute_energies(
+            &meter.counters,
+            meter.config.buckets(),
+            meter.config.tables(),
+        )
+        .map_err(|_| SnapshotError::InvalidPayload)?;
+
+        Ok(meter)
+    }
+
     /// Adds one unique source-set element.
     ///
     /// The symmetric-difference interpretation requires callers to contribute
@@ -498,6 +643,42 @@ fn recompute_energies(
     }
 
     Ok(energies.into_boxed_slice())
+}
+
+fn relative_error_snapshot_tag(value: RelativeError) -> Result<u8, SnapshotError> {
+    match value {
+        RelativeError::FivePercent => Ok(1),
+        RelativeError::TenPercent => Ok(2),
+        RelativeError::TwentyPercent => Ok(3),
+        _ => Err(SnapshotError::UnsupportedConfig),
+    }
+}
+
+fn relative_error_from_snapshot_tag(tag: u8) -> Result<RelativeError, SnapshotError> {
+    match tag {
+        1 => Ok(RelativeError::FivePercent),
+        2 => Ok(RelativeError::TenPercent),
+        3 => Ok(RelativeError::TwentyPercent),
+        _ => Err(SnapshotError::InvalidPayload),
+    }
+}
+
+fn failure_target_snapshot_tag(value: FailureTarget) -> Result<u8, SnapshotError> {
+    match value {
+        FailureTarget::OneInThousand => Ok(1),
+        FailureTarget::OneInMillion => Ok(2),
+        FailureTarget::OneInBillion => Ok(3),
+        _ => Err(SnapshotError::UnsupportedConfig),
+    }
+}
+
+fn failure_target_from_snapshot_tag(tag: u8) -> Result<FailureTarget, SnapshotError> {
+    match tag {
+        1 => Ok(FailureTarget::OneInThousand),
+        2 => Ok(FailureTarget::OneInMillion),
+        3 => Ok(FailureTarget::OneInBillion),
+        _ => Err(SnapshotError::InvalidPayload),
+    }
 }
 
 const fn ceil_div(value: u128, divisor: u128) -> u128 {
