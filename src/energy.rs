@@ -424,8 +424,7 @@ impl EnergyDeltaMeter {
         let mut cursor = Cursor::new(payload);
 
         let buckets_u64 = cursor.read_u64()?;
-        let buckets =
-            usize::try_from(buckets_u64).map_err(|_| SnapshotError::UnsupportedConfig)?;
+        let buckets = usize::try_from(buckets_u64).map_err(|_| SnapshotError::UnsupportedConfig)?;
         let table_count_u32 = cursor.read_u32()?;
         let table_count =
             usize::try_from(table_count_u32).map_err(|_| SnapshotError::UnsupportedConfig)?;
