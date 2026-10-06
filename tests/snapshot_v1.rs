@@ -42,7 +42,12 @@ fn proven_energy_round_trip_preserves_config_state_and_coverage() {
     }
 
     let encoded = meter.encode_snapshot().unwrap();
-    let decoded = EnergyDeltaMeter::decode_snapshot(&encoded).unwrap();
+    assert!(matches!(
+        EnergyDeltaMeter::decode_snapshot(&encoded),
+        Err(SnapshotError::ProvenanceRequired)
+    ));
+    let decoded =
+        EnergyDeltaMeter::decode_snapshot_assuming_uniform_rows(&encoded).unwrap();
 
     assert_eq!(decoded.config(), meter.config());
     assert_eq!(decoded.estimate(profile), meter.estimate(profile));
