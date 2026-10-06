@@ -761,15 +761,26 @@ const fn ceil_div(value: u128, divisor: u128) -> u128 {
 
 fn lsb_multiplication_mask(coefficient: u64) -> u64 {
     let mut mask = 0_u64;
+    let mut basis_product = coefficient;
 
     for bit in 0..64 {
-        let basis = 1_u64 << bit;
-        if gf64_mul(coefficient, basis) & 1 != 0 {
-            mask |= basis;
+        if basis_product & 1 != 0 {
+            mask |= 1_u64 << bit;
         }
+        basis_product = gf64_mul_x(basis_product);
     }
 
     mask
+}
+
+#[inline]
+fn gf64_mul_x(value: u64) -> u64 {
+    let carry = value >> 63;
+    let mut shifted = value << 1;
+    if carry != 0 {
+        shifted ^= GF64_REDUCTION;
+    }
+    shifted
 }
 
 #[inline]
@@ -911,6 +922,27 @@ mod tests {
                     u64::from((mask & value).count_ones() & 1),
                     gf64_mul(coefficient, value) & 1,
                     "coefficient={coefficient:#018x} value={value:#018x}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn lsb_mask_recurrence_matches_every_polynomial_basis_vector() {
+        for coefficient in [
+            0,
+            1,
+            1_u64 << 63,
+            u64::MAX,
+            0x0123_4567_89AB_CDEF,
+            0xDEAD_BEEF_CAFE_BABE,
+        ] {
+            let mask = lsb_multiplication_mask(coefficient);
+            for bit in 0..64 {
+                assert_eq!(
+                    (mask >> bit) & 1,
+                    gf64_mul(coefficient, 1_u64 << bit) & 1,
+                    "coefficient={coefficient:#018x} bit={bit}"
                 );
             }
         }
