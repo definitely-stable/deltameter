@@ -76,14 +76,19 @@ Acceptance:
 
 ## M3 — Experimental ParityDeltaMeter
 
+Status: active in issue #6 / branch `m3/experimental-parity`.
+
 Wrap the reproduced algorithm in the small public API.
 
 Deliverables:
 
-- explicit `Coverage::Asymptotic`/experimental status;
-- merge compatibility checks;
-- state/memory/update benchmarks;
-- comparison with Energy.
+- explicit `Coverage::Asymptotic { relative_standard_error }` status;
+- `ParityConfig` + `ParityDeltaMeter` wrapper over M2;
+- Compact/Standard/Accurate experimental profiles;
+- exact configuration compatibility for XOR merge;
+- visible finite-J truncation outcomes;
+- stable-Rust state/update/merge/query benchmark harness;
+- documented memory/guarantee comparison with Energy.
 
 Optional research:
 
