@@ -124,8 +124,7 @@ pub struct EnergyProfile {
 
 impl EnergyProfile {
     /// Balanced v0 strict default: 10% relative error at failure probability <= 1e-6.
-    pub const DEFAULT: Self =
-        Self::new(RelativeError::TenPercent, FailureTarget::OneInMillion);
+    pub const DEFAULT: Self = Self::new(RelativeError::TenPercent, FailureTarget::OneInMillion);
 
     pub const fn new(relative_error: RelativeError, failure_target: FailureTarget) -> Self {
         Self {
