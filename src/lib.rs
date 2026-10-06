@@ -4,6 +4,7 @@ mod coverage;
 mod energy;
 mod fpcsa;
 mod parity;
+mod snapshot;
 
 pub use coverage::Coverage;
 pub use energy::{
@@ -14,3 +15,5 @@ pub use energy::{
 pub use parity::{
     ParityConfig, ParityDeltaMeter, ParityError, ParityEstimate, ParityProfile, ParityUpdate,
 };
+
+pub use snapshot::SnapshotError;
