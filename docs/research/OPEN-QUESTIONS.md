@@ -117,7 +117,7 @@ Freeze for the first Rust slice:
 - pairwise-uniform bucket collisions;
 - 4-wise independent signs;
 - independent bucket/sign families;
-- deterministic public seed/config for reproducibility;
+- explicit coefficients/configuration for reproducibility; a short PRNG seed is not the independent-uniform theorem contract;
 - oblivious-input theorem model.
 
 Do not use secret-key infrastructure.
@@ -137,9 +137,9 @@ Do not replace the published model with classical PCSA first-1-position reasonin
 
 ### Persistence
 
-No wire format yet.
+M5 snapshot v1 is merged and frozen; see [the contract](../M5-INTERCHANGE-V1.md).
 
-Only in-memory compatibility/config identity is required for M1/M2.
+Dataset/session identity, resource admission and transport framing remain outside v1 and are evaluated in [M6](../M6-RECONCILIATION-AND-OPTIMIZATION.md).
 
 ---
 
@@ -169,4 +169,4 @@ No self-hosted runners. No absolute nanosecond merge gate. No Monte Carlo claim 
 
 None from strict-Parity theory.
 
-M4 performance/API work may proceed independently of the optional ParityLevelCounts or exact-small-d research tracks.
+M4 and M5 are complete. M6 measurement/workflow work may proceed independently of optional strict-Parity research. Exact-small-d adoption remains gated by product evidence and a separate failure-semantics audit.

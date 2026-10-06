@@ -123,7 +123,7 @@ ParityUpdate
 
 PublishedFpcsaF2 and its configuration/oracle/update types remain the M2 research reproduction used behind ParityDeltaMeter; they are not frozen as external API.
 
-ParityDeltaMeter does not expose raw packed words. EnergyConfig does not expose its internal row slice. State size metadata may be inspected, but no byte-level persistence contract exists.
+ParityDeltaMeter does not expose raw packed words. EnergyConfig does not expose its internal row slice. State size metadata may be inspected. M5 subsequently froze snapshot v1; see the interchange section below.
 
 Public enums and result records that may need compatible extension are #[non_exhaustive]. Configuration and meter structs keep private fields.
 
@@ -244,7 +244,7 @@ Rare-event Monte Carlo is never a substitute for the theorem behind `Coverage::P
 - cryptographic key management;
 - Minisketch/IBLT integration;
 - FFI;
-- persistent protocol compatibility;
+- public network protocol compatibility; existing snapshot v1 bytes/semantics stay stable unless a later explicit compatibility/migration decision introduces a versioned evolution;
 - AVX-512-specific code;
 - formal verification framework;
 - multiple packages for components that still fit in one crate.

@@ -8,6 +8,9 @@ use crate::snapshot::{
     BACKEND_PARITY, Cursor, SnapshotError, decode_envelope, encode_envelope, push_u32, push_u64,
 };
 
+const PARITY_SNAPSHOT_METADATA_LEN: usize = 16;
+const PARITY_SNAPSHOT_WORD_LEN: usize = core::mem::size_of::<u64>();
+
 const PARITY_RSE_COEFFICIENT: f64 = 1.638;
 const ROW_SEED_DOMAIN: u64 = 0x6A09_E667_F3BC_C909;
 const LEVEL_SEED_DOMAIN: u64 = 0xBB67_AE85_84CA_A73B;
@@ -218,17 +221,22 @@ impl ParityDeltaMeter {
     /// pseudo-oracle configuration; only the primary packed GF(2) state is
     /// persisted.
     pub fn encode_snapshot(&self) -> Result<Vec<u8>, SnapshotError> {
-        let mut payload = Vec::new();
-        push_u32(&mut payload, self.config.rows());
-        payload.push(self.config.stored_levels());
-        payload.extend_from_slice(&[0, 0, 0]);
-        push_u64(&mut payload, self.config.seed());
+        let words = self.backend.snapshot_words();
+        let payload_len = words
+            .len()
+            .checked_mul(PARITY_SNAPSHOT_WORD_LEN)
+            .and_then(|bytes| bytes.checked_add(PARITY_SNAPSHOT_METADATA_LEN))
+            .ok_or(SnapshotError::LengthOverflow)?;
+        encode_envelope(BACKEND_PARITY, payload_len, |payload| {
+            push_u32(payload, self.config.rows());
+            payload.push(self.config.stored_levels());
+            payload.extend_from_slice(&[0, 0, 0]);
+            push_u64(payload, self.config.seed());
 
-        for &word in self.backend.snapshot_words() {
-            push_u64(&mut payload, word);
-        }
-
-        encode_envelope(BACKEND_PARITY, &payload)
+            for &word in words {
+                push_u64(payload, word);
+            }
+        })
     }
 
     /// Decodes a canonical DeltaMeter snapshot v1 Parity sketch.

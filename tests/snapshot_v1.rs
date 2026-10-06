@@ -80,7 +80,7 @@ fn parity_round_trip_preserves_config_state_and_merge_behavior() {
     }
 
     let encoded = meter.encode_snapshot().unwrap();
-    let decoded = ParityDeltaMeter::decode_snapshot(&encoded).unwrap();
+    let mut decoded = ParityDeltaMeter::decode_snapshot(&encoded).unwrap();
 
     assert_eq!(decoded.config(), meter.config());
     assert_eq!(decoded.encode_snapshot().unwrap(), encoded);
@@ -90,6 +90,16 @@ fn parity_round_trip_preserves_config_state_and_merge_behavior() {
         cancelled.estimate(),
         Err(ParityError::EstimateUnavailable { empty_rows: 17 })
     ));
+
+    // A paired single update checks continued oracle/config interpretation;
+    // double toggles alone would pass even if both updates were no-ops.
+    for key in [0, 1 << 63, u64::MAX] {
+        assert_eq!(meter.toggle(key), decoded.toggle(key));
+        assert_eq!(
+            decoded.encode_snapshot().unwrap(),
+            meter.encode_snapshot().unwrap()
+        );
+    }
 }
 
 #[test]
@@ -197,4 +207,83 @@ fn splitmix64(mut value: u64) -> u64 {
     value = (value ^ (value >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
     value = (value ^ (value >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
     value ^ (value >> 31)
+}
+
+// Independently assembled from the M5 field layout (Python struct + bitwise
+// Castagnoli CRC), not captured from the encoder being tested. Energy: B=2,
+// one all-zero custom row, counters [-1, 0]. Parity: m=17, J=13, seed=7,
+// words [1, 1<<63, 0, 1<<28]; the last used bit is bit 220.
+const ENERGY_NEGATIVE_V1_HEX: &str = "44454c54414d54520100010100000000500000000000000002000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ffffffffffffffff000000000000000064568660";
+const PARITY_MULTIWORD_V1_HEX: &str = "44454c54414d545201000201000000003000000000000000110000000d00000007000000000000000100000000000000000000000000008000000000000000000000001000000000d820d11d";
+
+#[test]
+fn negative_energy_fixed_vector_matches_independent_state_and_continues() {
+    let row = EnergyRowHash::from_coefficients([0; 2], [0; 4]);
+    let config = EnergyConfig::new(2, vec![row]).unwrap();
+    let left = EnergyDeltaMeter::new(config.clone()).unwrap();
+    let mut right = EnergyDeltaMeter::new(config).unwrap();
+    right.add_unique(7).unwrap();
+    let difference = left.difference(&right).unwrap();
+    let bytes = hex_bytes(ENERGY_NEGATIVE_V1_HEX);
+    assert_eq!(difference.encode_snapshot().unwrap(), bytes);
+    let mut restored = EnergyDeltaMeter::decode_snapshot(&bytes).unwrap();
+    assert_eq!(restored.point_estimate(), 1);
+    restored.add_unique(7).unwrap();
+    assert_eq!(
+        restored.encode_snapshot().unwrap(),
+        left.encode_snapshot().unwrap()
+    );
+}
+
+#[test]
+fn nonempty_multiword_parity_fixed_vector_preserves_padding_and_updates() {
+    let bytes = hex_bytes(PARITY_MULTIWORD_V1_HEX);
+    let mut restored = ParityDeltaMeter::decode_snapshot(&bytes).unwrap();
+    assert_eq!(restored.encode_snapshot().unwrap(), bytes);
+    for key in [0, 1, 1 << 63, u64::MAX] {
+        restored.toggle(key);
+        restored.toggle(key);
+    }
+    assert_eq!(restored.encode_snapshot().unwrap(), bytes);
+}
+
+#[test]
+fn every_energy_profile_preserves_snapshot_length_and_continuation() {
+    for error in [
+        RelativeError::FivePercent,
+        RelativeError::TenPercent,
+        RelativeError::TwentyPercent,
+    ] {
+        for failure in [
+            FailureTarget::OneInThousand,
+            FailureTarget::OneInMillion,
+            FailureTarget::OneInBillion,
+        ] {
+            let profile = EnergyProfile::new(error, failure);
+            // Deterministic compatibility fixture, not evidence of uniform randomness.
+            let words: Vec<_> = (0..profile.uniform_words_required())
+                .map(|i| splitmix64(i as u64))
+                .collect();
+            let config = EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap();
+            let mut original = EnergyDeltaMeter::new(config).unwrap();
+            original.add_unique(u64::MAX).unwrap();
+            let bytes = original.encode_snapshot().unwrap();
+            assert_eq!(
+                bytes.len(),
+                44 + 48 * profile.tables() + profile.counter_state_bytes()
+            );
+            let mut restored =
+                EnergyDeltaMeter::decode_snapshot_assuming_uniform_rows(&bytes).unwrap();
+            assert_eq!(restored.encode_snapshot().unwrap(), bytes);
+            for key in [0, 1, 1 << 63] {
+                original.add_unique(key).unwrap();
+                restored.add_unique(key).unwrap();
+            }
+            assert_eq!(
+                restored.encode_snapshot().unwrap(),
+                original.encode_snapshot().unwrap()
+            );
+            assert_eq!(restored.estimate(profile), original.estimate(profile));
+        }
+    }
 }

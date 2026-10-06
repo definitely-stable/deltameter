@@ -1,7 +1,7 @@
 # Decision record 0001 — pre-implementation baseline
 
 Status: **accepted and updated through the M5 implementation**  
-Updated: 2026-10-06 after selecting canonical sketch interchange as the post-M4 product boundary.
+Updated: 2026-10-06 after M5 completion and the M6 evidence-gated sequencing decision.
 
 ## Context
 
@@ -230,7 +230,7 @@ In particular:
 - exact mean/variance plus an asymptotic chi-square limit is not a finite-sample confidence theorem;
 - alternative-backend memory numbers must be compared against the generated Energy profiles, including all amplification tables.
 
-M4 remains the next implementation milestone.
+Historical post-M3 next step was M4; M4/M5 are now complete and the current sequence is M6 below.
 
 ### D18 — Freeze a root-only v0 API
 
@@ -332,3 +332,10 @@ M0 research bootstrap
 Strict Parity theory is no longer a blocker for beginning the useful Rust crate.
 
 The post-M3 Gemini/Qwen/DeepSeek round strengthens the NO-GO decision for the published W_i strict track. Exact Poissonized and truncation results are retained as research artifacts; alternative backends require separate audits.
+
+
+## M6 sequencing decision (2026-10-06)
+
+Choose the bounded estimator-assisted value experiment before adopting ExactSmallDelta/hybrid. This does not establish economic superiority. Snapshot-plus-full-transfer is an overhead control; a useful decision policy and exact completion oracle are required. Keep the strict published-W_i NO-GO and all M5 compatibility/provenance rules.
+
+The [M6 critical audit/design](../M6-RECONCILIATION-AND-OPTIMIZATION.md) and parent #14 supersede stale post-M3 next-step text only; historical research findings are unchanged. M6-0 (#15) begins with snapshot compatibility/evidence. After M6-0, M6-A and the read-only/source-audit part of M6-D may proceed in parallel; production ExactSmallDelta/hybrid adoption remains gated on M6-A product evidence. M6-B/C/D are tracked in #17–#19.

@@ -1,0 +1,68 @@
+name: snapshot-performance
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "src/**"
+      - "examples/snapshot_bench.rs"
+      - "research/snapshot_perf_summary.py"
+      - ".github/workflows/snapshot-perf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install stable Rust
+        run: rustup toolchain install stable --profile minimal
+      - name: Build identical harness for base and head
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          mkdir -p "${RUNNER_TEMP}/snapshot-perf"
+          rustc +stable -Vv > "${RUNNER_TEMP}/snapshot-perf/rustc.txt"
+          lscpu > "${RUNNER_TEMP}/snapshot-perf/cpu.txt"
+          printf 'base=%s\nhead=%s\n' "${BASE_SHA}" "${HEAD_SHA}" > "${RUNNER_TEMP}/snapshot-perf/refs.txt"
+          cp examples/snapshot_bench.rs "${RUNNER_TEMP}/snapshot_bench.rs"
+          cp tests/snapshot_v1.rs "${RUNNER_TEMP}/snapshot_v1.rs"
+          cp research/snapshot_perf_summary.py "${RUNNER_TEMP}/snapshot_perf_summary.py"
+          sha256sum             "${RUNNER_TEMP}/snapshot_bench.rs"             "${RUNNER_TEMP}/snapshot_v1.rs"             "${RUNNER_TEMP}/snapshot_perf_summary.py"             > "${RUNNER_TEMP}/snapshot-perf/sources-sha256.txt"
+          for variant in base head; do
+            if [ "${variant}" = base ]; then source_sha="${BASE_SHA}"; else source_sha="${HEAD_SHA}"; fi
+            git worktree add --detach "${RUNNER_TEMP}/snapshot-${variant}" "${source_sha}"
+            cp "${RUNNER_TEMP}/snapshot_bench.rs" "${RUNNER_TEMP}/snapshot-${variant}/examples/snapshot_bench.rs"
+            cp "${RUNNER_TEMP}/snapshot_v1.rs" "${RUNNER_TEMP}/snapshot-${variant}/tests/snapshot_v1.rs"
+            (cd "${RUNNER_TEMP}/snapshot-${variant}" && cargo +stable test --test snapshot_v1) 2>&1 | tee "${RUNNER_TEMP}/snapshot-perf/${variant}-compatibility.txt"
+            (cd "${RUNNER_TEMP}/snapshot-${variant}" && cargo +stable build --release --example snapshot_bench)
+            cp "${RUNNER_TEMP}/snapshot-${variant}/target/release/examples/snapshot_bench" "${RUNNER_TEMP}/snapshot-${variant}-bench"
+          done
+      - name: Alternating paired rounds
+        run: |
+          for round in 1 2 3 4; do
+            if [ $((round % 2)) = 1 ]; then order='base head'; else order='head base'; fi
+            printf 'round=%s order=%s\n' "${round}" "${order}" >> "${RUNNER_TEMP}/snapshot-perf/order.txt"
+            for variant in ${order}; do
+              "${RUNNER_TEMP}/snapshot-${variant}-bench" 5 16 > "${RUNNER_TEMP}/snapshot-perf/${round}-${variant}.txt"
+            done
+          done
+      - name: Summarize paired rounds
+        if: always()
+        run: |
+          python3 "${RUNNER_TEMP}/snapshot_perf_summary.py" "${RUNNER_TEMP}/snapshot-perf"             | tee "${RUNNER_TEMP}/snapshot-perf/summary.csv"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snapshot-perf-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/snapshot-perf/
+          if-no-files-found: error
