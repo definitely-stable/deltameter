@@ -76,7 +76,7 @@ Acceptance:
 
 ## M3 — Experimental ParityDeltaMeter
 
-Status: active in issue #6 / branch `m3/experimental-parity`.
+Status: complete in PR #7.
 
 Wrap the reproduced algorithm in the small public API.
 
