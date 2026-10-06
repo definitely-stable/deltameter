@@ -275,9 +275,7 @@ impl PublishedFpcsaF2 {
     /// implement the paper's random-offsetting simplification assumption.
     /// Therefore this result is not Coverage::Proven and is not a strict
     /// finite-sample estimator.
-    pub fn table2_reference_estimate(
-        &self,
-    ) -> Result<FpcsaTable2ReferenceEstimate, FpcsaError> {
+    pub fn table2_reference_estimate(&self) -> Result<FpcsaTable2ReferenceEstimate, FpcsaError> {
         let highest = self.highest_levels();
         let empty_rows = highest.iter().filter(|level| level.is_none()).count();
         if empty_rows != 0 {
@@ -385,8 +383,7 @@ mod tests {
     use super::*;
 
     fn config(rows: u32, levels: u8) -> PublishedFpcsaF2Config {
-        PublishedFpcsaF2Config::new(rows, levels, PublishedFpcsaOracle::new(1, 2, 3))
-            .unwrap()
+        PublishedFpcsaF2Config::new(rows, levels, PublishedFpcsaOracle::new(1, 2, 3)).unwrap()
     }
 
     #[test]
@@ -444,10 +441,7 @@ mod tests {
     fn repeated_toggle_of_same_key_cancels() {
         let mut sketch = PublishedFpcsaF2::new(config(8, 16));
 
-        assert_eq!(
-            sketch.toggle(0),
-            FpcsaUpdate::Stored { row: 3, level: 1 }
-        );
+        assert_eq!(sketch.toggle(0), FpcsaUpdate::Stored { row: 3, level: 1 });
         assert!(sketch.packed_words().iter().any(|&word| word != 0));
 
         sketch.toggle(0);
@@ -515,12 +509,7 @@ mod tests {
     fn incompatible_config_fails_closed() {
         let left = PublishedFpcsaF2::new(config(8, 16));
         let right = PublishedFpcsaF2::new(
-            PublishedFpcsaF2Config::new(
-                8,
-                16,
-                PublishedFpcsaOracle::new(10, 20, 30),
-            )
-            .unwrap(),
+            PublishedFpcsaF2Config::new(8, 16, PublishedFpcsaOracle::new(10, 20, 30)).unwrap(),
         );
 
         assert_eq!(
@@ -551,8 +540,6 @@ mod tests {
         let expected_rse = 1.638 / 3_f64.sqrt();
 
         assert!((estimate.point - expected_point).abs() < 1e-12);
-        assert!(
-            (estimate.asymptotic_relative_standard_error - expected_rse).abs() < 1e-12
-        );
+        assert!((estimate.asymptotic_relative_standard_error - expected_rse).abs() < 1e-12);
     }
 }
