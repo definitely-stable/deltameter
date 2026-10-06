@@ -2,7 +2,7 @@
 
 This register records the latest research inputs that were incorporated into the canonical documents.
 
-These are **source snapshots**. When they conflict with current decisions, [../DECISIONS.md](../DECISIONS.md) and [../FOUNDATION.md](../FOUNDATION.md) win.
+These are **source snapshots**. When they conflict with current decisions, [../../DECISIONS.md](../../DECISIONS.md) and [../../FOUNDATION.md](../../FOUNDATION.md) win.
 
 ## Inputs
 
@@ -63,7 +63,7 @@ Snapshot: [minimal-randomness-contract-v0.md](minimal-randomness-contract-v0.md)
 Important content:
 
 - surveys concentration/test-inversion approaches;
-- highlights dependence, finite-(m) bias and truncation;
+- highlights dependence, finite-m bias and truncation;
 - considers median wrappers and alternative estimators;
 - ends with a GO recommendation.
 
@@ -100,4 +100,4 @@ The reports contain mutually contradictory implementation recommendations and se
 
 The repository therefore stores their findings as structured Markdown research snapshots and keeps a separate reconciliation layer.
 
-See [../NEW-INPUTS-AUDIT.md](../NEW-INPUTS-AUDIT.md).
+See [../../NEW-INPUTS-AUDIT.md](../../NEW-INPUTS-AUDIT.md).
