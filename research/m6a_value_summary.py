@@ -90,9 +90,10 @@ def main() -> int:
                         f"logical result changed for {key} field {field}: "
                         f"{base[field]} != {row[field]}"
                     )
-            timing.setdefault(key, [[], []])
+            timing.setdefault(key, [[], [], []])
             timing[key][0].append(int(row["elapsed_ns"]))
-            timing[key][1].append(int(row["source_sketch_build_ns"]))
+            timing[key][1].append(int(row["source_meter_build_ns"]))
+            timing[key][2].append(int(row["snapshot_encode_ns"]))
         for arm, (setup_ns, ready_bytes) in setup.items():
             entry = setup_timing.setdefault(arm, [[], ready_bytes])
             if entry[1] != ready_bytes:
@@ -155,13 +156,14 @@ def main() -> int:
             "total_bytes",
             "round_trips",
             "median_elapsed_ns",
-            "median_source_sketch_build_ns",
+            "median_source_meter_build_ns",
+            "median_snapshot_encode_ns",
             "exact_bytes_avoided",
         ]
     )
     for key in sorted(base_results):
         row = base_results[key]
-        elapsed, build = timing[key]
+        elapsed, build, encode = timing[key]
         writer.writerow(
             [
                 "summary",
@@ -175,6 +177,7 @@ def main() -> int:
                 row["round_trips"],
                 f"{statistics.median(elapsed):.0f}",
                 f"{statistics.median(build):.0f}",
+                f"{statistics.median(encode):.0f}",
                 row["exact_bytes_avoided"],
             ]
         )
