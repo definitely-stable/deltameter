@@ -415,11 +415,33 @@ impl EnergyDeltaMeter {
         encode_envelope(BACKEND_ENERGY, &payload)
     }
 
-    /// Decodes a canonical DeltaMeter snapshot v1 Energy sketch.
+    /// Decodes a canonical DeltaMeter snapshot v1 custom Energy sketch.
     ///
-    /// The decoder is fail-closed: the envelope, checksum, configuration,
-    /// exact payload length and derived energy cache must all validate.
+    /// A snapshot that claims a theorem-backed profile is rejected with
+    /// SnapshotError::ProvenanceRequired. CRC32C authenticates nothing and a
+    /// byte stream cannot prove that its hash rows originated from the
+    /// independent-uniform draw required by Coverage::Proven.
     pub fn decode_snapshot(bytes: &[u8]) -> Result<Self, SnapshotError> {
+        Self::decode_snapshot_impl(bytes, false)
+    }
+
+    /// Decodes an Energy snapshot while explicitly accepting the theorem-facing
+    /// uniform-row provenance precondition.
+    ///
+    /// If the snapshot carries a Proven profile marker, the caller asserts that
+    /// its encoded row coefficients originated from a valid independent-uniform
+    /// draw for that profile and were not adversarially substituted. CRC32C is
+    /// only accidental-corruption detection.
+    pub fn decode_snapshot_assuming_uniform_rows(
+        bytes: &[u8],
+    ) -> Result<Self, SnapshotError> {
+        Self::decode_snapshot_impl(bytes, true)
+    }
+
+    fn decode_snapshot_impl(
+        bytes: &[u8],
+        allow_proven_profile: bool,
+    ) -> Result<Self, SnapshotError> {
         let payload = decode_envelope(bytes, BACKEND_ENERGY)?;
         let mut cursor = Cursor::new(payload);
 
@@ -465,6 +487,9 @@ impl EnergyDeltaMeter {
                 EnergyConfig::new(buckets, rows).map_err(|_| SnapshotError::InvalidPayload)?
             }
             ENERGY_PROFILE_PROVEN => {
+                if !allow_proven_profile {
+                    return Err(SnapshotError::ProvenanceRequired);
+                }
                 let profile = EnergyProfile::new(
                     relative_error_from_snapshot_tag(relative_tag)?,
                     failure_target_from_snapshot_tag(failure_tag)?,
