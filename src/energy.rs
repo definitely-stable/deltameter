@@ -261,7 +261,7 @@ impl EnergyConfig {
         }
 
         let rows = words
-            .chunks_exact(6)
+            .chunks(6)
             .map(|chunk| {
                 EnergyRowHash::from_coefficients(
                     [chunk[0], chunk[1]],
@@ -544,7 +544,7 @@ mod tests {
 
     fn test_rows(count: usize, salt: u64) -> Vec<EnergyRowHash> {
         test_uniform_words(count * 6, salt)
-            .chunks_exact(6)
+            .chunks(6)
             .map(|chunk| {
                 EnergyRowHash::from_coefficients(
                     [chunk[0], chunk[1]],
