@@ -104,7 +104,7 @@ A narrow `ParityLevelCounts` research track may continue post-v0, but it is not 
 
 ## M4 — Performance and API freeze
 
-Status: implemented in PR #11; acceptance checks green; pending merge.
+Status: complete; merged in PR #11.
 
 Deliverables:
 
@@ -140,6 +140,32 @@ See docs/M4-PERFORMANCE-API-FREEZE.md for the freeze record and performance inte
 
 Only after M4 is merged should a separate requirement decide whether persisted serialization is actually needed.
 
+## M5 — Canonical sketch interchange v1
+
+Status: implementation in PR #13.
+
+Rationale:
+
+- when both full sets are already co-resident, exact comparison is often available;
+- the mergeable-sketch use case becomes materially useful across process, host, storage or time boundaries;
+- therefore a minimal self-contained interchange representation is a product requirement after the M4 API freeze.
+
+Deliverables:
+
+- versioned canonical envelope shared by Energy and Parity;
+- little-endian fixed-width integers;
+- exact backend and length validation;
+- CRC32C accidental-corruption detection;
+- self-contained Energy hash-row configuration plus primary counters;
+- Energy derived energies recomputed on decode rather than persisted;
+- self-contained Parity shape/seed plus packed GF(2) state;
+- zero-padding canonicality for the final Parity word;
+- public encode_snapshot/decode_snapshot methods and SnapshotError;
+- fixed byte vectors and fail-closed malformed-input tests;
+- no serde, file/network helper, compression, crypto, unsafe or new runtime dependency.
+
+The exact format and compatibility rules are in docs/M5-INTERCHANGE-V1.md.
+
 ## Post-v0 candidates
 
 Only after evidence:
@@ -147,7 +173,6 @@ Only after evidence:
 - `ParityLevelCounts` strict finite-sample research, only if certified fixed-d tails become practical;
 - `ParityPcsaSetV1` with `g(v)=1`;
 - ExactSmallDelta via Minisketch/PinSketch, Simple Set Sketching, IBLT-derived methods or a pure-Rust alternative, only after a separate primary-source and failure-semantics audit;
-- persisted wire format;
 - SIMD/unsafe specialization;
 - formal verification of a narrow proof/code boundary.
 
