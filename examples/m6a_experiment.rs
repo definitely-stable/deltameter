@@ -641,11 +641,7 @@ fn run_direct_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::Re
     let before = peer.counters();
     let body = encode_exact_set(scenario.source)?;
     let started = Instant::now();
-    let (header, response) = peer.request(
-        KIND_EXACT_SET,
-        scenario.source_generation,
-        &body,
-    )?;
+    let (header, response) = peer.request(KIND_EXACT_SET, scenario.source_generation, &body)?;
     let elapsed = nanos_u64(started.elapsed())?;
     if header.kind != KIND_EXACT_RESULT {
         return Err(invalid_data(
@@ -678,21 +674,12 @@ fn run_direct_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::Re
 fn run_control_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::Result<()> {
     let before = peer.counters();
     let started = Instant::now();
-    let estimate = request_estimate(
-        peer,
-        scenario.source_generation,
-        scenario.snapshot,
-    )?;
+    let estimate = request_estimate(peer, scenario.source_generation, scenario.snapshot)?;
     let exact_body = encode_exact_set(scenario.source)?;
-    let (header, response) = peer.request(
-        KIND_EXACT_SET,
-        scenario.source_generation,
-        &exact_body,
-    )?;
+    let (header, response) =
+        peer.request(KIND_EXACT_SET, scenario.source_generation, &exact_body)?;
     let elapsed = nanos_u64(started.elapsed())?;
-    if header.kind != KIND_EXACT_RESULT
-        || decode_exact_result(&response)? != scenario.exact_d
-    {
+    if header.kind != KIND_EXACT_RESULT || decode_exact_result(&response)? != scenario.exact_d {
         return Err(invalid_data(
             "snapshot control exact result disagrees with oracle",
         ));
@@ -728,14 +715,9 @@ fn run_admission_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io:
 
     let outcome = if estimate.admit {
         let exact_body = encode_exact_set(scenario.source)?;
-        let (header, response) = peer.request(
-            KIND_EXACT_SET,
-            scenario.source_generation,
-            &exact_body,
-        )?;
-        if header.kind != KIND_EXACT_RESULT
-            || decode_exact_result(&response)? != scenario.exact_d
-        {
+        let (header, response) =
+            peer.request(KIND_EXACT_SET, scenario.source_generation, &exact_body)?;
+        if header.kind != KIND_EXACT_RESULT || decode_exact_result(&response)? != scenario.exact_d {
             return Err(invalid_data("admitted exact result disagrees with oracle"));
         }
         "exact"
