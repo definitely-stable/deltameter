@@ -1,8 +1,11 @@
 use core::fmt;
 
 /// Reduction constant for the irreducible polynomial
-/// x^64 + x^7 + x^6 + x^2 + 1 over GF(2).
-const GF64_REDUCTION: u64 = 0xC5;
+/// x^64 + x^4 + x^3 + x + 1 over GF(2).
+///
+/// The previous bootstrap value 0xC5 was reducible and therefore could not
+/// justify the pairwise/4-wise finite-field independence argument.
+const GF64_REDUCTION: u64 = 0x1B;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EnergyError {
@@ -10,6 +13,7 @@ pub enum EnergyError {
     TablesMustBeOdd,
     EmptyTables,
     RowCountMismatch { expected: usize, actual: usize },
+    UniformWordCountMismatch { expected: usize, actual: usize },
     ProfileMismatch,
     StateSizeOverflow,
     CounterOverflow,
@@ -28,6 +32,12 @@ impl fmt::Display for EnergyError {
             Self::EmptyTables => f.write_str("at least one table is required"),
             Self::RowCountMismatch { expected, actual } => {
                 write!(f, "row count mismatch: expected {expected}, got {actual}")
+            }
+            Self::UniformWordCountMismatch { expected, actual } => {
+                write!(
+                    f,
+                    "uniform-random word count mismatch: expected {expected}, got {actual}"
+                )
             }
             Self::ProfileMismatch => {
                 f.write_str("configuration is not bound to the requested proven profile")
@@ -135,6 +145,12 @@ impl EnergyProfile {
         self.buckets() * self.tables() * core::mem::size_of::<i64>()
     }
 
+    /// Number of independent uniformly random u64 words needed to construct
+    /// all theorem-facing row hashes: 2 bucket + 4 sign coefficients per row.
+    pub const fn uniform_words_required(self) -> usize {
+        self.tables() * 6
+    }
+
     pub fn recommended_capacity(self, point: u128) -> Result<u128, EnergyError> {
         let extra = ceil_div(point, self.relative_error.capacity_extra_denominator());
         point
@@ -220,17 +236,44 @@ impl EnergyConfig {
         })
     }
 
-    /// Creates a theorem-profile configuration.
+    /// Creates a theorem-profile configuration from raw independent uniform
+    /// words without imposing an RNG dependency on the crate.
     ///
     /// # Randomness contract
     ///
-    /// For every row, the two bucket coefficients must be sampled uniformly
-    /// and independently from GF(2^64). The four sign coefficients must also
-    /// be sampled uniformly and independently from GF(2^64), independently of
-    /// the bucket coefficients and independently across rows.
+    /// `words` must contain exactly `profile.uniform_words_required()`
+    /// independent uniformly distributed u64 values. Every six words form one
+    /// row: two bucket coefficients followed by four sign coefficients.
     ///
-    /// The probability in Coverage::Proven is over that random draw.
-    pub fn for_profile_assuming_uniform_rows(
+    /// The probability in Coverage::Proven is over that random draw. A small
+    /// deterministic seed expanded by an ordinary PRNG does not automatically
+    /// satisfy this information-theoretic contract.
+    pub fn for_profile_assuming_uniform_words(
+        profile: EnergyProfile,
+        words: &[u64],
+    ) -> Result<Self, EnergyError> {
+        let expected = profile.uniform_words_required();
+        if words.len() != expected {
+            return Err(EnergyError::UniformWordCountMismatch {
+                expected,
+                actual: words.len(),
+            });
+        }
+
+        let rows = words
+            .chunks_exact(6)
+            .map(|chunk| {
+                EnergyRowHash::from_coefficients(
+                    [chunk[0], chunk[1]],
+                    [chunk[2], chunk[3], chunk[4], chunk[5]],
+                )
+            })
+            .collect();
+
+        Self::for_profile_assuming_uniform_rows(profile, rows)
+    }
+
+    fn for_profile_assuming_uniform_rows(
         profile: EnergyProfile,
         rows: Vec<EnergyRowHash>,
     ) -> Result<Self, EnergyError> {
@@ -486,32 +529,35 @@ fn gf64_mul(mut left: u64, mut right: u64) -> u64 {
 mod tests {
     use super::*;
 
+    fn splitmix64(mut value: u64) -> u64 {
+        value = value.wrapping_add(0x9E37_79B9_7F4A_7C15);
+        value = (value ^ (value >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+        value = (value ^ (value >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+        value ^ (value >> 31)
+    }
+
+    fn test_uniform_words(word_count: usize, salt: u64) -> Vec<u64> {
+        (0..word_count)
+            .map(|index| splitmix64((index as u64) ^ salt.rotate_left(17)))
+            .collect()
+    }
+
     fn test_rows(count: usize, salt: u64) -> Vec<EnergyRowHash> {
-        (0..count)
-            .map(|index| {
-                let i = index as u64 + 1;
+        test_uniform_words(count * 6, salt)
+            .chunks_exact(6)
+            .map(|chunk| {
                 EnergyRowHash::from_coefficients(
-                    [
-                        0x9E37_79B9_7F4A_7C15 ^ i.rotate_left(7) ^ salt,
-                        0xD1B5_4A32_D192_ED03 ^ i.rotate_left(19),
-                    ],
-                    [
-                        0x94D0_49BB_1331_11EB ^ i,
-                        0xBF58_476D_1CE4_E5B9 ^ i.rotate_left(11),
-                        0xA24B_AED4_963E_E407 ^ i.rotate_left(23),
-                        0x9FB2_1C65_1E98_DF25 ^ i.rotate_left(37) ^ salt,
-                    ],
+                    [chunk[0], chunk[1]],
+                    [chunk[2], chunk[3], chunk[4], chunk[5]],
                 )
             })
             .collect()
     }
 
     fn meter(profile: EnergyProfile, salt: u64) -> EnergyDeltaMeter {
-        let config = EnergyConfig::for_profile_assuming_uniform_rows(
-            profile,
-            test_rows(profile.tables(), salt),
-        )
-        .unwrap();
+        let words = test_uniform_words(profile.uniform_words_required(), salt);
+        let config =
+            EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap();
         EnergyDeltaMeter::new(config).unwrap()
     }
 
@@ -589,8 +635,9 @@ mod tests {
     fn sketch_difference_matches_direct_signed_difference() {
         let profile =
             EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
-        let rows = test_rows(profile.tables(), 7);
-        let config = EnergyConfig::for_profile_assuming_uniform_rows(profile, rows).unwrap();
+        let words = test_uniform_words(profile.uniform_words_required(), 7);
+        let config =
+            EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap();
 
         let mut left = EnergyDeltaMeter::new(config.clone()).unwrap();
         let mut right = EnergyDeltaMeter::new(config.clone()).unwrap();
@@ -638,6 +685,217 @@ mod tests {
             sketch.estimate(profile).unwrap_err(),
             EnergyError::ProfileMismatch
         );
+    }
+
+    fn polynomial_degree(value: u128) -> u32 {
+        127 - value.leading_zeros()
+    }
+
+    fn polynomial_mod(mut value: u128, modulus: u128) -> u128 {
+        let modulus_degree = polynomial_degree(modulus);
+        while value != 0 && polynomial_degree(value) >= modulus_degree {
+            value ^= modulus << (polynomial_degree(value) - modulus_degree);
+        }
+        value
+    }
+
+    fn polynomial_gcd(mut left: u128, mut right: u128) -> u128 {
+        while right != 0 {
+            let remainder = polynomial_mod(left, right);
+            left = right;
+            right = remainder;
+        }
+        left
+    }
+
+    #[test]
+    fn gf64_modulus_is_irreducible() {
+        let modulus = (1_u128 << 64) | u128::from(GF64_REDUCTION);
+        let x = 2_u64;
+        let mut value = x;
+
+        // For degree 64, whose only prime divisor is 2, Rabin's test reduces
+        // to gcd(x^(2^32)-x, p)=1 and x^(2^64)=x modulo p.
+        for _ in 0..32 {
+            value = gf64_mul(value, value);
+        }
+        assert_eq!(polynomial_gcd(u128::from(value ^ x), modulus), 1);
+
+        for _ in 0..32 {
+            value = gf64_mul(value, value);
+        }
+        assert_eq!(value, x);
+    }
+
+    #[test]
+    fn gf64_multiplication_matches_reference_vectors() {
+        let vectors = [
+            (
+                0x0123_4567_89AB_CDEF,
+                0xF0E1_D2C3_B4A5_9687,
+                0x287C_26FE_0540_0BC2,
+            ),
+            (
+                0xFFFF_FFFF_FFFF_FFFF,
+                0xFFFF_FFFF_FFFF_FFFF,
+                0x5555_5555_5555_5513,
+            ),
+            (
+                0x8000_0000_0000_0000,
+                0x0000_0000_0000_0002,
+                0x0000_0000_0000_001B,
+            ),
+            (
+                0xDEAD_BEEF_CAFE_BABE,
+                0x0123_4567_89AB_CDEF,
+                0xFBB6_7120_92FD_6A8C,
+            ),
+        ];
+
+        for (left, right, expected) in vectors {
+            assert_eq!(gf64_mul(left, right), expected);
+            assert_eq!(gf64_mul(right, left), expected);
+        }
+    }
+
+    #[test]
+    fn uniform_word_count_mismatch_is_rejected() {
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+        let words = test_uniform_words(profile.uniform_words_required() - 1, 11);
+
+        assert_eq!(
+            EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap_err(),
+            EnergyError::UniformWordCountMismatch {
+                expected: profile.uniform_words_required(),
+                actual: profile.uniform_words_required() - 1,
+            }
+        );
+    }
+
+    #[test]
+    fn source_order_is_invariant() {
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+        let mut forward = meter(profile, 23);
+        let mut reverse = meter(profile, 23);
+        let keys = [3, 5, 8, 13, 21, 34, 55, 89];
+
+        for key in keys {
+            forward.add_unique(key).unwrap();
+        }
+        for key in keys.into_iter().rev() {
+            reverse.add_unique(key).unwrap();
+        }
+
+        assert_eq!(forward.counters, reverse.counters);
+        assert_eq!(forward.energies, reverse.energies);
+    }
+
+    #[test]
+    fn self_difference_is_zero() {
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+        let mut sketch = meter(profile, 31);
+        for key in 0..64 {
+            if key % 3 != 0 {
+                sketch.add_unique(key).unwrap();
+            }
+        }
+
+        let zero = sketch.difference(&sketch).unwrap();
+        assert!(zero.counters.iter().all(|&counter| counter == 0));
+        assert!(zero.energies.iter().all(|&energy| energy == 0));
+        assert_eq!(zero.point_estimate(), 0);
+    }
+
+    #[test]
+    fn difference_is_antisymmetric() {
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+        let mut left = meter(profile, 41);
+        let mut right = meter(profile, 41);
+
+        for key in [1, 2, 5, 8, 13, 21] {
+            left.add_unique(key).unwrap();
+        }
+        for key in [2, 3, 5, 13, 34, 55] {
+            right.add_unique(key).unwrap();
+        }
+
+        let left_minus_right = left.difference(&right).unwrap();
+        let right_minus_left = right.difference(&left).unwrap();
+
+        for (forward, reverse) in left_minus_right
+            .counters
+            .iter()
+            .zip(right_minus_left.counters.iter())
+        {
+            assert_eq!(*forward, -*reverse);
+        }
+        assert_eq!(left_minus_right.energies, right_minus_left.energies);
+        assert_eq!(
+            left_minus_right.point_estimate(),
+            right_minus_left.point_estimate()
+        );
+    }
+
+    #[test]
+    fn deterministic_difference_property_grid() {
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+
+        for case in 0_u64..16 {
+            let mut left = meter(profile, 73);
+            let mut right = meter(profile, 73);
+            let mut direct = meter(profile, 73);
+
+            for key in 0_u64..96 {
+                let left_member = splitmix64(key ^ case.rotate_left(7)) & 3 != 0;
+                let right_member = splitmix64(
+                    key ^ case.rotate_left(19) ^ 0xA5A5_A5A5_A5A5_A5A5,
+                ) & 3 != 0;
+
+                if left_member {
+                    left.add_unique(key).unwrap();
+                }
+                if right_member {
+                    right.add_unique(key).unwrap();
+                }
+
+                match (left_member, right_member) {
+                    (true, false) => direct.add_unique(key).unwrap(),
+                    (false, true) => direct.remove_unique(key).unwrap(),
+                    _ => {}
+                }
+            }
+
+            let difference = left.difference(&right).unwrap();
+            assert_eq!(difference.counters, direct.counters, "case {case}");
+            assert_eq!(difference.energies, direct.energies, "case {case}");
+            assert_eq!(
+                difference.point_estimate(),
+                direct.point_estimate(),
+                "case {case}"
+            );
+        }
+    }
+
+    #[test]
+    fn failed_update_is_transactional_across_rows() {
+        let config = EnergyConfig::new(1, test_rows(3, 101)).unwrap();
+        let mut sketch = EnergyDeltaMeter::new(config).unwrap();
+
+        sketch.counters[1] = i64::MAX;
+        let counters_before = sketch.counters.clone();
+        let energies_before = sketch.energies.clone();
+
+        assert_eq!(
+            sketch.add_unique(7).unwrap_err(),
+            EnergyError::CounterOverflow
+        );
+        assert_eq!(sketch.counters, counters_before);
+        assert_eq!(sketch.energies, energies_before);
     }
 
     #[test]
