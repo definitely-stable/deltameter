@@ -13,7 +13,7 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-Pre-implementation. Research bootstrap is in PR #1.
+M0 research bootstrap is merged. M1 EnergyDeltaMeter reference implementation is active in Draft PR #3.
 
 Current implementation direction:
 
@@ -43,7 +43,10 @@ Requires Python 3. No third-party packages are needed.
 
 ```bash
 python research/run_all.py --out research-out
+python research/energy_profiles.py --check-csv research/energy_profiles.csv
 ```
+
+The committed CSV is the machine-readable bridge between the theorem-derived Python profile generator and Rust profile tests.
 
 ## Project principles
 
