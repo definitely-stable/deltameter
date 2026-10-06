@@ -35,7 +35,7 @@ The paper's estimator uses the highest non-zero index W_i per row and an exponen
 PublishedFpcsaF2 implements:
 
 - one packed bit per finite FIELDMAP[i,j] cell;
-- rows m >= 3;
+- rows m >= 1, matching the construction rather than imposing an estimator-quality threshold;
 - one-based levels 1..=J;
 - deterministic row/level/coefficient mapping from a key;
 - exact GF(2) cancellation on repeated toggles;
@@ -43,7 +43,7 @@ PublishedFpcsaF2 implements:
 - highest non-zero level per row;
 - a diagnostic-only Table 2 reference estimate.
 
-For J = 64, the implementation covers the full geometric level range representable from one uniform u64 word. A sampled level above J is returned as an explicit Truncated update and is not silently clamped.
+For J = 64, the implementation covers the full geometric level range representable from one uniform u64 word. J is a stored-level boundary, not a synonym for universe cardinality. A sampled level above J is returned as an explicit Truncated update and is not silently clamped.
 
 ## Random-oracle boundary
 
