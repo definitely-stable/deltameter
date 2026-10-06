@@ -9,7 +9,7 @@ Initial domain:
 - key type: `u64`;
 - data model: sets;
 - Energy source-set ingestion: `add_unique(key)`, then `difference(other)`;
-- Parity set update operation later: `toggle(key)`;
+- Parity set update operation: `toggle(key)`;
 - target output: point estimate plus explicitly labelled coverage information.
 
 No generic key codecs, distributed protocol, persistent wire format, keyed-security mode, exact-recovery subsystem, multi-crate workspace, plugin system or unsafe SIMD is required in the first implementation slice.
@@ -79,7 +79,19 @@ This is **not** assumed equivalent to published F-PCSA statistically. It receive
 
 ### ParityDeltaMeter
 
-The public experimental backend should initially wrap the published reproduction, not the unproved set-specialized variant.
+M3 wraps the published reproduction; it does not fork or rewrite the F-PCSA mechanics.
+
+Public experimental shape:
+
+~~~text
+ParityProfile::{Compact, Standard, Accurate}
+ParityConfig::{for_profile, new}
+ParityDeltaMeter::{toggle, xor_assign, xor_merged, estimate}
+~~~
+
+Built-in profiles use 64 stored levels and rows 64/256/1024, corresponding to published asymptotic RSE scales about 20.475% / 10.2375% / 5.11875%.
+
+The convenience u64 seed is deterministically expanded into the M2 pseudo-oracle domains. It is for reproducibility, not a proof that the ideal-random-oracle model has been instantiated.
 
 Strict `recommended_capacity(Proven)` is unavailable.
 
@@ -89,9 +101,8 @@ Illustrative direction:
 
 ```rust
 pub enum Coverage {
-    Proven { failure_probability: f64 },
-    Asymptotic,
-    Empirical,
+    Proven { failure_probability_upper_bound: f64 },
+    Asymptotic { relative_standard_error: f64 },
 }
 ```
 
@@ -99,7 +110,7 @@ Rules:
 
 - `Proven` requires a finite-sample theorem matching the concrete implementation.
 - asymptotic constants stay `Asymptotic`;
-- Monte Carlo calibration stays `Empirical`.
+- empirical calibration, if ever added, requires a separate explicit contract rather than reusing `Proven`.
 
 ## Compatibility
 

@@ -13,13 +13,13 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-M0 research bootstrap, M1 EnergyDeltaMeter, and M2 published GF(2)-F-PCSA reproduction are complete.
+M0–M3 are complete. M3 adds the experimental/asymptotic ParityDeltaMeter wrapper.
 
 Current implementation direction:
 
 - **EnergyDeltaMeter** — first implementation and strict finite-sample backend.
 - **PublishedFpcsaF2** — M2 faithful GF(2)-F-PCSA research reproduction.
-- **ParityDeltaMeter** — later M3 wrapper, experimental/asymptotic.
+- **ParityDeltaMeter** — M3 experimental/asymptotic wrapper over the published reproduction.
 - Gaussian/chi-square — research oracle only.
 - ExactSmallDelta — deferred.
 
@@ -30,6 +30,7 @@ Q1 is resolved for v0: there is currently **no accepted strict finite-sample Par
 - [docs/research/README.md](docs/research/README.md) — research index and authority order.
 - [docs/research/Q1-FINITE-SAMPLE-PARITY.md](docs/research/Q1-FINITE-SAMPLE-PARITY.md) — current Q1 result.
 - [docs/research/M2-FPCSA-REPRODUCTION.md](docs/research/M2-FPCSA-REPRODUCTION.md) — M2 source/implementation boundary.
+- [docs/research/M3-PARITY-EXPERIMENTAL.md](docs/research/M3-PARITY-EXPERIMENTAL.md) — M3 API, profiles, guarantees and benchmark plan.
 - [docs/research/FOUNDATION.md](docs/research/FOUNDATION.md) — canonical mathematical/engineering synthesis.
 - [docs/research/DECISIONS.md](docs/research/DECISIONS.md) — current decisions.
 - [docs/research/NEW-INPUTS-AUDIT.md](docs/research/NEW-INPUTS-AUDIT.md) — reconciliation of the latest reports.
@@ -49,6 +50,14 @@ python research/energy_profiles.py --check-csv research/energy_profiles.csv
 ```
 
 The committed CSV is the machine-readable bridge between the theorem-derived Python profile generator and Rust profile tests.
+
+M3 comparison harness:
+
+~~~bash
+cargo run --release --example m3_compare -- 100000
+~~~
+
+Its timing output is diagnostic only; Energy and Parity have different guarantee contracts.
 
 ## Project principles
 

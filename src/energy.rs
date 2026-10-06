@@ -1,5 +1,7 @@
 use core::fmt;
 
+use crate::coverage::Coverage;
+
 /// Reduction constant for the irreducible polynomial
 /// x^64 + x^4 + x^3 + x + 1 over GF(2).
 ///
@@ -157,13 +159,6 @@ impl EnergyProfile {
             .checked_add(extra)
             .ok_or(EnergyError::CapacityOverflow)
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Coverage {
-    Proven {
-        failure_probability_upper_bound: f64,
-    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -584,6 +579,16 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn energy_estimate_remains_proven_after_asymptotic_variant_is_added() {
+        let profile =
+            EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+        let sketch = meter(profile, 404);
+        let estimate = sketch.estimate(profile).unwrap();
+
+        assert!(matches!(estimate.coverage, Coverage::Proven { .. }));
     }
 
     #[test]
