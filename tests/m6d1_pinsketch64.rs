@@ -82,14 +82,11 @@ fn exact_merge_decode_grid_with_full_width_keys() {
 
                 let mut combined =
                     PinSketch64Lab::from_sorted_unique(stored_capacity, &left).unwrap();
-                let other =
-                    PinSketch64Lab::from_sorted_unique(stored_capacity, &right).unwrap();
+                let other = PinSketch64Lab::from_sorted_unique(stored_capacity, &right).unwrap();
                 combined.merge(&other).unwrap();
 
                 assert_eq!(
-                    combined
-                        .decode_candidate_with_limit(max_elements)
-                        .unwrap(),
+                    combined.decode_candidate_with_limit(max_elements).unwrap(),
                     expected,
                     "stored_capacity={stored_capacity} max_elements={max_elements} d={difference} case={case}"
                 );
@@ -194,12 +191,9 @@ fn one_extra_syndrome_rejects_fixed_over_capacity_vectors() {
                 max_elements + 1,
                 0x6A17_0000_0000_0000 ^ (max_elements as u64) << 32 ^ case,
             );
-            let sketch =
-                PinSketch64Lab::from_sorted_unique(stored_capacity, &keys).unwrap();
+            let sketch = PinSketch64Lab::from_sorted_unique(stored_capacity, &keys).unwrap();
             assert!(
-                sketch
-                    .decode_candidate_with_limit(max_elements)
-                    .is_err(),
+                sketch.decode_candidate_with_limit(max_elements).is_err(),
                 "guarded false success: max_elements={max_elements} case={case}"
             );
         }
