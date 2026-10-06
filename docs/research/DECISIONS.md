@@ -13,11 +13,11 @@ The main architectural risk is not lack of infrastructure. It is accidentally tu
 
 ### D1 — Primary mathematical model
 
-For true sets,
+For true sets:
 
-[
-d=|A	riangle B|=|Aoplus B|_0
-]
+```text
+d = |A △ B| = ||A XOR B||_0
+```
 
 over GF(2).
 
@@ -50,18 +50,18 @@ Parity may not expose a proven high-confidence capacity API until a concrete fin
 
 The first Parity implementation must reproduce the **published finite-field construction**:
 
-~~~text
+```text
 FIELDMAP[i,j] in F
 h(v) chooses row/level with published probability mass
 g(v) is uniform over F
 row statistic = highest non-zero level
-~~~
+```
 
 Classical PCSA first-1/bitmap models are intuition only, not the proof object.
 
 A proposed specialization with `g(v)=1` / `cell ^= 1` is a separate research algorithm, tentatively named `ParityPcsaSetV1`.
 
-It inherits no published (1.638/sqrt m) claim automatically.
+It inherits no published `1.638/sqrt(m)` claim automatically.
 
 ### D5 — Exact small-d recovery
 
@@ -137,7 +137,7 @@ Use:
 - exact small-case enumeration where useful;
 - theorem-derived configuration tests.
 
-Monte Carlo is diagnostic, not proof of (10^{-6}) or (10^{-9}) failure probabilities.
+Monte Carlo is diagnostic, not proof of `1e-6` or `1e-9` failure probabilities.
 
 ### D12 — CI
 
