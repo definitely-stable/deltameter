@@ -1,216 +1,367 @@
 # Q1 — Finite-sample Parity capacity
 
-Status: **v0 decision resolved: NO-GO for `Coverage::Proven`**  
+Status: **v0 decision resolved: NO-GO for Coverage::Proven**  
 Research status: **open**  
 Date: 2026-10-06
 
 ## Question
 
-For (xin GF(2)^V), (d=|x|_0), can a practical GF(2)-PCSA / finite-field sketch produce a computable
+For x in GF(2)^N with true Hamming weight
 
-[
-U(S,m,V,delta)
-]
+~~~text
+d = ||x||_0
+~~~
+
+can a practical GF(2)-F-PCSA construction produce a computable upper bound
+
+~~~text
+U(S, m, N, delta)
+~~~
 
 such that
 
-[
-Pr[dle U]ge 1-delta
-]
+~~~text
+Pr[d <= U] >= 1 - delta
+~~~
 
-for finite (m,V), all (d), including (d=0) and small (d), without relying on unsupported asymptotic normality?
+for finite parameters, including d = 0 and small d, without unsupported asymptotic normality?
 
-## Decision for v0
+## v0 decision
 
 **No. Not yet.**
 
-The repository does not currently have a theorem-backed finite-sample construction that justifies strict Parity capacity at (delta=10^{-3},10^{-6},10^{-9}).
+The repository still has no theorem-backed finite-sample construction that justifies strict Parity capacity at:
+
+~~~text
+delta in {1e-3, 1e-6, 1e-9}
+epsilon in {5%, 10%, 20%}
+~~~
 
 Therefore:
 
-```text
+~~~text
 ParityDeltaMeter
     point estimate: allowed
-    asymptotic/calibrated metadata: allowed if labelled
+    asymptotic metadata: allowed if labelled
+    empirical diagnostics: allowed if labelled
     Coverage::Proven: not allowed
     recommended_capacity(Proven): not allowed
 
 EnergyDeltaMeter
     strict finite-sample capacity: allowed
-```
+~~~
 
-This is a product decision, not a theorem that strict Parity is impossible.
+This is a product decision, not an impossibility theorem.
 
-## Critical distinction: published F-PCSA vs set-specialized parity
+## Canonical notation
 
-The latest research surfaced an important distinction that must be frozen before implementation.
+The newest report overloaded several symbols. Q1 now fixes notation:
 
-### Published F-PCSA over GF(2)
+~~~text
+N = universe cardinality
+m = number of F-PCSA rows
+d = true Hamming weight / symmetric-difference size
+j = level index
+J = maximum stored level / finite-level truncation boundary
+F = field; for DeltaMeter Parity, F = GF(2)
+~~~
 
-The published finite-field construction uses a random coefficient (g(v)in GF(2)). In the binary field that coefficient can be zero.
+Never reuse d for fringe width or truncation depth.
 
-Claims such as the published asymptotic relative-error constant near
+## Exact published construction first
 
-[
-1.638/sqrt m
-]
+The proof effort must start from the published F-PCSA definition, not from a generic classical-PCSA approximation.
 
-belong to that construction and its assumptions.
+For the published construction:
 
-### Proposed set-specialized `g(v) = 1`
+~~~text
+state:
+    FIELDMAP[i,j] in F
 
-A tempting DeltaMeter specialization is:
+hash h:
+    h : U -> [m] x N_levels
+    P(h(v) = (i,j)) = (1/m) * 2^-j
 
-```text
-choose row/level
+hash/coefficient g:
+    g : U -> F
+    g(v) is uniform over F
+
+update:
+    add k * g(v) to FIELDMAP[h(v)] in the field
+
+row statistic:
+    W_i = highest level j whose FIELDMAP[i,j] is non-zero
+
+estimator:
+    normalized function of the W_i values
+~~~
+
+For F = GF(2), a field cell that “should contain a 1” in classical PCSA can cancel back to zero. That cancellation is part of the published model.
+
+The published paper explicitly analyzes the middle-cardinality regime and does not claim that the same estimator handles the d = O(1) and d near N regimes without separate treatment.
+
+## Published F-PCSA vs set-specialized parity
+
+Two candidates remain separate.
+
+### PublishedFpcsaF2
+
+Uses the published random coefficient g(v) in GF(2).
+
+Published asymptotic claims, including the relative-error constant near
+
+~~~text
+1.638 / sqrt(m)
+~~~
+
+belong only to this construction and its assumptions.
+
+### ParityPcsaSetV1
+
+Potential DeltaMeter specialization:
+
+~~~text
+g(v) = 1
 cell ^= 1
-```
+~~~
 
-This removes coefficient randomness and is natural for set XOR semantics.
+This is statistically a different estimator.
 
-However, this is a **different estimator**. Published F-PCSA constants and tail claims must not be transferred to it automatically.
+It inherits no published asymptotic constant and no strict tail result automatically.
 
 Repository rule:
 
-> Until independently analyzed, `ParityPcsaSetV1` and published GF(2)-F-PCSA are separate research candidates.
+> Reproduce PublishedFpcsaF2 before evaluating ParityPcsaSetV1.
 
-The Rust implementation must reproduce the published construction first before any set-specialized variant is evaluated.
+## What is now established
 
-## What the latest research established
+The latest report strengthens the following exclusions.
 
-### Strong evidence
+1. Asymptotic RSE is not finite-sample high-confidence coverage.
+2. Empirical tails are diagnostics, not proof of 1e-6 or 1e-9 coverage.
+3. Median/group amplification only amplifies a valid per-copy failure bound.
+4. Independence assumptions must be proved for the exact F-PCSA state/statistic.
+5. Saddlepoint or other asymptotic approximations need explicit rigorous remainder control.
+6. Finite levels/truncation, d = 0, small d, and practical randomness are part of the theorem.
+7. A one-sided capacity bound does not require a full two-sided exact confidence interval.
 
-1. Published asymptotic RSE is not a finite-sample high-confidence theorem.
-2. Very small (delta) cannot be certified by ordinary Monte Carlo.
-3. Median/grouping amplification is valid only after a valid per-copy failure bound is established.
-4. Poissonization can simplify occupancy/parity analysis, but returning to fixed (d) needs a justified de-Poissonization argument.
-5. Naive de-Poissonization can introduce a large penalty and should not be hidden inside a `Proven` profile.
-6. Small (d), level truncation, finite (V), and practical hash independence are part of the theorem, not implementation afterthoughts.
+## Critical corrections to the newest attached report
 
-### Not established
+### Classical PCSA is not the exact proof object
 
-The following are **not** accepted as proof-grade conclusions:
+The report repeatedly reasons about first-1 positions and classical PCSA bitmaps.
 
-- plugging the asymptotic (1.638/sqrt m) variance into Chebyshev/Cantelli and calling the result finite-sample;
-- fitting an empirical CDF and calling (delta=10^{-9}) coverage `Proven`;
-- using a median wrapper without a theorem for the per-copy tail;
-- assuming independent cells/registers in the fixed-(d) model;
-- treating a saddlepoint approximation as an exact confidence guarantee;
-- transferring published F-PCSA results to `g(v)=1`.
+That is useful historical intuition, but Q1 concerns the published finite-field FIELDMAP construction and its rightmost-nonzero row statistic.
+
+Exact finite analysis must use the actual state or a proved sufficient statistic.
+
+### GF(2^V) is not the definition of GF(2)-F-PCSA
+
+The report speculates that GF(2)-F-PCSA may mean hashing through an extension field GF(2^V).
+
+That is rejected.
+
+For DeltaMeter:
+
+~~~text
+field = GF(2)
+universe size = N
+~~~
+
+These are separate concepts.
+
+### Poissonization is a tool, not a free independence theorem
+
+If fully independent hashing splits a Poisson number of active keys into disjoint row/level categories, the category counts may become independent by Poisson thinning.
+
+That can simplify the exact field-cell law.
+
+But the proof must derive this for:
+
+- the exact h distribution;
+- the g coefficient model;
+- finite J;
+- the chosen row statistic.
+
+No blanket “the registers are independent” assumption is accepted.
+
+### De-Poissonization is promising but conditional
+
+The 2025 elementary de-Poissonization result is potentially useful because it gives explicit finite-order Poisson-Charlier remainder bounds in terms of higher forward differences.
+
+For DeltaMeter it becomes applicable only after we define a concrete coefficient sequence, for example:
+
+~~~text
+a_n(s) = P_n[ T(S) <= s ]
+~~~
+
+or another acceptance/tail probability, and prove computable bounds on the forward differences required by the theorem.
+
+Until then its status is:
+
+~~~text
+promising theorem candidate
+not a finished F-PCSA tail bound
+~~~
+
+### Truncated multivariate-normal estimation is not the right truncation model
+
+The cited high-dimensional truncated-sample paper studies parameter estimation from truncated multivariate Gaussian observations.
+
+F-PCSA finite-level storage is discrete algorithmic censoring of sketch state.
+
+That paper is not a direct justification for Q1 and is not part of the main proof path.
+
+### One-sided inversion is the minimal statistical target
+
+We need a valid level-delta test for large cardinalities, then invert it.
+
+A conservative test with Type-I error <= delta is sufficient.
+
+The test does not need to attain delta exactly.
+
+Two-sided central/minlike/Blaker machinery is optional and currently unnecessary.
+
+### Binary search requires monotonicity
+
+A numeric binary search for U is only valid if the rejection/acceptance rule is monotone in d.
+
+If stochastic ordering cannot be proved, test inversion must use explicit certified search over the candidate cardinalities or another method that handles non-monotone acceptance sets.
 
 ## Correct research path
 
-The next proof attempt should be narrow.
+### A. Freeze the exact published state machine
 
-### A. Reproduce the exact published construction
+Write an implementation-independent mathematical specification for:
 
-Freeze:
+- h;
+- g;
+- field update;
+- finite J;
+- row statistic W_i;
+- final estimator.
 
-- row/register selection;
-- level distribution;
-- coefficient distribution;
-- finite level range induced by (V);
-- exact estimator statistic;
-- exact independence model.
+Do not introduce the g(v)=1 variant here.
 
-No implementation-specific simplification before reproduction.
+### B. Exact small finite distribution
 
-### B. Exact finite cases
+For small N, m, J, and d:
 
-For small (m,d), compute the exact distribution by enumeration or dynamic programming.
+- enumerate or dynamic-program the exact FIELDMAP distribution;
+- compare exact moments with the existing moment oracle where the models overlap;
+- identify a smallest sufficient statistic, if one exists;
+- test stochastic ordering in d;
+- produce golden distributions/vectors.
 
-Goals:
+Do not use a classical-PCSA first-1-position Markov chain unless equivalence to the actual FIELDMAP statistic is proved.
 
-- validate first/second-moment formulas;
-- detect non-monotonicity;
-- test stochastic ordering assumptions needed by test inversion;
-- produce golden vectors.
+### C. Finite-level model
 
-### C. Poissonized model
+Treat levels above J as an explicit event.
 
-If Poissonization makes cells independent, use it only as an intermediate model.
+Track a failure/error budget such as:
 
-Track explicitly:
-
-```text
+~~~text
 delta_total =
-    delta_poisson_tail
-  + delta_depoissonization
+    delta_model
   + delta_truncation
+  + delta_depoissonization
   + delta_numerical
-```
+~~~
 
-No hidden error budget.
+Only terms that are actually probabilistic failures belong in the budget; deterministic numerical interval enclosure can instead be handled by outward rounding/certified arithmetic.
 
-### D. Fixed-d return
+### D. Poissonized exact law, if useful
 
-Prefer, in order:
+Derive the exact cell/row law under a Poissonized active-key count.
 
-1. exact conditioning / exact coefficient extraction;
-2. rigorous finite-d dynamic program;
-3. explicit de-Poissonization theorem with computable remainder;
-4. conservative inequality whose assumptions are verified.
+Do not jump directly to CLT or asymptotic RSE.
 
-Saddlepoint/CGF approximations may guide search, but remain diagnostic until accompanied by a rigorous remainder bound.
+### E. Rigorous return to fixed d
 
-### E. Test inversion
+Preferred order:
 
-A strict upper bound should ideally come from a family of valid tests.
+1. direct fixed-d combinatorial/DP analysis;
+2. exact conditioning/coefficient extraction;
+3. a de-Poissonization theorem with verified hypotheses and explicit remainder;
+4. only then looser concentration inequalities whose assumptions are verified.
 
-For observed statistic (S=s), define a valid rejection probability (p_d(s)). Then construct an upper confidence set by inversion.
+### F. One-sided test inversion
 
-A generic shape is:
+For each candidate d0, construct a test of a one-sided hypothesis suitable for an upper confidence limit.
 
-```text
-U(s) = max { d : p_d(s) > delta }
-```
+The exact direction depends on the monotone statistic eventually chosen.
 
-but only if the acceptance/rejection ordering is valid. Parity occupancy can saturate or become non-monotone, so stochastic monotonicity must be proved or the inversion must explicitly handle non-monotone acceptance regions.
+Then define U from the non-rejected parameter set.
 
-## Engineering threshold for changing the decision
+Do not assume that the confidence set is an interval until monotonicity is established.
 
-The decision may move from NO-GO to GO only if all of the following hold:
+### G. Width/power gate
 
-1. finite-sample coverage is theorem-backed for the concrete sketch;
-2. (d=0) and small (d) are covered explicitly;
-3. truncation and numerical error are inside the failure budget;
-4. the randomness contract used in Rust matches the proof;
-5. for (arepsilonin{0.05,0.10,0.20}) and (deltain{10^{-3},10^{-6},10^{-9}}), generated profiles have useful width;
-6. memory/update cost is competitive enough to justify a second strict backend.
+Coverage alone is not enough.
 
-If coverage is valid but (U/d) is usually too large, the result remains NO-GO for strict Parity.
+For each requested epsilon/delta pair, measure or rigorously bound:
 
-## Reproducible research runners to add later
+- state bytes;
+- update cost;
+- query cost;
+- median/p95 U/d where meaningful;
+- the smallest d where relative width is useful;
+- behavior near d = 0 and d near N.
 
-Keep this small:
+## GO / NO-GO / REPLACE rule
 
-```text
+### GO
+
+Only if:
+
+- finite-sample coverage is theorem-backed for the concrete implementation;
+- small-d and finite-J behavior are included;
+- the Rust randomness contract matches the proof;
+- width is useful for the requested profiles;
+- memory/update cost is competitive enough to justify a second strict backend.
+
+### NO-GO
+
+If the theorem is unavailable or the resulting U is too wide/expensive.
+
+Then:
+
+~~~text
+Parity = fast experimental/asymptotic estimate
+Energy = strict capacity backend
+~~~
+
+### REPLACE
+
+Only if another GF(2)-linear estimator directly demonstrates a better practical frontier under the same model.
+
+## Minimal reproducible Q1 tooling
+
+Do not build a research framework.
+
+The next useful tools are:
+
+~~~text
 research/
-  parity_exact_small.py
-  parity_truncation_budget.py
-  parity_tail_profile.py
-```
+    parity_exact_small.py
+    parity_truncation_budget.py
+~~~
 
-Their roles:
+A strict tail/profile generator is added only after a valid theorem exists.
 
-- `parity_exact_small.py`: exact enumeration/DP for small (m,d);
-- `parity_truncation_budget.py`: finite-(V) level-mass accounting;
-- `parity_tail_profile.py`: only after a valid tail theorem exists, generate strict profiles.
-
-Monte Carlo remains diagnostic and belongs outside the proof path.
+Monte Carlo remains diagnostic.
 
 ## v0 consequence
 
-Q1 no longer blocks starting Rust implementation.
+This newest research **does not delay M1**.
 
-The implementation order is:
+Implementation order remains:
 
-```text
+~~~text
 EnergyDeltaMeter
--> published F-PCSA reproduction
--> ParityDeltaMeter experimental
+-> faithful PublishedFpcsaF2 reproduction
+-> experimental ParityDeltaMeter
 -> performance comparison
 -> optional continuation of strict-Parity theory
-```
-
-Strict Parity research continues, but it is not a release gate for the first useful crate.
+~~~
