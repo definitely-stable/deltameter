@@ -113,7 +113,8 @@ struct ScenarioData<'a> {
     snapshot: &'a [u8],
     peer_n: usize,
     exact_d: u64,
-    source_build_ns: u64,
+    source_meter_build_ns: u64,
+    snapshot_encode_ns: u64,
 }
 
 #[derive(Debug)]
@@ -543,7 +544,7 @@ fn harness_main() -> AppResult<()> {
         admission.setup_ns, admission.rx_bytes
     );
     println!(
-        "result,arm,scenario,source_n,peer_n,exact_d,threshold,point,decision,outcome,tx_bytes,rx_bytes,total_bytes,round_trips,elapsed_ns,source_sketch_build_ns,exact_bytes_avoided,false_admit,false_reject"
+        "result,arm,scenario,source_n,peer_n,exact_d,threshold,point,decision,outcome,tx_bytes,rx_bytes,total_bytes,round_trips,elapsed_ns,source_meter_build_ns,snapshot_encode_ns,exact_bytes_avoided,false_admit,false_reject"
     );
 
     let workloads = [
@@ -612,10 +613,13 @@ fn harness_main() -> AppResult<()> {
 
         let build_started = Instant::now();
         let source_meter = build_meter(&source, CONFIG_ID)?;
+        let source_meter_build_ns = nanos_u64(build_started.elapsed())?;
+
+        let encode_started = Instant::now();
         let snapshot = source_meter
             .encode_snapshot()
             .map_err(|error| other_error(format!("snapshot encode failed: {error}")))?;
-        let source_build_ns = nanos_u64(build_started.elapsed())?;
+        let snapshot_encode_ns = nanos_u64(encode_started.elapsed())?;
 
         let scenario = ScenarioData {
             name: workload.name,
@@ -624,7 +628,8 @@ fn harness_main() -> AppResult<()> {
             snapshot: &snapshot,
             peer_n: peer_keys.len(),
             exact_d,
-            source_build_ns,
+            source_meter_build_ns,
+            snapshot_encode_ns,
         };
         run_direct_arm(&mut direct, &scenario)?;
         run_control_arm(&mut control, &scenario)?;
@@ -663,7 +668,8 @@ fn run_direct_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::Re
         "exact",
         delta_counters(before, peer.counters())?,
         elapsed,
-        scenario.source_build_ns,
+        0,
+        0,
         0,
         false,
         false,
@@ -695,7 +701,8 @@ fn run_control_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io::R
         "exact",
         delta_counters(before, peer.counters())?,
         elapsed,
-        scenario.source_build_ns,
+        scenario.source_meter_build_ns,
+        scenario.snapshot_encode_ns,
         0,
         estimate.admit && scenario.exact_d > ADMISSION_THRESHOLD,
         !estimate.admit && scenario.exact_d <= ADMISSION_THRESHOLD,
@@ -733,7 +740,8 @@ fn run_admission_arm(peer: &mut PeerProcess, scenario: &ScenarioData<'_>) -> io:
         outcome,
         delta_counters(before, peer.counters())?,
         elapsed,
-        scenario.source_build_ns,
+        scenario.source_meter_build_ns,
+        scenario.snapshot_encode_ns,
         if estimate.admit { 0 } else { exact_bytes },
         estimate.admit && scenario.exact_d > ADMISSION_THRESHOLD,
         !estimate.admit && scenario.exact_d <= ADMISSION_THRESHOLD,
@@ -780,14 +788,15 @@ fn print_result(
     outcome: &str,
     counters: (u64, u64, u64),
     elapsed_ns: u64,
-    source_build_ns: u64,
+    source_meter_build_ns: u64,
+    snapshot_encode_ns: u64,
     exact_bytes_avoided: u64,
     false_admit: bool,
     false_reject: bool,
 ) {
     let (tx, rx, round_trips) = counters;
     println!(
-        "result,{arm},{scenario},{source_n},{peer_n},{exact_d},{ADMISSION_THRESHOLD},{point},{decision},{outcome},{tx},{rx},{},{round_trips},{elapsed_ns},{source_build_ns},{exact_bytes_avoided},{false_admit},{false_reject}",
+        "result,{arm},{scenario},{source_n},{peer_n},{exact_d},{ADMISSION_THRESHOLD},{point},{decision},{outcome},{tx},{rx},{},{round_trips},{elapsed_ns},{source_meter_build_ns},{snapshot_encode_ns},{exact_bytes_avoided},{false_admit},{false_reject}",
         tx + rx
     );
 }
