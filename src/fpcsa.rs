@@ -170,6 +170,7 @@ impl PublishedFpcsaF2Config {
         self.state_words * core::mem::size_of::<u64>()
     }
 
+    #[cfg(test)]
     pub const fn oracle(&self) -> PublishedFpcsaOracle {
         self.oracle
     }
@@ -214,10 +215,12 @@ impl PublishedFpcsaF2 {
         }
     }
 
+    #[cfg(test)]
     pub fn config(&self) -> &PublishedFpcsaF2Config {
         &self.config
     }
 
+    #[cfg(test)]
     pub fn packed_words(&self) -> &[u64] {
         &self.words
     }
@@ -251,6 +254,7 @@ impl PublishedFpcsaF2 {
         Ok(merged)
     }
 
+    #[cfg(test)]
     pub fn row_highest_level(&self, row: u32) -> Result<Option<u8>, FpcsaError> {
         if row >= self.config.rows {
             return Err(FpcsaError::InvalidRow {
@@ -262,6 +266,7 @@ impl PublishedFpcsaF2 {
         Ok(self.row_highest_level_unchecked(row))
     }
 
+    #[cfg(test)]
     pub fn highest_levels(&self) -> Vec<Option<u8>> {
         (0..self.config.rows)
             .map(|row| self.row_highest_level_unchecked(row))
