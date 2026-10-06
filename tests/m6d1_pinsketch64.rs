@@ -106,11 +106,11 @@ fn fixed_tiny_vectors_are_stable() {
             0, 0, 0,
         ]
     );
-    assert_eq!(one.decode_candidate().unwrap(), vec![1]);
+    assert_eq!(one.decode_candidate_with_limit(1).unwrap(), vec![1]);
 
     let two = PinSketch64Lab::from_sorted_unique(2, &[1, 2]).unwrap();
     assert_eq!(two.odd_syndromes(), &[3, 9]);
-    assert_eq!(two.decode_candidate().unwrap(), vec![1, 2]);
+    assert_eq!(two.decode_candidate_with_limit(2).unwrap(), vec![1, 2]);
 }
 
 #[test]
@@ -123,7 +123,7 @@ fn exact_merge_decode_handles_zero_and_high_bit_values() {
     let other = PinSketch64Lab::from_sorted_unique(4, &right).unwrap();
     combined.merge(&other).unwrap();
 
-    assert_eq!(combined.decode_candidate().unwrap(), expected);
+    assert_eq!(combined.decode_candidate_with_limit(4).unwrap(), expected);
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn direction_is_derived_only_from_exact_local_membership() {
     let mut combined = PinSketch64Lab::from_sorted_unique(4, &local).unwrap();
     let other = PinSketch64Lab::from_sorted_unique(4, &remote).unwrap();
     combined.merge(&other).unwrap();
-    let recovered = combined.decode_candidate().unwrap();
+    let recovered = combined.decode_candidate_with_limit(4).unwrap();
     assert_eq!(recovered, expected);
 
     let local_only: Vec<_> = recovered
@@ -163,7 +163,7 @@ fn serialization_is_separate_and_merge_stable() {
 
     let mut combined = left;
     combined.merge(&right).unwrap();
-    assert_eq!(combined.decode_candidate().unwrap(), vec![0, 5, 7]);
+    assert_eq!(combined.decode_candidate_with_limit(4).unwrap(), vec![0, 5, 7]);
 }
 
 #[test]
@@ -221,7 +221,7 @@ fn over_capacity_never_becomes_oracle_success() {
         assert_eq!(keys.len(), capacity + 1);
 
         let sketch = PinSketch64Lab::from_sorted_unique(capacity, &keys).unwrap();
-        match sketch.decode_candidate() {
+        match sketch.decode_candidate_with_limit(capacity) {
             Ok(candidate) => assert_ne!(
                 candidate, keys,
                 "over-capacity candidate must not be treated as exact oracle success"
