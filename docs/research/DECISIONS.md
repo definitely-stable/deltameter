@@ -1,7 +1,7 @@
 # Decision record 0001 — pre-implementation baseline
 
-Status: **accepted for bootstrap**  
-Updated: 2026-10-06 after the latest Q1 research and attached reports.
+Status: **accepted and updated through M3**  
+Updated: 2026-10-06 after the post-M3 strict-Parity research round.
 
 ## Context
 
@@ -186,6 +186,52 @@ Not v0 requirements.
 
 No Verus/Alerus/Creusot gate and no Minisketch FFI unless a concrete later need justifies the maintenance surface.
 
+### D15 — Stop the published-W_i strict-Parity track
+
+The post-M3 research round closes the current attempt to make the published W_i F-PCSA estimator a strict finite-sample backend.
+
+Reasons:
+
+- the exact full-state fixed-d law is exponential at target m,J;
+- W_i is not sufficient for d;
+- Poissonization gives a clean exact law but no practical certified fixed-d bridge;
+- stochastic monotonicity of the full published statistic remains unresolved;
+- no practical 1e-6/1e-9 one-sided inversion exists;
+- Energy already supplies a strict backend.
+
+This is a research stop gate, not an impossibility theorem for all GF(2)-linear estimators.
+
+### D16 — ParityLevelCounts is research-only
+
+A possible follow-up statistic is:
+
+~~~text
+S_j = popcount(FIELDMAP[:,j])
+~~~
+
+It reuses the mergeable FIELDMAP state and has exact one-level finite laws.
+
+It remains research-only until all of the following exist:
+
+- certified fixed-d tail/inversion;
+- outward-rounded numerical evaluation for target deltas;
+- useful width/power;
+- complete memory/update/query accounting.
+
+No public type and no Coverage::Proven are added now.
+
+### D17 — No hybrid REPLACE decision from secondary reports
+
+Simple Set Sketching, Minisketch/PinSketch, IBLT-derived estimators and related candidates remain separate future audits.
+
+In particular:
+
+- high-probability exact recovery is not automatically unconditional Coverage::Exact;
+- exact mean/variance plus an asymptotic chi-square limit is not a finite-sample confidence theorem;
+- alternative-backend memory numbers must be compared against the generated Energy profiles, including all amplification tables.
+
+M4 remains the next implementation milestone.
+
 ## Immediate implementation sequence
 
 ```text
@@ -193,10 +239,11 @@ M0 research bootstrap
 -> M1 EnergyDeltaMeter
 -> M2 published F-PCSA reproduction
 -> experimental ParityDeltaMeter
+-> post-M3 strict-Parity stop gate
 -> performance/API freeze
--> optional continued strict-Parity research
+-> optional ParityLevelCounts / exact-small-d research
 ```
 
 Strict Parity theory is no longer a blocker for beginning the useful Rust crate.
 
-The newest “От Эвристики к Доказательству” report does not change this decision. It sharpens the future proof program, especially exact-state analysis and rigorous de-Poissonization, while also confirming that asymptotic/empirical shortcuts are not enough.
+The post-M3 Gemini/Qwen/DeepSeek round strengthens the NO-GO decision for the published W_i strict track. Exact Poissonized and truncation results are retained as research artifacts; alternative backends require separate audits.
