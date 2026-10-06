@@ -20,11 +20,11 @@ fn main() {
     println!("DeltaMeter M3 comparison harness");
     println!("keys={keys}");
     println!(
-        "Energy state={} bytes; theorem profile=Proven(epsilon=10%, delta=1e-6)",
+        "Energy counter state={} bytes; theorem profile=Proven(epsilon=10%, delta=1e-6)",
         energy_profile.counter_state_bytes()
     );
     println!(
-        "Parity state={} bytes; guarantee=Asymptotic(RSE≈{:.4}%)",
+        "Parity packed cell state={} bytes; guarantee=Asymptotic(RSE≈{:.4}%)",
         parity_config.packed_state_bytes(),
         parity_config.asymptotic_relative_standard_error() * 100.0
     );
