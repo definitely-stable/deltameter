@@ -21,6 +21,7 @@ The v1 format is:
 - little-endian;
 - versioned;
 - backend-tagged;
+- explicitly domain-tagged;
 - exact-length checked;
 - corruption-detecting with CRC32C;
 - safe to decode without trusting cached/derived state;
@@ -45,10 +46,12 @@ offset  size  field
 0       8     magic = ASCII "DELTAMTR"
 8       2     format_version = 1 (u16)
 10      1     backend
-11      1     flags = 0
-12      8     payload_len (u64)
-20      N     backend payload
-20+N    4     CRC32C(header || payload)
+11      1     domain = 1
+12      1     flags = 0
+13      3     reserved = 0
+16      8     payload_len (u64)
+24      N     backend payload
+24+N    4     CRC32C(header || payload)
 ~~~
 
 Backend tags:
@@ -58,7 +61,13 @@ Backend tags:
 2 = Parity
 ~~~
 
-The total encoded length is exactly `20 + payload_len + 4`. Trailing bytes are invalid.
+Domain tags:
+
+~~~text
+1 = u64 set domain
+~~~
+
+The total encoded length is exactly `24 + payload_len + 4`. Trailing bytes are invalid. Unknown domains and non-zero reserved bytes are invalid.
 
 CRC32C uses the Castagnoli polynomial. It detects accidental corruption only. It is not a MAC and does not authenticate the sender.
 
@@ -174,7 +183,9 @@ A v1 decoder fails closed when any of the following occurs:
 - magic differs;
 - version is not 1;
 - backend does not match the requested meter type;
+- domain is not the v1 u64-set domain;
 - flags are non-zero;
+- a common-header reserved byte is non-zero;
 - declared payload length does not exactly match input length;
 - CRC32C differs;
 - a Proven Energy profile is decoded without the explicit uniform-row provenance assumption;
@@ -200,6 +211,7 @@ Changes that alter any of the following require a new format version or backend 
 - counter ordering or width;
 - profile-tag meaning;
 - backend payload layout;
+- domain-tag meaning;
 - checksum coverage/algorithm.
 
 Adding a new public Rust API does not by itself require a new snapshot version if v1 bytes and semantics remain unchanged.
