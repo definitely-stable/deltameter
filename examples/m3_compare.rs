@@ -12,14 +12,12 @@ fn main() {
         .map(|value| value.parse::<u64>().expect("key count must be an integer"))
         .unwrap_or(10_000);
 
-    let energy_profile =
-        EnergyProfile::new(RelativeError::TenPercent, FailureTarget::OneInMillion);
+    let energy_profile = EnergyProfile::new(RelativeError::TenPercent, FailureTarget::OneInMillion);
     let energy_words = pseudo_uniform_words(energy_profile.uniform_words_required(), 0xE11E);
     let energy_config =
         EnergyConfig::for_profile_assuming_uniform_words(energy_profile, &energy_words).unwrap();
 
-    let parity_config =
-        ParityConfig::for_profile(ParityProfile::Standard, 0xA11C_E55).unwrap();
+    let parity_config = ParityConfig::for_profile(ParityProfile::Standard, 0xA11C_E55).unwrap();
 
     println!("DeltaMeter M3 comparison harness");
     println!("keys={keys}");
@@ -93,10 +91,7 @@ fn bench_parity_update(keys: u64, config: ParityConfig) -> Duration {
     })
 }
 
-fn build_energy_pair(
-    keys: u64,
-    config: EnergyConfig,
-) -> (EnergyDeltaMeter, EnergyDeltaMeter) {
+fn build_energy_pair(keys: u64, config: EnergyConfig) -> (EnergyDeltaMeter, EnergyDeltaMeter) {
     let mut left = EnergyDeltaMeter::new(config.clone()).unwrap();
     let mut right = EnergyDeltaMeter::new(config).unwrap();
 
