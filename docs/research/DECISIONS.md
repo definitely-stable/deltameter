@@ -312,6 +312,8 @@ M5 uses a dependency-free canonical v1 envelope with:
 
 Energy serializes its exact hash coefficients because dimensions alone are insufficient to continue or compare the sketch. Parity serializes seed plus shape because that deterministically reconstructs its pseudo-oracle.
 
+A serialized Energy profile marker cannot self-certify the theorem's randomness assumption. The ordinary decoder rejects Proven snapshots; restoring Proven coverage requires an explicitly named decoder whose caller accepts the uniform-row provenance precondition.
+
 CRC32C is not authentication. No crypto, serde, compression, file or network abstraction is added.
 
 ## Immediate implementation sequence
