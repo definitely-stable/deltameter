@@ -96,15 +96,17 @@ Cold on-demand sketch construction is also not competitive with the in-memory ex
 
 No public network/admission API is justified. See [M6-A evidence](M6-A-EVIDENCE.md).
 
-## M6-C algebraic candidate
+## M6-C accepted algebraic optimization
 
 Let L(y) extract bit zero in the existing polynomial basis. Multiplication by fixed c is GF(2)-linear, so define bit i of M(c) as L(c * 2^i). Then L(c*y)=parity(M(c)&y).
 
 Distributivity gives L(c0+c1*x+c2*x²+c3*x³) as XOR of L(c0) and three masked parities. The coefficient order, field reduction 0x1B and sign convention do not change. Compute x² and x³ once per key; bucket hashing remains unchanged. For B>1 this replaces 4R field multiplications by R+2 plus masked parity work. B=1 needs a separate cost count.
 
-Three u64 masks require 24R raw bytes (552 at R=23), excluding layout overhead. They are derived private state, rebuilt on construction/decode and never serialized. A straightforward basis constructor costs 192 field multiplications per row, making setup/amortization a mandatory benchmark. Investigate cheaper mask derivation only as a separately verified transformation.
+Three u64 masks require 24R raw bytes (552 at R=23), excluding layout overhead. They are derived private state, rebuilt on construction/decode and never serialized. The initially measured basis-by-basis builder was rejected because of setup overhead. The accepted builder derives all mask bits by walking c*x^i with a cheap multiply-by-x recurrence, verified against full gf64_mul for every basis bit.
 
 Acceptance requires basis/linearity reasoning, Horner differential vectors including zero/high bits/all-ones, all profiles, signed differences, post-decode continuation, overflow atomicity and byte-identical v1 snapshots. A future adjoint-square transformation might avoid per-key powers but is not part of this candidate.
+
+M6-C measured result: **ACCEPT**. Final paired hosted evidence reports about 68–71% lower update latency, while optimized construction/decode overhead amortizes after roughly 1–1.4 updates. Difference/query remain near baseline and snapshot-v1 bytes are unchanged. See [M6-C evidence](M6-C-EVIDENCE.md).
 
 ## Implementation sequence
 
