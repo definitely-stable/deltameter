@@ -13,7 +13,7 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-M0–M4 are complete. Post-M3 research closes the current published-W_i strict-Parity track as NO-GO. M5 canonical sketch interchange is the current implementation milestone in PR #13.
+M0–M5 are complete. Post-M3 research closes the current published-W_i strict-Parity track as NO-GO. Canonical sketch interchange v1 is merged and frozen.
 
 Current implementation direction:
 
