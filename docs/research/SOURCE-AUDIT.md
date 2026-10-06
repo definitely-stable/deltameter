@@ -8,11 +8,11 @@ The report is preserved as an important historical research input. It contains s
 
 ### F2 identity
 
-For set difference represented as (x_i\in\{-1,0,+1\}),
+For set difference represented as `x_i ∈ {-1,0,+1}`:
 
-[
-|A\triangle B|=F_2(x).
-]
+```text
+|A △ B| = F2(x)
+```
 
 The AMS discussion and the role of fourth-order sign independence are useful baselines.
 
@@ -20,9 +20,9 @@ The AMS discussion and the role of fourth-order sign independence are useful bas
 
 If a two-sided relative guarantee holds, the report's conversion
 
-[
-C=\left\lceil\widehat d/(1-\varepsilon)\right\rceil
-]
+```text
+C = ceil(d_hat / (1 - epsilon))
+```
 
 is valid on the estimator's good event.
 
@@ -44,17 +44,12 @@ The Verus/Alerus discussion is relevant as a long-term direction, especially if 
 
 The report frames DeltaMeter mainly as F2 estimation.
 
-For true sets,
+For true sets:
 
-[
-z=A\oplus B\in GF(2)^V
-]
-
-and
-
-[
-|A\triangle B|=\|z\|_0.
-]
+```text
+z = A XOR B in GF(2)^N
+|A △ B| = ||z||_0
+```
 
 This GF(2) Hamming/L0 formulation is strictly more specialized and changes the algorithmic search space.
 
@@ -72,11 +67,11 @@ Current decision: no “optimal DeltaMeter” claim is made from generic F2 lowe
 
 The report recommends sparse sign embeddings and excludes CountSketch based on general oblivious embedding comparisons.
 
-That does not directly settle the specialized energy estimator
+That does not directly settle the specialized energy estimator:
 
-[
-T=\sum_b c_b^2
-]
+```text
+T = sum_b c_b^2
+```
 
 for set differences.
 
@@ -96,9 +91,9 @@ Current decision: no secret-key infrastructure in v0.
 
 The report discusses high confidence mainly through generic median amplification and modern sequential inference.
 
-For Parity/F-PCSA, the important unresolved point is narrower: obtain a useful finite-(m), finite-(V), all-(d) one-sided tail for the actual construction.
+For Parity/F-PCSA, the important unresolved point is narrower: obtain a useful finite-m, finite-N, all-d one-sided tail for the actual construction.
 
-Current decision: Parity cannot expose strict (10^{-6})/(10^{-9}) capacity until that exists.
+Current decision: Parity cannot expose strict `1e-6`/`1e-9` capacity until that exists.
 
 ### Correction F — SIMD should not be an architectural prerequisite
 
