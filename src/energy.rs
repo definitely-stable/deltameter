@@ -184,7 +184,7 @@ impl EnergyRowHash {
     ///
     /// This constructor does not prove that the coefficients were sampled
     /// randomly. The Coverage::Proven contract is available only through
-    /// EnergyConfig::for_profile_assuming_uniform_rows, whose caller accepts
+    /// EnergyConfig::for_profile_assuming_uniform_words, whose caller accepts
     /// the documented uniform-independence precondition.
     pub const fn from_coefficients(
         bucket_coefficients: [u64; 2],
