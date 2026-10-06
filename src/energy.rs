@@ -548,6 +548,28 @@ impl EnergyDeltaMeter {
     }
 }
 
+#[cfg(test)]
+fn recompute_energies(
+    counters: &[i64],
+    buckets: usize,
+    tables: usize,
+) -> Result<Box<[i128]>, EnergyError> {
+    let mut energies = vec![0_i128; tables];
+
+    for (row_index, row) in counters.chunks_exact(buckets).enumerate() {
+        let mut energy = 0_i128;
+        for &counter in row {
+            let counter = i128::from(counter);
+            energy = energy
+                .checked_add(counter * counter)
+                .ok_or(EnergyError::EnergyOverflow)?;
+        }
+        energies[row_index] = energy;
+    }
+
+    Ok(energies.into_boxed_slice())
+}
+
 const fn ceil_div(value: u128, divisor: u128) -> u128 {
     if value == 0 {
         0
