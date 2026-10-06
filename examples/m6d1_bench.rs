@@ -24,9 +24,7 @@ fn main() {
     println!("merge_repeats={MERGE_REPEATS}");
     println!("decode_samples={DECODE_SAMPLES}");
     println!("over_capacity_trials={OVER_CAPACITY_TRIALS}");
-    println!(
-        "metric,capacity,d,operations,sample,total_ns,sketch_bytes,direct_set_payload_bytes"
-    );
+    println!("metric,capacity,d,operations,sample,total_ns,sketch_bytes,direct_set_payload_bytes");
 
     let base = canonical_keys(SOURCE_KEYS, 0xD100_BA5E_0000_0001);
     let direct_bytes = 4 + base.len() * 8;
@@ -77,6 +75,25 @@ fn main() {
                 sketch_bytes,
                 direct_bytes,
             );
+
+            let direct_elapsed = timed(|| {
+                for _ in 0..MERGE_REPEATS {
+                    black_box(symmetric_difference_count(
+                        black_box(&base),
+                        black_box(&right_keys),
+                    ));
+                }
+            });
+            emit(
+                "direct_diff",
+                capacity,
+                2,
+                MERGE_REPEATS,
+                sample,
+                direct_elapsed,
+                sketch_bytes,
+                direct_bytes,
+            );
         }
 
         for d in decode_sizes(capacity) {
@@ -100,7 +117,9 @@ fn main() {
             }
         }
 
-        inventory_over_capacity(capacity);
+        for d in over_capacity_sizes(capacity) {
+            inventory_over_capacity(capacity, d);
+        }
     }
 }
 
@@ -119,8 +138,14 @@ fn difference_sketch(capacity: usize, d: usize, salt: u64) -> PinSketch64Lab {
     sketch
 }
 
-fn inventory_over_capacity(capacity: usize) {
-    let d = capacity + 1;
+fn over_capacity_sizes(capacity: usize) -> Vec<usize> {
+    let mut values = vec![capacity + 1, capacity + 2, capacity * 2];
+    values.sort_unstable();
+    values.dedup();
+    values
+}
+
+fn inventory_over_capacity(capacity: usize, d: usize) {
     let mut rejected = 0_usize;
     let mut false_success = 0_usize;
 
@@ -181,6 +206,31 @@ fn canonical_keys(count: usize, salt: u64) -> Vec<u64> {
     keys.dedup();
     assert_eq!(keys.len(), count);
     keys
+}
+
+fn symmetric_difference_count(left: &[u64], right: &[u64]) -> u64 {
+    let mut i = 0;
+    let mut j = 0;
+    let mut difference = 0_u64;
+
+    while i < left.len() && j < right.len() {
+        match left[i].cmp(&right[j]) {
+            std::cmp::Ordering::Less => {
+                difference += 1;
+                i += 1;
+            }
+            std::cmp::Ordering::Greater => {
+                difference += 1;
+                j += 1;
+            }
+            std::cmp::Ordering::Equal => {
+                i += 1;
+                j += 1;
+            }
+        }
+    }
+
+    difference + (left.len() - i) as u64 + (right.len() - j) as u64
 }
 
 fn splitmix64(mut value: u64) -> u64 {
