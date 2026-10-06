@@ -1,226 +1,136 @@
-# Implementation-blocking research questions
+# Research questions and decision gates
 
-These are the five deep-research questions that must be resolved only as far as needed to make implementation decisions. They are not permission to build a large research framework.
+The original five questions remain useful, but not all of them are implementation blockers anymore.
 
 ## Q1 — Finite-sample Parity capacity
 
-### Question
+### v0 gate
 
-For (x\in GF(2)^V), (d=\|x\|_0), can the practical GF(2)-PCSA/finite-field construction produce a useful computable
+**Resolved: NO-GO for strict Parity `Coverage::Proven`.**
 
-[
-U(S,m,V,\delta)
-]
+The mathematical question remains open.
 
-such that
+See [Q1-FINITE-SAMPLE-PARITY.md](Q1-FINITE-SAMPLE-PARITY.md).
 
-[
-\Pr[d\le U]\ge1-\delta
-]
+### Why
 
-for finite (m,V), all (d), including (d=0) and small (d), without relying on unsupported asymptotic normality?
+The current material does not establish a finite-(m), finite-(V), all-(d) upper confidence bound for the concrete GF(2)-F-PCSA construction.
 
-### Required investigation
+In particular, these are insufficient:
 
-- exact statistic and finite-(m) bias/variance;
-- level truncation;
-- dependence structure;
-- MGF/CGF or other concentration tools;
-- Chernoff/Bennett/Bernstein/test inversion where applicable;
-- independent grouping/median/quantile wrappers;
-- (delta=10^{-3},10^{-6},10^{-9});
-- (arepsilon=5\%,10\%,20\%);
-- memory and overprovision cost.
+- asymptotic RSE inserted into Chebyshev/Cantelli;
+- fitted empirical tails at (10^{-9});
+- median amplification without a valid per-copy bound;
+- unproved independence assumptions;
+- saddlepoint approximations without rigorous remainder control.
 
-### Implementation decision
+### Research continuation
 
-- **GO:** strict Parity profiles are practical.
-- **NO-GO:** Parity remains fast point estimate, Energy remains strict backend.
-- **REPLACE:** only if another GF(2) estimator demonstrably improves the Pareto frontier.
+Focus only on:
 
-### Current status
-
-Open. The repository has only first/second-moment executable checks.
+- exact small-(m,d) distribution;
+- finite-(V) truncation accounting;
+- direct fixed-(d) analysis or rigorous de-Poissonization;
+- valid test inversion;
+- explicit width/power.
 
 ---
 
-## Q2 — Exact Pareto frontier and v1 backend choice
+## Q2 — Pareto frontier and v1 backend choice
 
-### Question
-
-Within the actual DeltaMeter model
+### Current decision
 
 ```text
-set-only
-GF(2)-linear/composable
-oblivious input
-sparse update
-high-confidence relative estimation
+strict/default candidate: Energy
+fast/experimental candidate: Parity
+oracle: Gaussian/chi-square
 ```
 
-what is the best practical frontier among:
+This remains subject to actual Rust measurements, not qualitative literature comparisons.
 
-- GF(2)-PCSA;
-- Energy/CountSketch-like estimator;
-- dense AMS/Gaussian oracle;
-- sparse JL/SSE baseline?
-
-### Required separation
-
-Do not conflate:
-
-- generic F2;
-- insertion-only F0;
-- integer turnstile L0;
-- finite-field L0;
-- GF(2) Hamming weight;
-- JL/subspace embedding.
-
-### Output required
+### Still needed
 
 For (V=2^{32}) and (2^{64}):
 
 - state bytes;
-- random cells touched/update;
+- cells touched/update;
 - hash evaluations/update;
-- merge cost;
-- query cost;
-- guarantee type;
+- merge/query cost;
+- accuracy/coverage class;
 - small-(d) behavior.
 
-### Current provisional decision
-
-```text
-Energy first
-Parity second
-final v1 default after measurements and Q1
-```
+A replacement GF(2) estimator is considered only if it wins directly in the actual set/Hamming model.
 
 ---
 
 ## Q3 — Exact small-d lane
 
-### Question
+### Decision
 
-Does v1 benefit enough from an exact/capped small-d lane to justify another algorithm and decoder?
+**Deferred from v0.**
 
-Candidate shape:
+The latest inputs disagree: one strongly recommends Minisketch/PinSketch immediately, another recommends deferral.
 
-```text
-ExactSmallDelta + ParityDeltaMeter
-```
+The repository chooses deferral because DeltaMeter's first product is an estimator, and a decoder adds:
 
-### Candidates
+- a new algorithmic subsystem;
+- either C/C++ FFI or substantial pure-Rust BCH work;
+- additional API and CI surface.
 
-- capped IBLT;
-- Simple Set Sketching;
-- BCH/PinSketch/minisketch-like syndrome;
-- power sums;
-- XOR + fingerprint buckets.
-
-### Required comparison
-
-For (T=8,16,32,64,128):
-
-- state bytes;
-- update/hash cost;
-- decode cost;
-- failure probability;
-- XOR compatibility;
-- dependency/licensing impact;
-- implementation complexity.
-
-### Current decision
-
-Deferred from v0.
-
-Do not add Minisketch FFI or a decoder before Energy and Parity measurements show a concrete gap.
+Minisketch remains the strongest future candidate if small-(d) exact recovery becomes a demonstrated product requirement.
 
 ---
 
 ## Q4 — Randomness/hash/threat/wire contract
 
-### Question
+### Energy: enough to start implementation
 
-What is the smallest randomness contract that exactly matches the proofs without importing unnecessary security infrastructure?
-
-### Energy needs
+Freeze for the first Rust slice:
 
 - pairwise-uniform bucket collisions;
-- fourth-order sign independence;
-- separation between bucket/sign randomness.
+- 4-wise independent signs;
+- independent bucket/sign families;
+- deterministic public seed/config for reproducibility;
+- oblivious-input theorem model.
 
-### Parity needs
+Do not use secret-key infrastructure.
 
-To be frozen after Q1, because tail proofs may require stronger structure than first/second moments.
+### Parity: still open
 
-### Threat modes
+Freeze only what is needed to reproduce the published construction. Stronger tail-related assumptions wait for future strict-Parity research.
 
-```text
-v0 supported:
-    oblivious input
+### Persistence
 
-not promised:
-    chosen-input after seeing seed
-    adaptive queries
-```
+No wire format yet.
 
-A secret seed is not a v0 requirement.
-
-### Wire/config direction
-
-Do not freeze persistence yet.
-
-When persistence becomes necessary, compatibility should at least include:
-
-- algorithm/version;
-- key/universe domain;
-- estimator dimensions;
-- randomness/hash suite identifier;
-- seed/config identity;
-- canonical endian-independent encoding.
-
-Rust `Hash` is not a persisted wire identity.
+Only in-memory compatibility/config identity is required for M1/M2.
 
 ---
 
-## Q5 — Verification and CI for one developer
+## Q5 — Verification and CI
 
-### Question
+### Decision
 
-How do we maintain mathematical confidence without creating a research-infrastructure project?
+Resolved enough for implementation.
 
-### PR gate
+PR gate:
 
-Keep cheap and deterministic:
+- format/lint/build/test;
+- deterministic vectors;
+- property/algebra tests;
+- exact formula/profile tests.
 
-- compile/lint/test;
-- algebraic identities;
-- reference vectors;
-- property tests;
-- theorem-derived parameter tests;
-- exact numerical formula checks.
+Research jobs:
 
-### Research workflow
-
-Allowed on GitHub-hosted public runners:
-
-- regenerated JSON tables;
-- wider finite-d grids;
+- exact finite grids;
 - moderate Monte Carlo diagnostics;
-- benchmarks as artifacts.
+- profile regeneration;
+- benchmark artifacts.
 
-### Do not do
+No self-hosted runners. No absolute nanosecond merge gate. No Monte Carlo claim of (10^{-9}) proof.
 
-- billion-trial Monte Carlo for (10^{-9});
-- absolute hosted-VM nanoseconds as merge gates;
-- self-hosted runners;
-- large orchestration frameworks.
+## Remaining true blockers before M1
 
-### Formal verification
+None at the research-architecture level.
 
-Verus/Alerus/Creusot are post-v1 unless a concrete proof/code boundary needs them.
-
-### Current status
-
-The first dependency-free research workflow is already implemented.
+M1 can start after M0/PR #1 is reviewed and merged.
