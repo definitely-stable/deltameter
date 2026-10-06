@@ -385,83 +385,30 @@ impl EnergyDeltaMeter {
             return Err(EnergyError::IncompatibleConfig);
         }
 
-        let buckets = self.config.buckets();
-        let tables = self.config.tables();
-        let mut counters = Vec::with_capacity(self.counters.len());
-        let mut energies = Vec::with_capacity(tables);
+        let mut result = Self::new(self.config.clone())?;
 
-        for row_index in 0..tables {
-            let start = row_index * buckets;
-            let end = start + buckets;
-            let mut energy = 0_i128;
-
-            for (&left, &right) in self.counters[start..end]
-                .iter()
-                .zip(other.counters[start..end].iter())
-            {
-                let counter = left
-                    .checked_sub(right)
-                    .ok_or(EnergyError::CounterOverflow)?;
-                let counter_i128 = i128::from(counter);
-                energy = energy
-                    .checked_add(counter_i128 * counter_i128)
-                    .ok_or(EnergyError::EnergyOverflow)?;
-                counters.push(counter);
-            }
-
-            energies.push(energy);
+        for ((dst, left), right) in result
+            .counters
+            .iter_mut()
+            .zip(self.counters.iter())
+            .zip(other.counters.iter())
+        {
+            *dst = left
+                .checked_sub(*right)
+                .ok_or(EnergyError::CounterOverflow)?;
         }
 
-        Ok(Self {
-            config: self.config.clone(),
-            counters: counters.into_boxed_slice(),
-            energies: energies.into_boxed_slice(),
-            pending: vec![PendingUpdate::default(); tables].into_boxed_slice(),
-        })
+        result.energies = recompute_energies(
+            &result.counters,
+            result.config.buckets(),
+            result.config.tables(),
+        )?;
+
+        Ok(result)
     }
 
-    /// Subtracts a compatible sketch in place.
-    ///
-    /// Validation is transactional: all counter differences and row energies
-    /// are checked before any counter or cached energy is committed.
     pub fn subtract_assign(&mut self, other: &Self) -> Result<(), EnergyError> {
-        if self.config != other.config {
-            return Err(EnergyError::IncompatibleConfig);
-        }
-
-        let buckets = self.config.buckets();
-        let tables = self.config.tables();
-
-        for row_index in 0..tables {
-            let start = row_index * buckets;
-            let end = start + buckets;
-            let mut energy = 0_i128;
-
-            for (&left, &right) in self.counters[start..end]
-                .iter()
-                .zip(other.counters[start..end].iter())
-            {
-                let counter = left
-                    .checked_sub(right)
-                    .ok_or(EnergyError::CounterOverflow)?;
-                let counter = i128::from(counter);
-                energy = energy
-                    .checked_add(counter * counter)
-                    .ok_or(EnergyError::EnergyOverflow)?;
-            }
-
-            self.pending[row_index].energy = energy;
-        }
-
-        for (left, &right) in self.counters.iter_mut().zip(other.counters.iter()) {
-            *left = left
-                .checked_sub(right)
-                .expect("counter subtraction was validated before commit");
-        }
-        for row_index in 0..tables {
-            self.energies[row_index] = self.pending[row_index].energy;
-        }
-
+        *self = self.difference(other)?;
         Ok(())
     }
 
@@ -548,7 +495,6 @@ impl EnergyDeltaMeter {
     }
 }
 
-#[cfg(test)]
 fn recompute_energies(
     counters: &[i64],
     buckets: usize,
