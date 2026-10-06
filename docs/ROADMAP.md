@@ -26,7 +26,7 @@ Acceptance:
 
 ## M1 — Energy reference implementation
 
-Status: active in PR #3 / issue #2.
+Status: complete; merged in PR #3.
 
 Build one Rust crate, not a workspace.
 
@@ -49,6 +49,8 @@ Acceptance:
 - no crypto dependency.
 
 ## M2 — Published F-PCSA reproduction
+
+Status: active in issue #4 / branch `m2/published-fpcsa-f2`.
 
 Do not start with the custom g(v)=1 variant and do not substitute a classical-PCSA first-1-position model.
 
