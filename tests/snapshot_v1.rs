@@ -3,26 +3,29 @@ use deltameter::{
     ParityDeltaMeter, ParityError, RelativeError, SnapshotError,
 };
 
-const ENERGY_EMPTY_V1_HEX: &str =
-    "44454c54414d5452010001004800000000000000010000000000000001000000000000000100000000000000020000000000000003000000000000000400000000000000050000000000000006000000000000000000000000000000f4957e54";
-const PARITY_EMPTY_V1_HEX: &str =
-    "44454c54414d5452010002001800000000000000010000000100000007000000000000000000000000000000e9306248";
-const PARITY_NONCANONICAL_PADDING_V1_HEX: &str =
-    "44454c54414d5452010002001800000000000000010000000100000007000000000000000200000000000000a7ca1ada";
+const ENERGY_EMPTY_V1_HEX: &str = "44454c54414d5452010001004800000000000000010000000000000001000000000000000100000000000000020000000000000003000000000000000400000000000000050000000000000006000000000000000000000000000000f4957e54";
+const PARITY_EMPTY_V1_HEX: &str = "44454c54414d5452010002001800000000000000010000000100000007000000000000000000000000000000e9306248";
+const PARITY_NONCANONICAL_PADDING_V1_HEX: &str = "44454c54414d5452010002001800000000000000010000000100000007000000000000000200000000000000a7ca1ada";
 
 #[test]
 fn energy_empty_snapshot_matches_committed_v1_vector() {
     let row = EnergyRowHash::from_coefficients([1, 2], [3, 4, 5, 6]);
     let meter = EnergyDeltaMeter::new(EnergyConfig::new(1, vec![row]).unwrap()).unwrap();
 
-    assert_eq!(meter.encode_snapshot().unwrap(), hex_bytes(ENERGY_EMPTY_V1_HEX));
+    assert_eq!(
+        meter.encode_snapshot().unwrap(),
+        hex_bytes(ENERGY_EMPTY_V1_HEX)
+    );
 }
 
 #[test]
 fn parity_empty_snapshot_matches_committed_v1_vector() {
     let meter = ParityDeltaMeter::new(ParityConfig::new(1, 1, 7).unwrap());
 
-    assert_eq!(meter.encode_snapshot().unwrap(), hex_bytes(PARITY_EMPTY_V1_HEX));
+    assert_eq!(
+        meter.encode_snapshot().unwrap(),
+        hex_bytes(PARITY_EMPTY_V1_HEX)
+    );
 }
 
 #[test]
