@@ -84,6 +84,14 @@ def build_payload() -> dict:
     row = row_pmf(lam, rows, stored_levels)
     total = sum_w_pmf(lam, rows, stored_levels)
 
+    row_mass = sum(row)
+    total_mass = sum(total)
+    tolerance = 1e-12
+    if abs(row_mass - 1.0) > tolerance:
+        raise AssertionError(f"row PMF mass error: {row_mass - 1.0}")
+    if abs(total_mass - 1.0) > tolerance:
+        raise AssertionError(f"sum-W PMF mass error: {total_mass - 1.0}")
+
     return {
         "model": "published-fpcsa-f2-poissonized-v1",
         "coverage_scope": "Poissonized only; not a fixed-d theorem",
@@ -91,8 +99,9 @@ def build_payload() -> dict:
         "rows": rows,
         "stored_levels": stored_levels,
         "row_pmf": row,
-        "row_probability_mass": sum(row),
-        "sum_w_probability_mass": sum(total),
+        "row_probability_mass": row_mass,
+        "sum_w_probability_mass": total_mass,
+        "probability_mass_tolerance": tolerance,
         "sum_w_support": len(total),
         "cell_one_level_1": cell_one_probability(lam, rows, 1),
         "cell_one_level_8": cell_one_probability(lam, rows, 8),
