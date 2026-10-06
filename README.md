@@ -13,7 +13,7 @@ The equivalent integer `F2` representation remains useful, but the primary set-o
 
 ## Status
 
-M0 research bootstrap and M1 EnergyDeltaMeter are merged. M2 published GF(2)-F-PCSA reproduction is active.
+M0 research bootstrap, M1 EnergyDeltaMeter, and M2 published GF(2)-F-PCSA reproduction are complete.
 
 Current implementation direction:
 
@@ -23,7 +23,7 @@ Current implementation direction:
 - Gaussian/chi-square — research oracle only.
 - ExactSmallDelta — deferred.
 
-Q1 is resolved for v0: there is currently **no accepted strict finite-sample Parity profile**. The published F-PCSA construction will be reproduced first; a `g(v)=1` set-specialized variant is treated as a separate unproved estimator.
+Q1 is resolved for v0: there is currently **no accepted strict finite-sample Parity profile**. The published F-PCSA construction has been reproduced in M2; a `g(v)=1` set-specialized variant remains a separate unproved estimator.
 
 ## Documentation
 
