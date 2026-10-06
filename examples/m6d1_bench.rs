@@ -49,6 +49,48 @@ fn main() {
         }
 
         let left = PinSketch64Lab::from_sorted_unique(capacity, &base).unwrap();
+        assert_eq!(left.capacity(), capacity);
+        assert_eq!(left.odd_syndromes().len(), capacity);
+        assert!(!left.zero_present());
+
+        let encoded_left = left.encode();
+        assert_eq!(encoded_left.len(), sketch_bytes);
+        assert_eq!(PinSketch64Lab::decode(&encoded_left).unwrap(), left);
+
+        for sample in 0..BUILD_SAMPLES {
+            let encode_elapsed = timed(|| {
+                for _ in 0..MERGE_REPEATS {
+                    black_box(black_box(&left).encode());
+                }
+            });
+            emit(
+                "encode_state",
+                capacity,
+                0,
+                MERGE_REPEATS,
+                sample,
+                encode_elapsed,
+                sketch_bytes,
+                direct_bytes,
+            );
+
+            let decode_state_elapsed = timed(|| {
+                for _ in 0..MERGE_REPEATS {
+                    black_box(PinSketch64Lab::decode(black_box(&encoded_left)).unwrap());
+                }
+            });
+            emit(
+                "decode_state",
+                capacity,
+                0,
+                MERGE_REPEATS,
+                sample,
+                decode_state_elapsed,
+                sketch_bytes,
+                direct_bytes,
+            );
+        }
+
         let mut right_keys = base.clone();
         right_keys.remove(0);
         right_keys.push(splitmix64(0xF00D_0000_0000_0001 ^ capacity as u64));
