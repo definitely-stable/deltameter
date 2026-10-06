@@ -1,6 +1,6 @@
 # M6-D1 — Pure-Rust PinSketch64 lab reference
 
-Status: implementation in progress. Issue: #23. Parent: #19 / #14.
+Status: complete in PR #25; **ACCEPT as private lab reference, production NO-GO**. Issue: #23. Parent: #19 / #14.
 
 ## Goal
 
@@ -17,6 +17,8 @@ For configured total capacity c:
 - nonzero u64 keys are exact GF(2^64) field elements;
 - key zero is one separate XOR-composable presence bit;
 - store c odd power sums S1, S3, ..., S(2c-1);
+- keep stored syndrome capacity distinct from the explicit maximum decoded element count;
+- accepted lab experiments reserve one extra 64-bit syndrome as an over-capacity guard;
 - merging sketches XORs every syndrome and the zero bit.
 
 Lab serialization is separate from snapshot v1 and has no compatibility promise.
@@ -72,3 +74,20 @@ No absolute performance threshold.
 - no Coverage::Exact;
 - capacities above the audited lab ceiling require a new decision;
 - production final verification is out of scope.
+
+
+## Completion record
+
+Final measured implementation head: `7b610a1e99e49a08e8aaf923000b329ccfc6d3db`.
+
+Hosted evidence: `m6d1-lab #15 / 37523031317`.
+
+Canonical evidence: [M6-D1 PinSketch64 evidence](../../M6-D1-PINSKETCH64-EVIDENCE.md).
+
+Verdict:
+
+- private pure-Rust reference: ACCEPT;
+- unguarded `stored_capacity == max_elements`: REJECT;
+- guarded `stored_capacity = max_elements + 1`: retain for future lab work;
+- production/public exact backend: NO-GO;
+- next candidate: guarded incremental syndrome-prefix experiment.
