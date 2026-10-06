@@ -1,0 +1,43 @@
+name: performance
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "src/**"
+      - "examples/m4_bench.rs"
+      - ".github/workflows/perf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  m4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc -Vv
+
+      - name: Runner CPU
+        run: lscpu
+
+      - name: Build M4 harness
+        run: cargo build --release --example m4_bench
+
+      - name: Run diagnostic benchmark
+        run: ./target/release/examples/m4_bench 2000 5 | tee m4-perf.txt
+
+      - name: Upload diagnostic evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: m4-perf-${{ github.run_id }}-${{ github.run_attempt }}
+          path: m4-perf.txt
+          if-no-files-found: error
