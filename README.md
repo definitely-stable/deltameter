@@ -23,12 +23,16 @@ The current implementation direction is deliberately small:
 
 We are explicitly **not** starting with a large framework, multiple crates, adaptive-adversary machinery, secret-key infrastructure, FFI, or hand-written SIMD. Those are only added if measurements or a concrete product requirement justify them.
 
-## Repository layout
+## Documentation
 
-- [docs/RESEARCH.md](docs/RESEARCH.md) — mathematical conclusions and open research.
+- [docs/research/README.md](docs/research/README.md) — research index and authority order.
+- [docs/research/FOUNDATION.md](docs/research/FOUNDATION.md) — canonical mathematical/engineering synthesis.
+- [docs/research/DECISIONS.md](docs/research/DECISIONS.md) — current pre-implementation decisions.
+- [docs/research/OPEN-QUESTIONS.md](docs/research/OPEN-QUESTIONS.md) — five implementation-blocking deep-research questions.
+- [docs/research/SOURCE-AUDIT.md](docs/research/SOURCE-AUDIT.md) — audit of the earlier F2-centric report.
 - [docs/DESIGN.md](docs/DESIGN.md) — minimal v0 design constraints.
 - [docs/ROADMAP.md](docs/ROADMAP.md) — implementation order for one developer.
-- [research/](research/) — dependency-free research scripts.
+- [research/](research/) — dependency-free executable research scripts.
 - [research workflow](.github/workflows/research.yml) — reproducible GitHub-hosted research run.
 
 ## Run the research harness
@@ -49,6 +53,7 @@ The run writes machine-readable JSON for the conservative Energy profiles and fi
 4. Stable Rust first; scalar code first; optimize after profiling.
 5. Public GitHub-hosted CI is part of the normal development path, not a scarce resource.
 6. Persisted formats and compatibility rules are frozen only after the state layout earns them.
+7. Historical research is preserved, but current decisions have an explicit authority order.
 
 ## License / release
 
