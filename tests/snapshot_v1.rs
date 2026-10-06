@@ -55,10 +55,13 @@ fn proven_energy_round_trip_preserves_config_state_and_coverage() {
 }
 
 #[test]
-fn custom_energy_round_trip_remains_custom() {
+fn custom_energy_round_trip_preserves_signed_difference_state() {
     let rows = vec![EnergyRowHash::from_coefficients([11, 12], [13, 14, 15, 16])];
-    let mut meter = EnergyDeltaMeter::new(EnergyConfig::new(1, rows).unwrap()).unwrap();
-    meter.add_unique(99).unwrap();
+    let config = EnergyConfig::new(1, rows).unwrap();
+    let left = EnergyDeltaMeter::new(config.clone()).unwrap();
+    let mut right = EnergyDeltaMeter::new(config).unwrap();
+    right.add_unique(99).unwrap();
+    let meter = left.difference(&right).unwrap();
 
     let decoded = EnergyDeltaMeter::decode_snapshot(&meter.encode_snapshot().unwrap()).unwrap();
 
@@ -149,6 +152,26 @@ fn unknown_version_and_flags_fail_closed() {
         EnergyDeltaMeter::decode_snapshot(&flags),
         Err(SnapshotError::UnsupportedFlags(1))
     ));
+
+    let mut reserved = hex_bytes(ENERGY_EMPTY_V1_HEX);
+    reserved[13] = 1;
+    assert!(matches!(
+        EnergyDeltaMeter::decode_snapshot(&reserved),
+        Err(SnapshotError::InvalidPayload)
+    ));
+}
+
+#[test]
+fn every_strict_snapshot_prefix_is_rejected() {
+    let energy = hex_bytes(ENERGY_EMPTY_V1_HEX);
+    for end in 0..energy.len() {
+        assert!(EnergyDeltaMeter::decode_snapshot(&energy[..end]).is_err());
+    }
+
+    let parity = hex_bytes(PARITY_EMPTY_V1_HEX);
+    for end in 0..parity.len() {
+        assert!(ParityDeltaMeter::decode_snapshot(&parity[..end]).is_err());
+    }
 }
 
 #[test]
