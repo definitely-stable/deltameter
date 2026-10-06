@@ -11,6 +11,12 @@ import sys
 from collections import defaultdict
 
 
+HEADER = (
+    "metric,stored_capacity,max_elements,d,operations,sample,total_ns,"
+    "sketch_bytes,direct_set_payload_bytes"
+)
+
+
 def parse(path: str):
     metadata = {}
     rows = []
@@ -21,7 +27,7 @@ def parse(path: str):
 
     header_index = None
     for index, line in enumerate(lines):
-        if line == "metric,capacity,d,operations,sample,total_ns,sketch_bytes,direct_set_payload_bytes":
+        if line == HEADER:
             header_index = index
             break
         if "=" in line and not line.startswith("inventory,"):
@@ -38,12 +44,17 @@ def parse(path: str):
             values = {}
             for part in parts:
                 key, value = part.split("=", 1)
-                values[key] = int(value)
-            key = (values["capacity"], values["d"])
+                values[key] = value
+            key = (
+                values["mode"],
+                int(values["stored_capacity"]),
+                int(values["max_elements"]),
+                int(values["d"]),
+            )
             inventory[key] = (
-                values["trials"],
-                values["rejected"],
-                values["false_success"],
+                int(values["trials"]),
+                int(values["rejected"]),
+                int(values["false_success"]),
             )
         elif line:
             csv_lines.append(line)
@@ -55,7 +66,8 @@ def parse(path: str):
         rows.append(
             {
                 **row,
-                "capacity": int(row["capacity"]),
+                "stored_capacity": int(row["stored_capacity"]),
+                "max_elements": int(row["max_elements"]),
                 "d": int(row["d"]),
                 "operations": operations,
                 "sample": int(row["sample"]),
@@ -80,6 +92,7 @@ def main() -> int:
     base_meta, _, base_inventory = parsed[0]
 
     grouped = defaultdict(list)
+    first_rows = {}
     for metadata, rows, inventory in parsed:
         if metadata != base_meta:
             raise SystemExit("benchmark metadata changed across runs")
@@ -87,10 +100,16 @@ def main() -> int:
             raise SystemExit("over-capacity inventory changed across runs")
 
         for row in rows:
-            key = (row["metric"], row["capacity"], row["d"])
+            key = (
+                row["metric"],
+                row["stored_capacity"],
+                row["max_elements"],
+                row["d"],
+            )
             grouped[key].append(row["total_ns"] / row["operations"])
+            first_rows.setdefault(key, row)
 
-    print("format=deltameter.m6d1-summary.v1")
+    print("format=deltameter.m6d1-summary.v2")
     print(f"runs={len(paths)}")
     for key in [
         "contract",
@@ -99,26 +118,42 @@ def main() -> int:
         "merge_repeats",
         "decode_samples",
         "over_capacity_trials",
+        "guard_field_bits",
+        "guard_extra_syndromes",
     ]:
         print(f"{key}={base_meta[key]}")
 
-    total_trials = sum(item[0] for item in base_inventory.values())
-    total_rejected = sum(item[1] for item in base_inventory.values())
-    total_false_success = sum(item[2] for item in base_inventory.values())
-    print(f"over_capacity_total_trials={total_trials}")
-    print(f"over_capacity_rejected={total_rejected}")
-    print(f"over_capacity_false_success={total_false_success}")
+    mode_totals = defaultdict(lambda: [0, 0, 0])
+    for (mode, _, _, _), (trials, rejected, false_success) in base_inventory.items():
+        totals = mode_totals[mode]
+        totals[0] += trials
+        totals[1] += rejected
+        totals[2] += false_success
 
-    print("inventory,capacity,d,trials,rejected,false_success")
-    for (capacity, d), (trials, rejected, false_success) in sorted(base_inventory.items()):
-        print(f"inventory,{capacity},{d},{trials},{rejected},{false_success}")
+    for mode in sorted(mode_totals):
+        trials, rejected, false_success = mode_totals[mode]
+        print(f"{mode}_over_capacity_total_trials={trials}")
+        print(f"{mode}_over_capacity_rejected={rejected}")
+        print(f"{mode}_over_capacity_false_success={false_success}")
+
+    print("inventory,mode,stored_capacity,max_elements,d,trials,rejected,false_success")
+    for (mode, stored_capacity, max_elements, d), (
+        trials,
+        rejected,
+        false_success,
+    ) in sorted(base_inventory.items()):
+        print(
+            f"inventory,{mode},{stored_capacity},{max_elements},{d},"
+            f"{trials},{rejected},{false_success}"
+        )
 
     writer = csv.writer(sys.stdout, lineterminator="\n")
     writer.writerow(
         [
             "summary",
             "metric",
-            "capacity",
+            "stored_capacity",
+            "max_elements",
             "d",
             "median_ns_per_op",
             "min_ns_per_op",
@@ -130,13 +165,8 @@ def main() -> int:
         ]
     )
 
-    first_rows = {}
-    for _, rows, _ in parsed:
-        for row in rows:
-            first_rows.setdefault((row["metric"], row["capacity"], row["d"]), row)
-
     for key in sorted(grouped):
-        metric, capacity, d = key
+        metric, stored_capacity, max_elements, d = key
         values = grouped[key]
         row = first_rows[key]
         payload_ratio = row["sketch_bytes"] / row["direct_set_payload_bytes"]
@@ -144,7 +174,8 @@ def main() -> int:
             [
                 "summary",
                 metric,
-                capacity,
+                stored_capacity,
+                max_elements,
                 d,
                 f"{statistics.median(values):.3f}",
                 f"{min(values):.3f}",
