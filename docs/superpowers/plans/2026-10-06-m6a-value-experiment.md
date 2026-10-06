@@ -1,6 +1,6 @@
 # M6-A — Estimator-assisted value experiment plan
 
-Status: implementation in progress. Issue: #16. Parent: #14.
+Status: complete in PR #21; measured verdict NO-GO for a generic/public workflow. Issue: #16. Parent: #14.
 
 ## Goal
 
@@ -91,7 +91,8 @@ Record per arm/scenario:
 - request/response application bytes;
 - round trips;
 - local elapsed time;
-- source sketch build time;
+- source Energy meter build time;
+- snapshot encode time;
 - peer setup time;
 - exact bytes avoided on reject;
 - false-admit / false-reject classification against the declared exact threshold.
@@ -123,3 +124,12 @@ RTT is reported as round-trip count, not hidden inside local subprocess timing.
 M6-A GO requires a named workload where the snapshot changes an action and the saved rejected-work cost exceeds snapshot/setup overhead under a declared reuse/RTT model.
 
 Otherwise record NO-GO for the workflow and prefer estimator-only scope or the independently audited exact lane.
+
+
+## Completion record
+
+M6-A completed on 2026-10-06. The canonical evidence is [M6-A evidence](../../M6-A-EVIDENCE.md).
+
+Final hosted evidence run: `m6a-value #12 / 37514920381` on implementation head `15d89fdaaf9c24900548e29e685d757f8cb76d50`.
+
+Decision: **NO-GO** for a generic/public snapshot-admission workflow. Conditional utility remains possible only for already-maintained sketches and a workload whose reject rate/downstream avoided cost clears the measured break-even.
