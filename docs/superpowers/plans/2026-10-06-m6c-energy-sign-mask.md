@@ -116,8 +116,8 @@ No absolute CI latency threshold.
 
 M6-C completed on 2026-10-06. Canonical evidence: [M6-C evidence](../../M6-C-EVIDENCE.md).
 
-Final measured implementation head: `9952eea2760ca07cf2075cfde457a39b477930dc`.
+Final measured implementation head: `ee17c7e6d4620b223b4adfd3672a34926cdcdf2b`.
 
-Final hosted paired run: `m6c-performance #6 / 37516957320`.
+Final hosted paired run: `m6c-performance #11 / 37517400587`.
 
 Verdict: **ACCEPT**. Energy update latency improves by about 68–71%; optimized cache construction amortizes after roughly 1–1.4 updates; snapshot-v1 bytes and public/theorem contracts are unchanged.
