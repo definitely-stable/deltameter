@@ -29,7 +29,9 @@ fn main() {
         parity_config.asymptotic_relative_standard_error() * 100.0
     );
     println!("WARNING: these guarantees are not equivalent.");
-    println!("Benchmark Energy coefficients are deterministic timing inputs, not theorem randomness.");
+    println!(
+        "Benchmark Energy coefficients are deterministic timing inputs, not theorem randomness."
+    );
 
     let energy_update = bench_energy_update(keys, energy_config.clone());
     let parity_update = bench_parity_update(keys, parity_config.clone());
