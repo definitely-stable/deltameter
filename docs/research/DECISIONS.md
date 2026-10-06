@@ -412,3 +412,36 @@ The cache is private derived meter state (24R bytes), is never serialized, and i
 No coefficient, field polynomial, profile, randomness/provenance, public API, snapshot-v1 byte or Coverage contract changes.
 
 Canonical evidence: docs/M6-C-EVIDENCE.md.
+
+
+### D26 — ExactSmallDelta Phase 1 selects a private PinSketch64 lab reference
+
+M6-D audited PinSketch/Minisketch, Simple Set Sketching, classical and Rateless IBLT, and the 2025–2026 CertainSync, Self-Sizing IBLT and XYZ-Sketch frontier.
+
+The production decision is **NO-GO** in this slice.
+
+Reasons:
+
+- M6-A already rejects a generic public estimator-assisted reconciliation workflow;
+- direct libminisketch adoption requires C/C++ FFI and an unsafe/toolchain boundary that the crate currently forbids;
+- Minisketch can return a plausible wrong decode when the true difference exceeds the admitted bound;
+- successful sketch decode is not independent final verification;
+- probabilistic peel constructions do not automatically satisfy an exact-result contract;
+- the newest 2026 constructions are too fresh to treat as mature dependencies without reproduction.
+
+The strongest lab candidate is PinSketch/Minisketch because recovery is deterministic when the actual difference count is within the configured capacity.
+
+For DeltaMeter's exact u64 set domain, a collision-free PinSketch64 mapping is:
+
+~~~text
+key != 0 -> identical GF(2^64) field element
+key == 0 -> one separate XOR-composable presence bit
+~~~
+
+This avoids truncation and avoids hashing collisions.
+
+The next permitted implementation is a private pure-Rust reference with small fixed capacities, exact-oracle verification, over-capacity adversarial inventory and no public API/snapshot integration.
+
+Do not add Coverage::Exact. Decoder false-success, identifier mapping, final verification and any Energy estimate failure remain separate failure-budget terms.
+
+Canonical audit: docs/M6-D-EXACT-LANE-AUDIT.md.
