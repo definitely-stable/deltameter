@@ -32,7 +32,7 @@ The wrapper delegates state mechanics to `PublishedFpcsaF2`; it does not introdu
 
 ## Coverage contract
 
-M3 extends the shared coverage enum with:
+M3 moves the shared evidence contract into a backend-neutral `coverage` module and extends it with:
 
 ~~~text
 Coverage::Asymptotic {
@@ -142,7 +142,7 @@ It reports:
 - merge time;
 - repeated query time.
 
-The harness uses deterministic benchmark inputs. Its Energy coefficient words are reproducible pseudo-random test material and are not used to claim theorem randomness.
+The harness uses deterministic benchmark inputs. Its Energy side deliberately constructs a custom non-Proven configuration with the same dimensions as the 10% / 1e-6 Energy profile. The pseudo-random coefficient words are timing material only and are never passed through the theorem-profile constructor.
 
 No absolute timing result is committed as a product promise. Performance numbers become evidence only when reproduced on named hardware/toolchain.
 
