@@ -151,10 +151,12 @@ impl PinSketch64Lab {
         }
 
         let mut odd_syndromes = Vec::with_capacity(capacity);
-        for chunk in bytes[LAB_HEADER_LEN..].chunks_exact(8) {
-            odd_syndromes.push(u64::from_le_bytes(
-                chunk.try_into().map_err(|_| LabError::InvalidEncoding)?,
-            ));
+        let (chunks, remainder) = bytes[LAB_HEADER_LEN..].as_chunks::<8>();
+        if !remainder.is_empty() {
+            return Err(LabError::InvalidEncoding);
+        }
+        for chunk in chunks {
+            odd_syndromes.push(u64::from_le_bytes(*chunk));
         }
 
         Ok(Self {
@@ -191,7 +193,7 @@ impl PinSketch64Lab {
 
         roots.sort_unstable();
         if roots.windows(2).any(|pair| pair[0] == pair[1])
-            || roots.iter().any(|&root| root == 0)
+            || roots.contains(&0)
             || roots.len() != degree
         {
             return Err(LabError::InvalidRoots);
