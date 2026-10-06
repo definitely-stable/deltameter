@@ -635,8 +635,7 @@ mod tests {
         let profile =
             EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
         let words = test_uniform_words(profile.uniform_words_required(), 7);
-        let config =
-            EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap();
+        let config = EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap();
 
         let mut left = EnergyDeltaMeter::new(config.clone()).unwrap();
         let mut right = EnergyDeltaMeter::new(config.clone()).unwrap();
