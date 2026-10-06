@@ -28,11 +28,25 @@ In particular, these are insufficient:
 
 Focus only on:
 
-- exact small-(m,d) distribution;
-- finite-(V) truncation accounting;
-- direct fixed-(d) analysis or rigorous de-Poissonization;
-- valid test inversion;
-- explicit width/power.
+1. faithful mathematical specification of the published FIELDMAP/rightmost-nonzero F-PCSA construction;
+2. exact small finite distributions on the actual F-PCSA state or a proved sufficient statistic;
+3. finite-level truncation/censoring accounting;
+4. Poissonization only after the exact category decomposition is written down;
+5. direct fixed-d analysis or de-Poissonization with verified theorem hypotheses and explicit remainder;
+6. one-sided test inversion;
+7. explicit width/power.
+
+Canonical notation:
+
+~~~text
+N = universe cardinality
+m = row count
+d = true Hamming weight
+j = level
+J = finite level boundary
+~~~
+
+Do not reuse d as truncation width.
 
 ---
 
@@ -97,7 +111,16 @@ Do not use secret-key infrastructure.
 
 ### Parity: still open
 
-Freeze only what is needed to reproduce the published construction. Stronger tail-related assumptions wait for future strict-Parity research.
+Freeze only what is needed to reproduce the published construction:
+
+- h mapping keys to row/level with the published mass function;
+- g mapping keys to uniform field coefficients;
+- finite level policy;
+- rightmost-nonzero row statistic.
+
+Stronger tail-related assumptions wait for future strict-Parity research.
+
+Do not replace the published model with classical PCSA first-1-position reasoning or the proposed g(v)=1 specialization during reproduction.
 
 ### Persistence
 
