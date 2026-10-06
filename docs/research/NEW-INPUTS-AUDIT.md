@@ -1,6 +1,6 @@
 # Audit of 2026-10-06 research inputs
 
-This document reconciles the latest Deep Research run and four newly attached reports with the canonical DeltaMeter design.
+This document reconciles the latest Deep Research run and five newly attached reports with the canonical DeltaMeter design.
 
 The source reports are preserved under `archive/2026-10-06/`. They are evidence, not normative specifications.
 
@@ -45,6 +45,10 @@ no frozen persisted wire format yet
 | Wire format now | Some reports want a complete persisted header immediately | **Deferred.** Freeze only in-memory config identity first; persisted format after state/API stabilization. |
 | Heavy CI | Some material suggests very large Monte Carlo research jobs | **Diagnostic only.** Public runners can be used freely, but proof does not come from brute-force rare-event simulation. |
 | Formal verification | Some earlier material proposed Verus/Alerus | **Post-v1 unless a concrete proof boundary appears.** |
+| Classical PCSA vs published F-PCSA | The newest report frequently analyzes first-1 / bitmap PCSA mechanics | **Corrected.** Q1 must start from the published FIELDMAP + rightmost-nonzero F-PCSA construction. |
+| De-Poissonization theorem | The newest report treats the 2025 Poisson-Charlier result as nearly plug-and-play | **Promising but conditional.** We still need a concrete coefficient/tail sequence and computable forward-difference bounds. |
+| Truncated-sample theory | The newest report imports truncated multivariate-normal methodology | **Not on the main proof path.** Algorithmic finite-level censoring in F-PCSA is a different model. |
+| Exact CI construction | The newest report emphasizes two-sided exact tests | **Narrowed to one-sided inversion.** DeltaMeter only needs Pr[d <= U] >= 1-delta; conservative level <= delta is sufficient. |
 
 ## Source-specific audit
 
@@ -125,6 +129,28 @@ useful exploratory calculation
 not a Proven profile generator
 Q1 v0 verdict = NO-GO for strict Parity
 ```
+
+### F. “От Эвристики к Доказательству…”
+
+Strong contributions:
+
+- correctly rejects asymptotic RSE as a finite-sample theorem;
+- correctly rejects empirical 1e-9 tails as proof;
+- correctly notes that median amplification needs a valid per-copy bound;
+- usefully prioritizes exact finite distributions, truncation, de-Poissonization, test inversion, and width/power;
+- identifies strict remainder control as the key requirement if asymptotic/Poissonized machinery is used.
+
+Critical corrections:
+
+- much of the derivation is for classical PCSA rather than the published finite-field F-PCSA sketch;
+- the report overloads m and d, making several “fixed-parameter” passages ambiguous;
+- the speculative GF(2^V) explanation is not the published definition of GF(2)-F-PCSA;
+- “register independence after Poissonization” must be proved for the exact categorical decomposition and hash model;
+- the cited truncated-Gaussian estimation paper is not directly applicable to discrete F-PCSA fringe/level censoring;
+- a valid one-sided test need only have Type-I error at most delta; exact equality is unnecessary;
+- binary-search inversion is only valid after monotonicity/stochastic ordering is proved.
+
+Canonical effect: no architecture change; Q1 proof plan becomes more precise and more source-faithful.
 
 ## New architecture implication
 
