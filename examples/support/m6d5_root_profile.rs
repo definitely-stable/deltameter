@@ -45,8 +45,7 @@ impl RootProfile {
             if self.square_calls[degree] != self.trace_attempts[degree] * 64 {
                 return Err(LabError::DecodeFailure.into());
             }
-            let measured =
-                self.trace_ns[degree] + self.gcd_ns[degree] + self.division_ns[degree];
+            let measured = self.trace_ns[degree] + self.gcd_ns[degree] + self.division_ns[degree];
             if self.self_ns[degree] < measured {
                 return Err(LabError::DecodeFailure.into());
             }
