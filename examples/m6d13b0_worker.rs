@@ -366,7 +366,6 @@ fn sync_d11(state: &mut State) -> String {
     .join(" ")
 }
 
-
 fn parse_mode(value: &str) -> Mode {
     match value {
         "direct" => Mode::Direct,
