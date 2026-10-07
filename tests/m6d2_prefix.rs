@@ -1,7 +1,7 @@
-#[path = "../examples/support/m6d_pinsketch64.rs"]
-mod pinsketch64;
+#[path = "../examples/support/m6d2_prefix.rs"]
+mod prefix_lab;
 
-use pinsketch64::{LabError, PinSketch64Lab};
+use prefix_lab::{PrefixError, PinSketch64Lab, extend_prefix, prefix};
 
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
 
@@ -72,13 +72,13 @@ fn prefixes_are_exact_and_extensions_append_only_suffix_words() {
     };
     let full = PinSketch64Lab::from_sorted_unique(9, &keys).unwrap();
 
-    let mut received = full.prefix(2).unwrap();
+    let mut received = prefix(&full, 2).unwrap();
     assert_eq!(received.odd_syndromes(), &full.odd_syndromes()[..2]);
     assert_eq!(received.zero_present(), full.zero_present());
 
     for (new_capacity, expected_added) in [(3, 1), (5, 2), (9, 4)] {
         let before = received.odd_syndromes().to_vec();
-        let added = received.extend_prefix_from(&full, new_capacity).unwrap();
+        let added = extend_prefix(&mut received, &full, new_capacity).unwrap();
         assert_eq!(added, expected_added);
         assert_eq!(&received.odd_syndromes()[..before.len()], before.as_slice());
         assert_eq!(
@@ -95,17 +95,17 @@ fn prefixes_are_exact_and_extensions_append_only_suffix_words() {
 fn extension_rejects_mismatched_prefix_or_zero_metadata() {
     let full = PinSketch64Lab::from_sorted_unique(9, &[1, 3, 5]).unwrap();
     let other = PinSketch64Lab::from_sorted_unique(9, &[1, 3, 7]).unwrap();
-    let mut prefix = full.prefix(2).unwrap();
+    let mut prefix = prefix(&full, 2).unwrap();
 
     assert_eq!(
-        prefix.extend_prefix_from(&other, 3).unwrap_err(),
-        LabError::PrefixMismatch
+        extend_prefix(&mut prefix, &other, 3).unwrap_err(),
+        PrefixError::PrefixMismatch
     );
 
     let full_with_zero = PinSketch64Lab::from_sorted_unique(9, &[0, 1, 3, 5]).unwrap();
     assert_eq!(
-        prefix.extend_prefix_from(&full_with_zero, 3).unwrap_err(),
-        LabError::PrefixMismatch
+        extend_prefix(&mut prefix, &full_with_zero, 3).unwrap_err(),
+        PrefixError::PrefixMismatch
     );
 }
 
@@ -121,13 +121,13 @@ fn merged_prefix_matches_prefix_of_full_merged_sketch() {
     full_difference.merge(&right_full).unwrap();
 
     for (_, stored_capacity) in STAGES {
-        let mut prefix_difference = left_full.prefix(stored_capacity).unwrap();
+        let mut prefix_difference = left_prefix(&full, stored_capacity).unwrap();
         prefix_difference
-            .merge(&right_full.prefix(stored_capacity).unwrap())
+            .merge(&right_prefix(&full, stored_capacity).unwrap())
             .unwrap();
         assert_eq!(
             prefix_difference,
-            full_difference.prefix(stored_capacity).unwrap()
+            prefix(&full_difference, stored_capacity).unwrap()
         );
     }
 }
@@ -151,9 +151,9 @@ fn staged_decode_reaches_first_sufficient_guarded_prefix() {
 
         let mut completed = None;
         for (limit, stored_capacity) in STAGES {
-            let mut difference_prefix = left_full.prefix(stored_capacity).unwrap();
+            let mut difference_prefix = left_prefix(&full, stored_capacity).unwrap();
             difference_prefix
-                .merge(&right_full.prefix(stored_capacity).unwrap())
+                .merge(&right_prefix(&full, stored_capacity).unwrap())
                 .unwrap();
 
             if let Ok(candidate) = difference_prefix.decode_candidate_with_limit(limit) {
@@ -192,9 +192,9 @@ fn over_bound_stages_never_claim_exact_oracle_success() {
         let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
 
         for (limit, stored_capacity) in STAGES {
-            let mut difference_prefix = left_full.prefix(stored_capacity).unwrap();
+            let mut difference_prefix = left_prefix(&full, stored_capacity).unwrap();
             difference_prefix
-                .merge(&right_full.prefix(stored_capacity).unwrap())
+                .merge(&right_prefix(&full, stored_capacity).unwrap())
                 .unwrap();
 
             match difference_prefix.decode_candidate_with_limit(limit) {
