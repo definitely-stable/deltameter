@@ -1,0 +1,17 @@
+{
+  "research/m6d13b/contract.json": "6afc2e7e08bb06e39c2c201a82874b4ecf66f046",
+  "research/m6d13b/model.py": "4218672a02329feea6f19e894d1ebb6e4cc1d89f",
+  "research/m6d13b/measure.py": "573ae15946d389506c9f20e9b8f2b04a1898e6b9",
+  "research/m6d13b/summarize.py": "c3191ab36cea04542995244c87be7257e6deca3b",
+  "research/m6d13b0/readiness.py": "27f4533b9ca84ff792949bd86fdebcf14371b759",
+  "research/m6d13b0/readiness.json": "28c533248a9f78a5624677f6bc52913a73e061ca",
+  "research/m6d13b0/frozen-sources.json": "13c26e0d8573c4b20918fad1847b23c735d4547c",
+  "research/m6d13b0/riblt_worker.go": "52b1ecec3419d7fbad56f98a817e4552aafc34c4",
+  "examples/m6d13b0_worker.rs": "5f587df0d699d09450eefcee6a3d0d2e475f8bca",
+  "examples/support/m6d_pinsketch64.rs": "dc980e0e44231e48083a5cb2a59129dafdb47f92",
+  "examples/support/m6d4_trace_square.rs": "937abc02fa76edd9f60c0bf7ebf2b17261d3bb22",
+  "examples/support/m6d6_quadratic.rs": "7daaa53f73fbca21f3add08110710a03773d730b",
+  "examples/support/m6d8_square.rs": "1366a3969aac5895cbe77ef8d7aea96ec4d255e1",
+  "examples/support/m6d11_fixed_reduction.rs": "58102386c5461586632277c5e6db85f8ec458670",
+  "research/m6d13a/protocol.json": "9d30ebf4059dd6e84ad9e77dbf3fddd99507120f"
+}

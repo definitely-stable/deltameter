@@ -1,0 +1,106 @@
+name: M6-D13-B system comparison
+
+on:
+  pull_request:
+    paths:
+      - 'research/m6d13b/**'
+      - 'research/m6d13b0/**'
+      - 'research/m6d13a/protocol.json'
+      - 'examples/m6d13b0_worker.rs'
+      - 'examples/support/m6d_pinsketch64.rs'
+      - 'examples/support/m6d4_trace_square.rs'
+      - 'examples/support/m6d6_quadratic.rs'
+      - 'examples/support/m6d8_square.rs'
+      - 'examples/support/m6d11_fixed_reduction.rs'
+      - 'docs/M6-D13B-SYSTEM-COMPARISON.md'
+      - 'docs/superpowers/plans/2026-10-07-m6d13b-system-comparison.md'
+      - '.github/workflows/m6d13b.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    name: worker-${{ matrix.worker }}
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify frozen measurement sources
+        run: python3 research/m6d13b/check_sources.py
+      - name: Verify model tests
+        run: python3 -m unittest discover -s research/m6d13b -p 'test_*.py'
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+          cache: false
+      - name: Build frozen Rust worker
+        run: cargo build --release --example m6d13b0_worker
+      - name: Checkout pinned Rateless IBLT
+        uses: actions/checkout@v5
+        with:
+          repository: yangl1996/riblt
+          ref: 4afa6bc06cb2237d9ea273a51d97a7e05b3f573b
+          path: external-riblt
+          persist-credentials: false
+      - name: Build frozen pinned RIBLT adapter
+        run: |
+          test "$(git -C external-riblt rev-parse HEAD)" = 4afa6bc06cb2237d9ea273a51d97a7e05b3f573b
+          mkdir -p external-riblt/cmd/d13b
+          cp research/m6d13b0/riblt_worker.go external-riblt/cmd/d13b/main.go
+          cd external-riblt
+          go mod download
+          go mod verify
+          go build -mod=readonly -o ../riblt-d13b-worker ./cmd/d13b
+          git diff --exit-code -- go.mod go.sum encoder.go decoder.go mapping.go symbol.go
+      - name: Run frozen system matrix
+        run: |
+          mkdir -p d13b-out
+          git rev-parse HEAD > d13b-out/head.txt
+          git -C external-riblt rev-parse HEAD > d13b-out/riblt-head.txt
+          rustc -Vv > d13b-out/rust.txt
+          go version > d13b-out/go.txt
+          uname -a > d13b-out/platform.txt
+          python3 research/m6d13b/measure.py             --rust-worker target/release/examples/m6d13b0_worker             --riblt-worker ./riblt-d13b-worker             --worker-id ${{ matrix.worker }}             --out d13b-out/raw-worker-${{ matrix.worker }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6d13b-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: d13b-out/
+          if-no-files-found: error
+
+  aggregate:
+    needs: measure
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify frozen measurement sources
+        run: python3 research/m6d13b/check_sources.py
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: m6d13b-worker-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: d13b-raw
+          merge-multiple: true
+      - name: Aggregate frozen decision grid
+        run: |
+          mkdir -p d13b-summary
+          python3 research/m6d13b/summarize.py             --input d13b-raw             --out d13b-summary/summary.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m6d13b-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: d13b-summary/
+          if-no-files-found: error

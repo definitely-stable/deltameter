@@ -598,3 +598,51 @@ comparison after final exact-head CI. No algebraic decoder work, public
 ExactSmallDelta API or product GO is authorized.
 
 See [D13-B0 evidence](M6-D13B0-MEASUREMENT-READINESS-EVIDENCE.md).
+
+
+## M6-D13-B final system result
+
+D13-B executes the maintained-state system comparison authorized by D13-B0.
+
+Canonical hosted evidence contains five independent timing workers, three
+deterministic replicate families per worker, 3,900 raw observations and 360 named
+network/amortization cells. The first attempted run is excluded as INVALID because
+an untimed reused B0 ready-validator assumed equal A/B cardinality at the required
+odd d=9 boundary; protocol v2 froze the pair-length correction before the valid
+replacement run.
+
+The frozen >=10% every-worker gate is not met once:
+
+~~~text
+D11 qualifying cells             0 / 360
+RIBLT stream_lb qualifying       0 / 360
+~~~
+
+Even the best D11 cell is slower than direct on every worker; the worst-worker
+difference is about -0.042%. The deliberately optimistic rateless stream lower bound
+also loses in its best cell by at least about -0.435%.
+
+This is the expected consequence of the independent exact-verification boundary:
+direct transfers the canonical target list once, whereas a successful sketch lane
+transfers sketch/coded-symbol traffic and then another full canonical list for
+verification. Extra RTTs remain even when bandwidth dominates and native D11 work is
+small.
+
+The d=8/9 boundary and one-million-key scaling guards pass correctness. D11 performs
+the expected exact fallback for every d=9 and every large-d scaling row. RIBLT's
+optimistic stream lane succeeds at d=128/512 but is orders of magnitude more
+compute-heavy under the pinned upstream lifecycle; at d=1024 the 1024-cell resource
+cap falls back in every scaling replicate.
+
+Verdict: **STOP_SYSTEM_PRODUCT** for the current M6 reconciliation-backend program.
+D11 remains useful private research/reference code, but there is no evidence to
+justify a production ExactSmallDelta backend or public networking API under the
+current exact-verification contract.
+
+A compact cryptographic/probabilistic verification tier or a genuinely maintained
+rateless implementation would materially change the contract and must start a new
+evidence program rather than inherit this result.
+
+Production/public ExactSmallDelta remains **NO-GO**.
+
+See [D13-B evidence](M6-D13B-SYSTEM-EVIDENCE.md).
