@@ -487,3 +487,41 @@ security-vulnerability fix or a valid-input speedup.**
 
 Next M6-B candidate is one isolated B3 direct Energy decoded-state construction
 experiment. See [B2 evidence](M6-B2-STRUCTURAL-VALIDATION-EVIDENCE.md).
+
+
+## M6-D12 post-D11 whole-decode residual result
+
+D12 re-profiles the complete accepted D11 staged decode after the fixed-constant
+trace-reduction optimization.
+
+The profiler measures prefix materialization, locator construction, decoder
+validation, D11 plan construction, trace, GCD, successful division, quadratic solve
+and verification as non-overlapping selectable phases. Factor/decode wall timings are
+accounting controls only.
+
+The predeclared validity gate passes: d=8 profiler wall overhead ranges from -0.501%
+to +0.717% across the five deterministic corpora, below the +5% ceiling.
+
+For d=8, no selectable phase reaches the frozen >=25% share in every corpus:
+
+~~~text
+prefix        0.017- 0.080%
+locator       3.435-17.372%
+validation    0.003- 0.016%
+plan build    0.480- 2.741%
+trace        18.860-36.503%
+GCD          23.616-72.762%
+division      1.135- 7.998%
+quadratic     1.392- 9.275%
+verification  0.163- 1.066%
+~~~
+
+GCD is dominant in four corpora but falls to 23.616% in the D6-derived corpus.
+That 1.384-point miss is not reclassified after measurement.
+
+Verdict: **STOP algebraic decoder micro-optimization.** The next M6-D action is a
+maintained-state system comparison of accepted private D11 PinSketch, direct exact
+reconciliation and a rateless-style comparator. Production/public ExactSmallDelta
+remains NO-GO.
+
+See [M6-D12 evidence](M6-D12-POST-D11-PROFILE-EVIDENCE.md).
