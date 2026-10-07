@@ -12,8 +12,8 @@ use std::hint::black_box;
 use std::time::Instant;
 
 use incremental_bm::{
-    IncrementalBmDecoder, decode_with_locator, fresh_connection_from_sequence,
-    fresh_full_sequence, prefix,
+    IncrementalBmDecoder, decode_with_locator, fresh_connection_from_sequence, fresh_full_sequence,
+    prefix,
 };
 use pinsketch64::{LabError, PinSketch64Lab};
 
@@ -141,12 +141,7 @@ fn main() {
             let cold_build_ns = build_started.elapsed().as_nanos();
 
             let fixed = run_fixed_reference(&left_full, &right_full, &expected);
-            emit(
-                "fixed-reference",
-                scenario,
-                fixed,
-                cold_build_ns,
-            );
+            emit("fixed-reference", scenario, fixed, cold_build_ns);
 
             let incremental_reference =
                 run_incremental_reference(&left_full, &right_full, &expected);
@@ -158,12 +153,7 @@ fn main() {
             );
 
             let incremental_bm = run_incremental_bm(&left_full, &right_full, &expected);
-            emit(
-                "incremental-bm",
-                scenario,
-                incremental_bm,
-                cold_build_ns,
-            );
+            emit("incremental-bm", scenario, incremental_bm, cold_build_ns);
 
             assert_eq!(incremental_reference.outcome, incremental_bm.outcome);
             assert_eq!(incremental_reference.final_k, incremental_bm.final_k);
