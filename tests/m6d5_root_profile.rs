@@ -174,9 +174,9 @@ fn degree_two_work_is_observable_without_parent_double_counting() {
     assert!(profiled.profile.factor_calls[1] >= 2);
     assert!(profiled.profile.trace_attempts[2] >= 1);
     assert_eq!(profiled.profile.trace_attempts[1], 0);
-    assert!(profiled.profile.degree_two_self_ns() > 0);
-    assert_eq!(profiled.profile.higher_degree_self_ns(), 0);
-    assert!(profiled.profile.factor_wall_ns >= profiled.profile.degree_two_self_ns());
+    assert!(profiled.profile.self_ns[2] > 0);
+    assert_eq!(profiled.profile.self_ns[3..].iter().sum::<u128>(), 0);
+    assert!(profiled.profile.factor_wall_ns >= profiled.profile.self_ns[2]);
     assert!(profiled.profile.verification_ns > 0);
 }
 
