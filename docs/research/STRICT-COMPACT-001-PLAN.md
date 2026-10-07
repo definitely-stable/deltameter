@@ -127,6 +127,29 @@ exact joint inversion, or closed-testing/e-value/confidence-sequence constructio
 
 No data-dependent alpha tuning may be silently introduced.
 
+## Initial opportunity signal
+
+A Poissonized local-information screen is now committed as a diagnostic only.
+
+Using the full vector of independent level counts in the Poissonized model, the
+local Cramer-Rao relative standard-deviation lower bound approaches a scaled
+coefficient of about 1.30/sqrt(m) through the central lambda/m range.
+
+This is more informative than the current published W_i asymptotic coefficient
+1.638/sqrt(m), which is plausible because level counts retain information discarded
+by the rightmost-nonzero statistic.
+
+Interpretation:
+
+- this is NOT an achievable estimator claim;
+- this is NOT fixed-d;
+- this is NOT finite-sample coverage;
+- but it is strong enough that the <=32/64 KiB strict-state target is not obviously
+  information-theoretically dead.
+
+Therefore Phase A should continue to exact/certified fixed-d tails rather than stop
+at A0.
+
 ## Decision gates
 
 GO_COMPACT_STRICT requires at least one profile with:
