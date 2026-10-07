@@ -62,23 +62,23 @@ pub fn solve_artin_schreier(c: u64) -> Result<u64, D4Error> {
         let image = gf64_square(basis) ^ basis;
         let variable_bit = 1_u64 << (basis_bit - 1);
 
-        for output_bit in 0..64 {
+        for (output_bit, row) in rows.iter_mut().enumerate() {
             if image & (1_u64 << output_bit) != 0 {
-                rows[output_bit] ^= variable_bit;
+                *row ^= variable_bit;
             }
         }
     }
 
-    for output_bit in 0..64 {
+    for (output_bit, row) in rows.iter_mut().enumerate() {
         if c & (1_u64 << output_bit) != 0 {
-            rows[output_bit] ^= RHS_BIT;
+            *row ^= RHS_BIT;
         }
     }
 
     let mut pivot_row = 0_usize;
     let mut pivot_rows = [usize::MAX; 63];
 
-    for column in 0..63 {
+    for (column, pivot_slot) in pivot_rows.iter_mut().enumerate() {
         let mask = 1_u64 << column;
         let pivot = (pivot_row..64)
             .find(|&row| rows[row] & mask != 0)
@@ -92,7 +92,7 @@ pub fn solve_artin_schreier(c: u64) -> Result<u64, D4Error> {
             }
         }
 
-        pivot_rows[column] = pivot_row;
+        *pivot_slot = pivot_row;
         pivot_row += 1;
     }
 
