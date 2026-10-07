@@ -129,6 +129,7 @@ def run_session(a, b, lane, worker, riblt_cap=None):
     candidate = None
     fallbacks = 0
     false_candidates = 0
+    terminal_exact_transfer = False
     if lane:
         require(worker.request(f'init {key_text(a)} {key_text(b)}') == 'ready', 'worker init')
     if lane == 1:
@@ -169,23 +170,31 @@ def run_session(a, b, lane, worker, riblt_cap=None):
                 break
             require(result == 'reject', 'worker error')
             target *= 2
+
+    # A complete canonical target transfer is already the exact result under the
+    # frozen reliable/ordered transport model. It is terminal and is not sent
+    # back to A a second time merely to mimic sketch-candidate verification.
     if candidate is None:
         fallbacks = int(lane != 0)
         candidate = decode_list(s.exchange(0, encode_list(a)))
-    if not s.verify(candidate, a):
+        terminal_exact_transfer = True
+    elif not s.verify(candidate, a):
         false_candidates += 1
-        require(lane != 0 and fallbacks == 0, 'direct/fallback verification failed')
+        require(lane != 0, 'direct lane cannot produce a provisional candidate')
         fallbacks += 1
         candidate = decode_list(s.exchange(0, encode_list(a)))
-        require(s.verify(candidate, a), 'fallback verification failed')
-    # External exact oracle used only after all strategy choices and verification.
+        terminal_exact_transfer = True
+
+    # External exact oracle is used only after all protocol choices are complete.
     require(candidate == a, 'oracle mismatch')
     total = sum(f['bytes'] for f in s.trace)
     verification = sum(f['bytes'] for f in s.trace if f['phase'] == 'verification')
-    return dict(lane=lane, session_identity=list(s.identity), final=candidate, bytes=total, candidate_bytes=total-verification,
-                verification_bytes=verification, rounds=s.rounds, messages=len(s.trace),
-                fallbacks=fallbacks, false_candidates=false_candidates, trace=s.trace,
-                cpu_ns=None, allocated_peak_bytes=None, performance_decision='NOT_MEASURED',
+    return dict(lane=lane, session_identity=list(s.identity), final=candidate, bytes=total,
+                candidate_bytes=total-verification, verification_bytes=verification,
+                rounds=s.rounds, messages=len(s.trace), fallbacks=fallbacks,
+                false_candidates=false_candidates, terminal_exact_transfer=terminal_exact_transfer,
+                trace=s.trace, cpu_ns=None, allocated_peak_bytes=None,
+                performance_decision='NOT_MEASURED',
                 source_payload_bytes=8 * (len(a) + len(b)),
                 maintained_syndrome_payload_bytes=144 if lane == 1 else 0,
                 source_reimports_per_session=2 if lane == 2 else 0)
