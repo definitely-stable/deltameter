@@ -385,3 +385,44 @@ GF(2^64) rewrite, GCD/division change, SIMD/CLMUL/unsafe or protocol change is
 authorized.
 
 See [M6-D10 evidence](M6-D10-TRACE-INTERNAL-EVIDENCE.md).
+
+
+## M6-B codec/decoder research correction
+
+The 2026-10-07 external-research review is recorded in
+[M6-B codec/decoder research audit](M6-B-CODEC-DECODER-RESEARCH-AUDIT.md).
+
+The audit keeps the original one-candidate-at-a-time rule and corrects several
+external claims against the current implementation:
+
+- B1's table-driven CRC32C has strong hosted evidence, but its residual CRC share is
+  not known; an Amdahl result based on an assumed standalone CRC speedup is not
+  repository evidence.
+- Current Energy decode already checks the complete row block before row allocation
+  and exact counter bytes before primary meter allocation. B2 therefore must not be
+  framed as closing an existing arbitrary short-header primary-allocation
+  vulnerability.
+- B2 remains useful as exact backend-shape validation before row allocation and as
+  valid-CRC malformed-input hardening. It stays separate from B3.
+- B3 is widened from narrow cache-allocation reuse to a direct Energy decoded-state
+  candidate: capacity-only counters plus one-pass counter parsing and checked row
+  energy accumulation. This removes redundant zero initialization and the later
+  full counter rescan at the logical source-code level, but no physical DRAM/cache
+  percentage is claimed before measurement.
+- further slicing-by-N CRC, encode-side CRC fusion and row/sign-mask fusion are
+  deferred until residual attribution shows a material opportunity;
+- decode-side CRC fusion remains NO-GO for the current buffered v1 path because the
+  checksum-before-backend-decode boundary is intentionally preserved;
+- transport byte admission remains outside snapshot v1.
+
+The corrected execution sequence is:
+
+~~~text
+finish/synchronize B1
+-> B2 exact structural validation
+-> B3 direct Energy decoded-state experiment
+-> residual codec selector only if further optimization is justified
+~~~
+
+B2 and B3 must not be bundled into one performance verdict. See the
+[post-research plan](superpowers/plans/2026-10-07-m6b-post-research.md).
