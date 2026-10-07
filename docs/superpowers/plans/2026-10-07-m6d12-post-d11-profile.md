@@ -81,3 +81,42 @@ cross-corpus median share.
 - invalid profiler -> reduce instrumentation and rerun.
 
 Production/public ExactSmallDelta remains NO-GO.
+
+
+## Replication closure for the 25% boundary
+
+Valid exact-head reruns disagreed on the D6-derived GCD share around the frozen
+25% threshold: observed worker-level summaries included 23.616%, 24.721% and
+26.359%. Correctness and instrumentation-overhead gates passed in all cases.
+
+This is treated as a reproducibility problem, not as permission to choose the
+favorable run.
+
+Before collecting the canonical closure data, freeze this additional requirement:
+
+~~~text
+independent GitHub-hosted workers = 5
+profiler processes / worker       = 3
+balanced samples / process        = 4
+paired samples / worker / corpus  = 12
+~~~
+
+For each raw sample, each selectable phase is divided by the accepted-D11 control
+time from that same sample. Each worker/corpus/phase is summarized by the median of
+its 12 paired shares.
+
+Every worker must independently satisfy the original logical/matrix/false-success
+checks and the <=+5% d=8 median paired profile-overhead ceiling.
+
+A phase is replication-stable common/material only when its worker-level median is
+>=25% for every corpus on every worker.
+
+- stable phase(s) -> select only the phase with the largest median across all
+  worker/corpus medians and authorize a narrower **measurement** slice;
+- no stable phase -> STOP_ALGEBRAIC_MICRO_OPT and move to maintained-state system
+  comparison;
+- any invalid worker -> INCONCLUSIVE_REPLICATION.
+
+The 25% threshold itself is unchanged. This closure only makes its reproducibility
+requirement explicit after independent exact-head reruns demonstrated boundary
+sensitivity.
