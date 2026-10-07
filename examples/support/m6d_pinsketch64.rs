@@ -15,6 +15,7 @@ pub enum LabError {
     InvalidCapacity,
     InvalidDecodeLimit,
     CapacityMismatch,
+    PrefixMismatch,
     InvalidEncoding,
     DuplicateInput,
     DecodeFailure,
@@ -30,6 +31,7 @@ impl fmt::Display for LabError {
                 f.write_str("decode limit must not exceed stored syndrome capacity")
             }
             Self::CapacityMismatch => f.write_str("lab sketch capacities differ"),
+            Self::PrefixMismatch => f.write_str("lab sketch is not a prefix of the source state"),
             Self::InvalidEncoding => f.write_str("invalid PinSketch64 lab encoding"),
             Self::DuplicateInput => f.write_str("input must be a strictly increasing unique set"),
             Self::DecodeFailure => f.write_str("syndrome decoder failed"),
@@ -114,6 +116,47 @@ impl PinSketch64Lab {
         }
         self.zero_present ^= other.zero_present;
         Ok(())
+    }
+
+    pub fn prefix(&self, capacity: usize) -> Result<Self, LabError> {
+        if capacity == 0 || capacity > self.capacity {
+            return Err(LabError::InvalidCapacity);
+        }
+        Ok(Self {
+            capacity,
+            odd_syndromes: self.odd_syndromes[..capacity].to_vec().into_boxed_slice(),
+            zero_present: self.zero_present,
+        })
+    }
+
+    /// Extend this already-received prefix from a compatible full source.
+    ///
+    /// Returns the number of newly appended syndrome words. The zero bit is
+    /// immutable after the first prefix and is therefore not retransmitted.
+    pub fn extend_prefix_from(
+        &mut self,
+        source: &Self,
+        new_capacity: usize,
+    ) -> Result<usize, LabError> {
+        if new_capacity < self.capacity || new_capacity > source.capacity || new_capacity == 0 {
+            return Err(LabError::InvalidCapacity);
+        }
+        if self.zero_present != source.zero_present
+            || self.odd_syndromes.as_ref() != &source.odd_syndromes[..self.capacity]
+        {
+            return Err(LabError::PrefixMismatch);
+        }
+
+        let added = new_capacity - self.capacity;
+        if added == 0 {
+            return Ok(0);
+        }
+
+        self.odd_syndromes = source.odd_syndromes[..new_capacity]
+            .to_vec()
+            .into_boxed_slice();
+        self.capacity = new_capacity;
+        Ok(added)
     }
 
     pub fn encode(&self) -> Vec<u8> {
