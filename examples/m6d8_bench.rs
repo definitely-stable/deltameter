@@ -16,8 +16,10 @@ use std::hint::black_box;
 use std::time::Instant;
 
 use pinsketch64::PinSketch64Lab;
-use quadratic::{decode_with_locator_quadratic, gf64_square_reference_for_d8};
-use square_candidate::{decode_with_locator_square_candidate, gf64_square_candidate};
+use quadratic::decode_with_locator_quadratic;
+use square_candidate::{
+    decode_with_locator_square_candidate, gf64_square_candidate, gf64_square_scalar_reference,
+};
 use trace_square::{
     D4Error, decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
     generic_square_mod, poly_square_mod_monic,
@@ -233,7 +235,7 @@ fn validate_arithmetic_controls() {
         let value = 1_u64 << bit;
         assert_eq!(
             gf64_square_candidate(value),
-            gf64_square_reference_for_d8(value)
+            gf64_square_scalar_reference(value)
         );
     }
 
