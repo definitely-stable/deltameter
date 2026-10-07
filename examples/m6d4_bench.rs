@@ -3,10 +3,10 @@
 //! Private research harness only. The D2 protocol and locator computation are
 //! invariant controls; only root-factor trace squaring differs.
 
-#[path = "support/m6d4_trace_square.rs"]
-mod trace_square;
 #[path = "support/m6d_pinsketch64.rs"]
 mod pinsketch64;
+#[path = "support/m6d4_trace_square.rs"]
+mod trace_square;
 
 use std::hint::black_box;
 use std::time::Instant;
@@ -138,12 +138,7 @@ fn main() {
         for sample in 0..SAMPLES {
             let left_full = PinSketch64Lab::from_sorted_unique(9, &left).unwrap();
             let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
-            let metrics = run_decode(
-                &left_full,
-                &right_full,
-                &expected,
-                sample % 2 == 0,
-            );
+            let metrics = run_decode(&left_full, &right_full, &expected, sample % 2 == 0);
 
             println!(
                 "record,decode,{},{},0,{},{},{},{},{},{},{},{},{}",
@@ -179,40 +174,26 @@ fn run_square_micro() {
                 (
                     time_repeated(SQUARE_REPEATS, || {
                         black_box(
-                            generic_square_mod(
-                                black_box(&polynomial),
-                                black_box(&modulus),
-                            )
-                            .unwrap(),
+                            generic_square_mod(black_box(&polynomial), black_box(&modulus))
+                                .unwrap(),
                         );
                     }),
                     time_repeated(SQUARE_REPEATS, || {
                         black_box(
-                            poly_square_mod_monic(
-                                black_box(&polynomial),
-                                black_box(&modulus),
-                            )
-                            .unwrap(),
+                            poly_square_mod_monic(black_box(&polynomial), black_box(&modulus))
+                                .unwrap(),
                         );
                     }),
                 )
             } else {
                 let specialized = time_repeated(SQUARE_REPEATS, || {
                     black_box(
-                        poly_square_mod_monic(
-                            black_box(&polynomial),
-                            black_box(&modulus),
-                        )
-                        .unwrap(),
+                        poly_square_mod_monic(black_box(&polynomial), black_box(&modulus)).unwrap(),
                     );
                 });
                 let generic = time_repeated(SQUARE_REPEATS, || {
                     black_box(
-                        generic_square_mod(
-                            black_box(&polynomial),
-                            black_box(&modulus),
-                        )
-                        .unwrap(),
+                        generic_square_mod(black_box(&polynomial), black_box(&modulus)).unwrap(),
                     );
                 });
                 (generic, specialized)
@@ -285,7 +266,8 @@ fn run_decode(
             classify(specialized.as_ref().ok(), expected, expected.len() <= limit);
 
         assert_eq!(
-            generic_outcome, specialized_outcome,
+            generic_outcome,
+            specialized_outcome,
             "root outcome mismatch d={} limit={limit}",
             expected.len()
         );
@@ -351,9 +333,7 @@ fn square_modulus(degree: usize) -> Vec<u64> {
 
 fn square_polynomial(degree: usize) -> Vec<u64> {
     (0..degree)
-        .map(|index| {
-            splitmix64(0xD400_7000_0000_0000 ^ (degree as u64) << 48 ^ index as u64)
-        })
+        .map(|index| splitmix64(0xD400_7000_0000_0000 ^ (degree as u64) << 48 ^ index as u64))
         .collect()
 }
 
