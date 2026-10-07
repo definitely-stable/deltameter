@@ -10,7 +10,10 @@ mod trace_square;
 use pinsketch64::PinSketch64Lab;
 use quadratic::{decode_with_locator_quadratic, gf64_square_reference_for_d8};
 use square_candidate::{decode_with_locator_square_candidate, gf64_square_candidate};
-use trace_square::fresh_locator;
+use trace_square::{
+    D4Error, decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
+    generic_square_mod, poly_square_mod_monic,
+};
 
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
 
@@ -101,6 +104,25 @@ fn difference_prefix(
     let mut difference = prefix(left, capacity);
     difference.merge(&prefix(right, capacity)).unwrap();
     difference
+}
+
+#[test]
+fn frozen_d4_controls_remain_reachable() {
+    let polynomial = [0x0123_4567_89AB_CDEF, 0xDEAD_BEEF_CAFE_BABE];
+    let modulus = [0xA5A5_5A5A_F0F0_0F0F, 0x1357_9BDF_2468_ACE0, 1];
+    assert_eq!(
+        generic_square_mod(&polynomial, &modulus).unwrap(),
+        poly_square_mod_monic(&polynomial, &modulus).unwrap()
+    );
+
+    let sketch = PinSketch64Lab::from_sorted_unique(3, &[1, 2]).unwrap();
+    let locator = fresh_locator(&sketch, 2).unwrap();
+    let frozen = sketch.decode_candidate_with_limit(2).map_err(D4Error::from);
+    assert_eq!(decode_with_locator_generic(&sketch, 2, &locator), frozen);
+    assert_eq!(
+        decode_with_locator_specialized(&sketch, 2, &locator),
+        decode_with_locator_quadratic(&sketch, 2, &locator)
+    );
 }
 
 #[test]
