@@ -16,9 +16,12 @@ use std::hint::black_box;
 use std::time::Instant;
 
 use pinsketch64::PinSketch64Lab;
-use quadratic::decode_with_locator_quadratic;
-use square_candidate::decode_with_locator_square_candidate;
-use trace_square::fresh_locator;
+use quadratic::{decode_with_locator_quadratic, gf64_square_reference_for_d8};
+use square_candidate::{decode_with_locator_square_candidate, gf64_square_candidate};
+use trace_square::{
+    D4Error, decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
+    generic_square_mod, poly_square_mod_monic,
+};
 
 const SOURCE_KEYS: usize = 8_192;
 const SAMPLES: usize = 4;
@@ -77,6 +80,8 @@ fn main() {
     println!(
         "record,corpus,scenario,d,sample,outcome,final_k,attempts,rtts,payload_bytes,control_ns,candidate_ns,false_success"
     );
+
+    validate_arithmetic_controls();
 
     let corpora = [
         Corpus {
@@ -223,18 +228,43 @@ fn main() {
     }
 }
 
+fn validate_arithmetic_controls() {
+    for bit in 0..64 {
+        let value = 1_u64 << bit;
+        assert_eq!(
+            gf64_square_candidate(value),
+            gf64_square_reference_for_d8(value)
+        );
+    }
+
+    let polynomial = [0x0123_4567_89AB_CDEF, 0xDEAD_BEEF_CAFE_BABE];
+    let modulus = [0xA5A5_5A5A_F0F0_0F0F, 0x1357_9BDF_2468_ACE0, 1];
+    assert_eq!(
+        generic_square_mod(&polynomial, &modulus).unwrap(),
+        poly_square_mod_monic(&polynomial, &modulus).unwrap()
+    );
+}
+
 fn validate_controls(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64]) {
     for (limit, capacity) in STAGES {
         let sketch = difference_prefix(left, right, capacity);
         let locator = fresh_locator(&sketch, limit).unwrap();
+
+        let frozen = sketch.decode_candidate_with_limit(limit);
+        let generic = decode_with_locator_generic(&sketch, limit, &locator);
+        let d4 = decode_with_locator_specialized(&sketch, limit, &locator);
         let control = decode_with_locator_quadratic(&sketch, limit, &locator);
         let candidate = decode_with_locator_square_candidate(&sketch, limit, &locator);
+
+        assert_eq!(generic, frozen.clone().map_err(D4Error::from));
+        assert_eq!(d4, frozen.clone().map_err(D4Error::from));
+        assert_eq!(control, d4);
         assert_eq!(candidate, control);
 
         if expected.len() <= limit {
-            assert_eq!(control.unwrap(), expected);
+            assert_eq!(frozen.unwrap(), expected);
         } else {
-            assert!(control.is_err());
+            assert!(frozen.is_err());
         }
     }
 }
