@@ -51,10 +51,7 @@ pub fn extend_prefix(
     source: &PinSketch64Lab,
     new_capacity: usize,
 ) -> Result<usize, PrefixError> {
-    if new_capacity < received.capacity()
-        || new_capacity > source.capacity()
-        || new_capacity == 0
-    {
+    if new_capacity < received.capacity() || new_capacity > source.capacity() || new_capacity == 0 {
         return Err(PrefixError::InvalidCapacity);
     }
 
