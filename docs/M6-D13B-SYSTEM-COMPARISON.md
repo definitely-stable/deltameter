@@ -1,6 +1,6 @@
 # M6-D13-B — five-worker system comparison
 
-Status: **FROZEN BEFORE PERFORMANCE EVIDENCE**. Issue #56; parents #19/#14.
+Status: **FROZEN v2 BEFORE VALID PERFORMANCE EVIDENCE**. Issue #56; parents #19/#14.
 Baseline: `8b5421709965e88dfbb74cd61eb742321d738efa` (merged D13-B0
 MEASUREMENT_READY). Machine contract: `research/m6d13b/contract.json`.
 
@@ -192,3 +192,19 @@ No favorable cell can erase a correctness failure.
 Regardless of outcome, production/public ExactSmallDelta remains **NO-GO**. A
 future compact digest-verification tier or public reconciliation API would require
 a separate contract and decision.
+
+
+## Protocol amendment v2
+
+The first hosted attempt (run `37650626996`) is **INVALID and excluded**. All five
+workers deterministically reached the mandatory odd `d=9` boundary and stopped
+before producing a complete raw artifact because the reused B0 `ready` validator
+assumed equal A/B cardinality: it compared B capacity with `|A|`.
+
+For odd symmetric difference, equal source cardinality is impossible. The controller
+already knows both exact input lengths. v2 therefore validates pair initialization
+against `source_a_cap >= |A|` and `source_b_cap >= |B|` separately. This check is
+untimed. Native workers, phase timers, datasets, wire/RTT model, candidate threshold
+and every decision gate are unchanged.
+
+No observation from the invalid attempt is eligible for aggregation.
