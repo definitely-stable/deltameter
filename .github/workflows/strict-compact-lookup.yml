@@ -1,0 +1,57 @@
+name: strict-compact lookup lab
+
+on:
+  pull_request:
+    paths:
+      - "docs/research/STRICT-COMPACT-001-LOOKUP-PLAN.md"
+      - "research/strict_compact_lookup_q32.py"
+      - "examples/strict_compact_lookup_lab.rs"
+      - "src/fpcsa.rs"
+      - ".github/workflows/strict-compact-lookup.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lookup-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Compile generator
+        run: python -m py_compile research/strict_compact_lookup_q32.py
+
+      - name: Generate conservative prototype table twice
+        run: |
+          mkdir -p strict-compact-out
+          python research/strict_compact_lookup_q32.py             --table-out strict-compact-out/q32-a.txt             --summary-out strict-compact-out/q32-summary.json
+          python research/strict_compact_lookup_q32.py             --table-out strict-compact-out/q32-b.txt
+          cmp strict-compact-out/q32-a.txt strict-compact-out/q32-b.txt
+          cat strict-compact-out/q32-summary.json
+
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Run private lookup lab
+        run: |
+          cargo run --release --example strict_compact_lookup_lab --             strict-compact-out/q32-a.txt             | tee strict-compact-out/lab.txt
+
+      - name: Check repository targets
+        run: cargo check --all-targets
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: strict-compact-lookup-${{ github.run_id }}-${{ github.run_attempt }}
+          path: strict-compact-out/
+          if-no-files-found: error
