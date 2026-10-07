@@ -40,17 +40,20 @@ class ProtocolTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             decode_list(encode_list([1]) + b'\0')
 
-    def test_direct_charges_verification(self):
+    def test_direct_exact_transfer_is_terminal(self):
         row = run_session([1, 2], [2, 3], 0, None)
-        self.assertEqual(row['rounds'], 2)
-        self.assertEqual(row['bytes'], 4 * 48 + 2 * (8 + 2 * 8))
-        self.assertEqual(row['verification_bytes'], 2 * 48 + 8 + 2 * 8)
+        self.assertEqual(row['rounds'], 1)
+        self.assertEqual(row['bytes'], 2 * 48 + 8 + 2 * 8)
+        self.assertEqual(row['verification_bytes'], 0)
+        self.assertTrue(row['terminal_exact_transfer'])
         self.assertEqual(row['final'], [1, 2])
 
     def test_exhaustion_keeps_all_failed_cost(self):
         row = run_session(list(range(9)), [], 1, RejectWorker())
-        self.assertEqual(row['rounds'], 6)
+        self.assertEqual(row['rounds'], 5)
         self.assertEqual(row['candidate_bytes'], 5 * 96 + 73 + 80)
+        self.assertEqual(row['verification_bytes'], 0)
+        self.assertTrue(row['terminal_exact_transfer'])
         self.assertEqual(row['fallbacks'], 1)
 
     def test_false_success_requires_separate_verification_and_fallback(self):
@@ -59,8 +62,10 @@ class ProtocolTests(unittest.TestCase):
                 return 'ok -' if line.startswith('decode ') else super().request(line)
         row = run_session([1], [], 1, FalseWorker())
         self.assertEqual(row['false_candidates'], 1)
-        self.assertEqual(row['rounds'], 4)
+        self.assertEqual(row['rounds'], 3)
         self.assertEqual(row['fallbacks'], 1)
+        self.assertEqual(row['false_candidates'], 1)
+        self.assertTrue(row['terminal_exact_transfer'])
         self.assertEqual(row['final'], [1])
 
     def test_generation_and_sequence_are_not_reusable(self):
