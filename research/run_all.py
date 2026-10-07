@@ -14,6 +14,7 @@ from parity_level_moments import build_grid as build_parity_grid
 from parity_poissonized import build_payload as build_poissonized_payload
 from parity_truncation_budget import build_payload as build_truncation_payload
 from strict_compact_level_count import build_payload as build_strict_compact_payload
+from strict_compact_depoisson import build_payload as build_strict_depoisson_payload
 from strict_compact_poisson_screen import build_payload as build_strict_screen_payload
 from strict_compact_poisson_width import build_payload as build_strict_width_payload
 
@@ -39,6 +40,7 @@ def main() -> None:
     parity_poissonized_path = args.out / "parity-poissonized.json"
     parity_truncation_path = args.out / "parity-truncation-budget.json"
     strict_compact_path = args.out / "strict-compact-level-count.json"
+    strict_depoisson_path = args.out / "strict-compact-depoisson.json"
     strict_screen_path = args.out / "strict-compact-poisson-screen.json"
     strict_width_path = args.out / "strict-compact-poisson-width.json"
 
@@ -49,6 +51,7 @@ def main() -> None:
     write_json(parity_poissonized_path, build_poissonized_payload())
     write_json(parity_truncation_path, build_truncation_payload())
     write_json(strict_compact_path, build_strict_compact_payload())
+    write_json(strict_depoisson_path, build_strict_depoisson_payload())
     write_json(strict_screen_path, build_strict_screen_payload())
     write_json(strict_width_path, build_strict_width_payload())
 
@@ -59,6 +62,7 @@ def main() -> None:
     print(f"wrote {parity_poissonized_path}")
     print(f"wrote {parity_truncation_path}")
     print(f"wrote {strict_compact_path}")
+    print(f"wrote {strict_depoisson_path}")
     print(f"wrote {strict_screen_path}")
     print(f"wrote {strict_width_path}")
 
