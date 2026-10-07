@@ -10,6 +10,7 @@ from pathlib import Path
 from readiness import (
     CONTRACT,
     validate_check,
+    validate_diagnose,
     validate_ready,
     validate_riblt_check,
     validate_riblt_ready,
@@ -109,13 +110,26 @@ def run_rust_chain(worker: Worker, mode: str, updates: int, sessions: int):
                 True,
             )
 
+        diagnose = None
+        if mode == "d11":
+            diagnose = validate_diagnose(worker.request("diagnose"))
+            if diagnose["exact_d"] != updates:
+                raise ValueError(
+                    f"unexpected D11 exact_d={diagnose['exact_d']} updates={updates} "
+                    f"sessions={sessions} session={session}"
+                )
+
         sync = validate_sync(worker.request("sync"), mode)
         if mode == "direct":
             if sync["fallback"] != 0:
                 raise ValueError("direct fallback")
         elif updates <= 8:
             if sync["fallback"] != 0:
-                raise ValueError("in-capacity D11 fallback")
+                raise ValueError(
+                    "in-capacity D11 fallback "
+                    f"updates={updates} sessions={sessions} session={session} "
+                    f"diagnose={diagnose}"
+                )
         else:
             if sync["fallback"] != 1:
                 raise ValueError("over-capacity D11 did not fall back")
@@ -126,6 +140,7 @@ def run_rust_chain(worker: Worker, mode: str, updates: int, sessions: int):
                 "updates": updates,
                 "sessions": sessions,
                 "session": session,
+                "diagnose": diagnose,
                 "metrics": sync,
             }
         )
