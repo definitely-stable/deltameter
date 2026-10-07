@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'examples/m6d13b0_worker.rs'
+      - 'examples/support/m6d_pinsketch64.rs'
+      - 'examples/support/m6d4_trace_square.rs'
+      - 'examples/support/m6d6_quadratic.rs'
+      - 'examples/support/m6d11_fixed_reduction.rs'
       - 'research/m6d13b0/**'
       - 'docs/M6-D13B0-MEASUREMENT-READINESS.md'
       - 'docs/superpowers/plans/2026-10-07-m6d13b0-measurement-readiness.md'
@@ -13,7 +17,7 @@ permissions:
 jobs:
   readiness:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
         with:
@@ -22,6 +26,10 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal --component rustfmt,clippy
           rustup default stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+          cache: false
       - name: Verify readiness contract
         run: python3 -m unittest discover -s research/m6d13b0 -p 'test_*.py'
       - name: Build persistent Rust worker
@@ -35,6 +43,36 @@ jobs:
           python3 research/m6d13b0/check_worker.py \
             target/release/examples/m6d13b0_worker \
             d13b0-out/rust-partial.json
+      - name: Verify Go adapter formatting
+        run: |
+          cp research/m6d13b0/riblt_worker.go /tmp/riblt_worker.go
+          gofmt -w /tmp/riblt_worker.go
+          diff -u research/m6d13b0/riblt_worker.go /tmp/riblt_worker.go
+      - name: Checkout pinned Rateless IBLT
+        uses: actions/checkout@v5
+        with:
+          repository: yangl1996/riblt
+          ref: 4afa6bc06cb2237d9ea273a51d97a7e05b3f573b
+          path: external-riblt
+          persist-credentials: false
+      - name: Build pinned pull/stream adapter
+        run: |
+          test "$(git -C external-riblt rev-parse HEAD)" = 4afa6bc06cb2237d9ea273a51d97a7e05b3f573b
+          mkdir -p external-riblt/cmd/d13b0
+          cp research/m6d13b0/riblt_worker.go external-riblt/cmd/d13b0/main.go
+          cd external-riblt
+          go mod download
+          go mod verify
+          go test ./...
+          go build -mod=readonly -o ../riblt-b0-worker ./cmd/d13b0
+          git diff --exit-code -- go.mod go.sum encoder.go decoder.go mapping.go symbol.go
+      - name: Run pinned RIBLT readiness controls
+        run: |
+          git -C external-riblt rev-parse HEAD > d13b0-out/riblt-head.txt
+          go version > d13b0-out/go.txt
+          python3 research/m6d13b0/check_riblt.py \
+            ./riblt-b0-worker \
+            d13b0-out/riblt-partial.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
