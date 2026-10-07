@@ -89,20 +89,48 @@ Add a dependency-free Fraction oracle for small m,d:
 
 This is the reference implementation for accelerated/certified work.
 
-### A2 — scalable fixed-d law
+### A2 — scalable fixed-d tails by monotone de-Poissonization
 
-The chain has Krawtchouk eigenstructure with eigenvalues
-lambda_k = 1 - 2 r_j k/m, k=0..m.
+A direct Krawtchouk evaluator is no longer the primary path.
 
-Choose a stable scalable evaluator and cross-check it against A1. Ordinary binary64
-output may be used for diagnostic width exploration but is not a proof boundary.
-A product GO requires auditable tail enclosures / certified numerical error.
+Let F_d(s)=P[S_j(d)<=s] be the exact fixed-d CDF and let N~Poisson(lambda).
+Poissonization gives
 
-Potential path:
-1. exact tiny oracle;
-2. stable spectral recurrence for production m;
-3. directed-rounding/high-precision enclosure or another numerical certificate;
-4. monotone inversion in d.
+G_lambda(s)=E[F_N(s)],
+
+and the stored level count is exactly Binomial(m,p_j(lambda)) with
+
+p_j(lambda)=(1-exp(-lambda/(m*2^j)))/2.
+
+Because F_n(s) is nonincreasing in n,
+
+G_lambda(s) >= P[N<=d] * F_d(s),
+
+hence
+
+F_d(s) <= G_lambda(s) / P[N<=d].
+
+Choose lambda=d. Choi's sharp Poisson-median bound
+mu-log(2) <= median(Poisson(mu)) < mu+1/3 implies that for integer d, d itself is
+a Poisson(d) median, so P[N<=d]>=1/2. Therefore
+
+F_d(s) <= 2 * G_d(s).
+
+This converts an easily evaluated Poissonized binomial lower tail into a rigorous
+fixed-d upper bound. The initial strict inversion can therefore use a per-level
+Poissonized threshold alpha_j/2 rather than evaluating the Krawtchouk expansion
+directly.
+
+Primary A2 path:
+1. exact tiny fixed-d oracle from A1;
+2. theorem-derived factor-two de-Poissonization checked against that oracle;
+3. scalable binomial lower-tail evaluation;
+4. auditable/certified numerical upper enclosure of those binomial tails;
+5. monotone inversion in d.
+
+The Krawtchouk fixed-d law remains useful as an independent validator or later
+tightening route if the factor-two penalty materially hurts width, but it is no
+longer required for the first certified backend.
 
 ### A3 — frozen width frontier
 
@@ -126,6 +154,24 @@ alpha allocation, data-independent level selection, independent pilot rows,
 exact joint inversion, or closed-testing/e-value/confidence-sequence constructions.
 
 No data-dependent alpha tuning may be silently introduced.
+
+## De-Poissonization breakthrough
+
+Phase A now has a substantially cheaper strict fixed-d route.
+
+The combination of fixed-d stochastic monotonicity, Poisson splitting and the
+integer-mean Poisson median gives the universal single-level bound
+
+F_fixed_d(s) <= 2 * F_poissonized_lambda=d(s).
+
+This means the current Poissonized binomial law is not merely an optimistic
+diagnostic. With a factor-two tightening of the per-level tail budget, it can certify
+fixed-d one-sided coverage once the binomial numerical tail itself is enclosed
+rigorously.
+
+A tiny exact Fraction oracle plus binary64 Poissonized regression is committed to
+check this theorem-derived inequality on small grids. The proof claim does not rest
+on the floating-point regression.
 
 ## Initial opportunity signal
 
