@@ -335,3 +335,23 @@ fn guard_mutation_cannot_bypass_candidate_verification() {
     assert!(decode_with_locator_generic(&damaged, 2, &locator).is_err());
     assert!(decode_with_locator_specialized(&damaged, 2, &locator).is_err());
 }
+
+#[test]
+fn invalid_limits_are_rejected_before_factorization() {
+    let sketch = PinSketch64Lab::from_sorted_unique(3, &[0, 1]).unwrap();
+    for (limit, locator) in [(4, vec![0, 0]), (0, vec![0, 0]), (1, vec![1, 1])] {
+        let frozen = decode_with_locator(&sketch, limit, &locator);
+        let expected = match frozen.unwrap_err() {
+            incremental_bm::D3Error::Lab(error) => D4Error::Lab(error),
+            error => panic!("unexpected frozen error: {error:?}"),
+        };
+        assert_eq!(
+            decode_with_locator_generic(&sketch, limit, &locator).unwrap_err(),
+            expected
+        );
+        assert_eq!(
+            decode_with_locator_specialized(&sketch, limit, &locator).unwrap_err(),
+            expected
+        );
+    }
+}
