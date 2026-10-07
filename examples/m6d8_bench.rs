@@ -112,16 +112,56 @@ fn main() {
     ];
 
     let scenarios = [
-        Scenario { name: "d0", d: 0, include_zero: false },
-        Scenario { name: "d1-zero", d: 1, include_zero: true },
-        Scenario { name: "d2", d: 2, include_zero: false },
-        Scenario { name: "d3", d: 3, include_zero: false },
-        Scenario { name: "d4", d: 4, include_zero: false },
-        Scenario { name: "d5", d: 5, include_zero: false },
-        Scenario { name: "d8", d: 8, include_zero: false },
-        Scenario { name: "d9", d: 9, include_zero: false },
-        Scenario { name: "d10", d: 10, include_zero: false },
-        Scenario { name: "d16", d: 16, include_zero: false },
+        Scenario {
+            name: "d0",
+            d: 0,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d1-zero",
+            d: 1,
+            include_zero: true,
+        },
+        Scenario {
+            name: "d2",
+            d: 2,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d3",
+            d: 3,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d4",
+            d: 4,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d5",
+            d: 5,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d8",
+            d: 8,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d9",
+            d: 9,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d10",
+            d: 10,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d16",
+            d: 16,
+            include_zero: false,
+        },
     ];
 
     for corpus in corpora {
