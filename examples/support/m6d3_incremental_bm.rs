@@ -109,23 +109,6 @@ impl IncrementalBmDecoder {
         Ok(())
     }
 
-    pub fn decode_current(
-        &self,
-        sketch: &PinSketch64Lab,
-        max_elements: usize,
-    ) -> Result<Vec<u64>, D3Error> {
-        let zero_count = usize::from(sketch.zero_present());
-        if zero_count > max_elements {
-            return Err(LabError::CandidateExceedsCapacity.into());
-        }
-        let nonzero_limit = max_elements - zero_count;
-        if self.sequence.len() != nonzero_limit * 2 {
-            return Err(LabError::InvalidDecodeLimit.into());
-        }
-
-        decode_with_locator(sketch, max_elements, &self.connection_polynomial())
-    }
-
     pub fn connection_polynomial(&self) -> Vec<u64> {
         let mut connection = self.connection.clone();
         connection.truncate(self.length + 1);
@@ -206,11 +189,6 @@ pub fn fresh_full_sequence(
     }
 
     Ok(sequence)
-}
-
-pub fn fresh_connection(sketch: &PinSketch64Lab, max_elements: usize) -> Result<Vec<u64>, D3Error> {
-    let sequence = fresh_full_sequence(sketch, max_elements)?;
-    fresh_connection_from_sequence(&sequence)
 }
 
 pub fn fresh_connection_from_sequence(sequence: &[u64]) -> Result<Vec<u64>, D3Error> {
