@@ -279,8 +279,7 @@ fn diagnose_d11(state: &State) -> String {
     let fresh_a = PinSketch64Lab::from_sorted_unique(CAPACITY, &state.a.keys).unwrap();
     let fresh_b = PinSketch64Lab::from_sorted_unique(CAPACITY, &state.b.keys).unwrap();
 
-    let (maintained_roots, maintained_k) =
-        decode_pair_unmeasured(maintained_a, maintained_b);
+    let (maintained_roots, maintained_k) = decode_pair_unmeasured(maintained_a, maintained_b);
     let (fresh_roots, fresh_k) = decode_pair_unmeasured(&fresh_a, &fresh_b);
 
     let maintained_exact = maintained_roots.as_ref() == Some(&expected);
@@ -297,10 +296,7 @@ fn diagnose_d11(state: &State) -> String {
         kv("fresh_decoded", u8::from(fresh_roots.is_some())),
         kv("fresh_exact", u8::from(fresh_exact)),
         kv("fresh_k", fresh_k),
-        kv(
-            "candidate_equal",
-            u8::from(maintained_roots == fresh_roots),
-        ),
+        kv("candidate_equal", u8::from(maintained_roots == fresh_roots)),
     ]
     .join(" ")
 }
