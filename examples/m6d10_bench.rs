@@ -123,7 +123,11 @@ fn main() {
     for corpus in corpora {
         let dataset = build_dataset(corpus);
         let trace_attempts = dataset.replays.len();
-        let term_cases: usize = dataset.replays.iter().map(|replay| replay.terms.len()).sum();
+        let term_cases: usize = dataset
+            .replays
+            .iter()
+            .map(|replay| replay.terms.len())
+            .sum();
 
         assert!(trace_attempts > 0);
         assert_eq!(term_cases, trace_attempts * 64);
@@ -228,9 +232,7 @@ fn measure_component(component: Component, dataset: &ReplayDataset) -> u128 {
                     let modulus = &dataset.prepared_moduli[replay_index];
                     for remainder in remainders {
                         let working = black_box(remainder).clone();
-                        black_box(
-                            reduce_unreduced_replay(working, black_box(modulus)).unwrap(),
-                        );
+                        black_box(reduce_unreduced_replay(working, black_box(modulus)).unwrap());
                     }
                 }
             }
