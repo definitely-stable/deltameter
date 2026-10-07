@@ -32,6 +32,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Install stable Rust
         run: |
@@ -56,4 +58,4 @@ jobs:
         run: cargo doc --no-deps
 
       - name: Compile examples
-        run: cargo check --release --examples
+        run: cargo build --release --examples

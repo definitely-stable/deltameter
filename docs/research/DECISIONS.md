@@ -547,3 +547,28 @@ Decision:
 - do not add unsafe CLMUL/SIMD, randomized splitting or multiple root-finding changes in the same slice.
 
 Canonical evidence: docs/M6-D3-INCREMENTAL-BM-EVIDENCE.md.
+
+
+### D30 — Characteristic-2 trace squaring materially reduces private decoder CPU
+
+**ACCEPT D4 Candidate A for private research; production/public ExactSmallDelta remains NO-GO.**
+
+D4 preserves the D2 1/2/4/8 protocol, 17/25/41/73 bytes, one guard syndrome,
+exact u64/zero semantics and deterministic root splitting. Only Frobenius square/mod
+uses coefficient squares and monic reduction; verification remains in both arms.
+
+Canonical implementation `cf6434d4007825b8fc05ebc9b064ce4860d4442b`, hosted run
+37578505762: d=8 complete decoder 48.328 -> 6.575 ms, paired reduction 86.384%
+(three per-run medians 86.263–86.513%). d=2..5 reductions are 88.2–93.6%.
+Correctness and all strict CI gates pass; false-success is zero in the specified
+repeated deterministic matrix, an empirical result rather than a guard theorem.
+
+Root+verify still accounts for ~98.7% of the d=8 phase sum. The next single candidate
+is deterministic safe-Rust quadratic specialization, gated first on degree-specific
+factor and verification profiling. Do not start BM/even-syndrome caching, field
+multiplication or SIMD work. If the quadratic share is immaterial, stop and evaluate
+the maintained-state system end to end.
+
+Canonical evidence: [M6-D4 trace square](../M6-D4-TRACE-SQUARE-EVIDENCE.md), including
+raw runs, source hashes, exact-head CI and measurement limitations. D1/D2/D3 files,
+public API, snapshot-v1 and Coverage are unchanged.
