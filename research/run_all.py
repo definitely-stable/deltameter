@@ -17,6 +17,7 @@ from strict_compact_level_count import build_payload as build_strict_compact_pay
 from strict_compact_depoisson import build_payload as build_strict_depoisson_payload
 from strict_compact_chernoff import build_payload as build_strict_chernoff_payload
 from strict_compact_multilevel_exact import build_payload as build_strict_multilevel_payload
+from strict_compact_width_certificate import build_payload as build_strict_width_certificate_payload
 from strict_compact_poisson_screen import build_payload as build_strict_screen_payload
 from strict_compact_poisson_width import build_payload as build_strict_width_payload
 
@@ -45,6 +46,7 @@ def main() -> None:
     strict_depoisson_path = args.out / "strict-compact-depoisson.json"
     strict_chernoff_path = args.out / "strict-compact-chernoff.json"
     strict_multilevel_path = args.out / "strict-compact-multilevel-exact.json"
+    strict_width_certificate_path = args.out / "strict-compact-width-certificate.json"
     strict_screen_path = args.out / "strict-compact-poisson-screen.json"
     strict_width_path = args.out / "strict-compact-poisson-width.json"
 
@@ -58,6 +60,7 @@ def main() -> None:
     write_json(strict_depoisson_path, build_strict_depoisson_payload())
     write_json(strict_chernoff_path, build_strict_chernoff_payload())
     write_json(strict_multilevel_path, build_strict_multilevel_payload())
+    write_json(strict_width_certificate_path, build_strict_width_certificate_payload())
     write_json(strict_screen_path, build_strict_screen_payload())
     write_json(strict_width_path, build_strict_width_payload())
 
@@ -71,6 +74,7 @@ def main() -> None:
     print(f"wrote {strict_depoisson_path}")
     print(f"wrote {strict_chernoff_path}")
     print(f"wrote {strict_multilevel_path}")
+    print(f"wrote {strict_width_certificate_path}")
     print(f"wrote {strict_screen_path}")
     print(f"wrote {strict_width_path}")
 
