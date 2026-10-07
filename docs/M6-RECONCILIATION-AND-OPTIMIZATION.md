@@ -294,3 +294,36 @@ Verdict:
   experiment.
 
 See [M6-D7 evidence](M6-D7-RESIDUAL-ROOT-PROFILE-EVIDENCE.md).
+
+
+## M6-D8 scalar GF(2^64) square result
+
+D8 changes only coefficient squaring inside the degree>=3 trace square/mod path.
+The accepted D6 quadratic solver, generic multiplication, GCD/division, field
+representation, D2 bytes/RTTs and verification semantics remain frozen.
+
+The performance threshold was frozen before the first D8 run. On the same five
+deterministic corpora selected by D7, d=8 paired end-to-end reductions are:
+
+~~~text
+D4    13.043%
+D5    14.213%
+D6    16.984%
+D7a   13.144%
+D7b   14.940%
+
+aggregate median 14.263%
+~~~
+
+All five corpora clear the predeclared 5% primary threshold and every per-process
+median is positive. d=3/4/5 guardrails also pass; false-success total is zero in
+the deterministic matrix.
+
+Verdict: **ACCEPT D8 scalar square for private research.** Production/public
+ExactSmallDelta remains NO-GO.
+
+Next: re-profile the post-D8 residual decoder before selecting any further algebraic
+micro-optimization. If no common residual phase remains materially large, stop and
+move to maintained-state system comparison.
+
+See [M6-D8 evidence](M6-D8-GF64-SQUARE-EVIDENCE.md).
