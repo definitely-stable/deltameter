@@ -48,5 +48,25 @@
     "vmhwm_bytes"
   ],
   "performance_decision": "NOT_MEASURED",
-  "chain_n": 1024
+  "chain_n": 1024,
+  "d11_verified_false_candidate": {
+    "semantics": "charged_exact_fallback_only_when_fresh_rebuild_reproduces_same_early_stage_overcapacity_candidate",
+    "witness": {
+      "n": 1024,
+      "d": 8,
+      "stage_k": 1,
+      "removed": [
+        "0x1",
+        "0x2",
+        "0x3",
+        "0x4"
+      ],
+      "inserted": [
+        "0x80000000007a3910",
+        "0x80000000007a3911",
+        "0x80000000007a3912",
+        "0x80000000007a3913"
+      ]
+    }
+  }
 }
