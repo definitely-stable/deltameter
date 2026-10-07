@@ -1,6 +1,6 @@
 # M6-D7 — Post-quadratic residual root profile
 
-Status: implementation in progress. Issue: #36. Parent: #19 / #14.
+Status: profiling/evidence complete in PR #37; **NO-GO degree-specific next solver; trace-path GO-to-experiment**. Issue: #36. Parent: #19 / #14.
 
 ## Goal
 
@@ -105,3 +105,26 @@ After evidence:
 - if residual decode CPU is already small relative to maintained-state network/RTT regimes, stop decoder micro-optimization and move to system-level comparison.
 
 No Artin-Schreier cache, cubic/quartic solver, CLMUL, SIMD, unsafe, alternate field representation or bundled optimization in this slice.
+
+
+## Completion record
+
+Canonical measured head: `4df88b3f2a2e713db2a5482adc8db0ff979219e8`.
+
+Hosted gates:
+
+- M6-D7 #5 / `37588181951`;
+- Rust #256 / `37588181958`;
+- Research #269 / `37588181957`.
+
+Canonical evidence: [M6-D7 residual root profile](../../M6-D7-RESIDUAL-ROOT-PROFILE-EVIDENCE.md).
+
+Verdict:
+
+- immediate cubic solver: NO-GO;
+- immediate quartic solver: NO-GO;
+- degree dominance is factor-tree dependent;
+- degree>=3 trace self time is the stable general bottleneck;
+- d=8 trace share is roughly 63-83% of accepted D6 control across five corpora;
+- next candidate: one isolated safe-Rust bit-equivalent GF(2^64) scalar-squaring specialization used by trace square/mod;
+- no GCD/multiplication/solver/SIMD/unsafe changes bundled with that candidate.
