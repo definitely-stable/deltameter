@@ -694,3 +694,46 @@ Decision:
   representation changes in that experiment.
 
 Canonical evidence: docs/M6-D7-RESIDUAL-ROOT-PROFILE-EVIDENCE.md.
+
+
+### D34 — Dedicated scalar GF(2^64) squaring is accepted for the private research decoder
+
+M6-D8 tests the shared trace-path primitive selected by D7.
+
+The candidate replaces only `gf64_mul(x, x)` used for coefficient squaring inside
+degree>=3 trace square/mod with a safe-Rust carryless bit-spread square followed by
+reduction in the frozen polynomial basis. D6 quadratic roots, generic field
+multiplication, GCD/division, protocol bytes/RTTs and verification remain unchanged.
+
+A quantitative gate was frozen before the first performance run: every d=8 corpus
+must improve by at least 5%, every process median must stay positive, aggregate d=8
+must improve by at least 5%, and d=3/4/5 may not regress by more than 2%.
+
+Canonical hosted evidence at the accepted implementation head reports:
+
+~~~text
+d=8 D4     13.043%
+d=8 D5     14.213%
+d=8 D6     16.984%
+d=8 D7a    13.144%
+d=8 D7b    14.940%
+aggregate  14.263%
+~~~
+
+Correctness matches the scalar reference on all 64 basis vectors plus deterministic
+full-width vectors, and the complete decoder matches accepted D6 across all stages
+and corpora. d=9/10/16 remain reject; false-success total is zero in the repeated
+deterministic matrix.
+
+Decision:
+
+- accept D8 scalar squaring for private research;
+- do not claim a production performance promise;
+- do not change the field representation or generic multiplication;
+- do not start cubic/quartic specialization;
+- re-profile residual CPU after D8 before authorizing anything else;
+- if no remaining common decoder phase is materially large, stop algebraic
+  micro-optimization and proceed to maintained-state system comparison;
+- production/public ExactSmallDelta remains NO-GO.
+
+Canonical evidence: docs/M6-D8-GF64-SQUARE-EVIDENCE.md.
