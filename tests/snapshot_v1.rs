@@ -194,6 +194,112 @@ fn parity_non_zero_padding_bits_are_rejected() {
     ));
 }
 
+#[test]
+fn valid_crc_energy_shape_mismatch_reaches_backend_validation() {
+    let mut bytes = hex_bytes(ENERGY_EMPTY_V1_HEX);
+    bytes[24..32].copy_from_slice(&2_u64.to_le_bytes());
+
+    assert!(matches!(
+        EnergyDeltaMeter::decode_snapshot(&bytes),
+        Err(SnapshotError::ChecksumMismatch)
+    ));
+
+    rewrite_snapshot_crc32c(&mut bytes);
+    assert!(matches!(
+        EnergyDeltaMeter::decode_snapshot(&bytes),
+        Err(SnapshotError::InvalidPayload)
+    ));
+}
+
+#[test]
+fn valid_crc_energy_row_shape_mismatch_fails_closed() {
+    let mut bytes = hex_bytes(ENERGY_EMPTY_V1_HEX);
+    bytes[32..36].copy_from_slice(&3_u32.to_le_bytes());
+    rewrite_snapshot_crc32c(&mut bytes);
+
+    assert!(matches!(
+        EnergyDeltaMeter::decode_snapshot(&bytes),
+        Err(SnapshotError::InvalidPayload)
+    ));
+}
+
+#[test]
+fn valid_crc_energy_invalid_custom_tags_fail_closed() {
+    let mut bytes = hex_bytes(ENERGY_EMPTY_V1_HEX);
+    bytes[37] = 1;
+    rewrite_snapshot_crc32c(&mut bytes);
+
+    assert!(matches!(
+        EnergyDeltaMeter::decode_snapshot(&bytes),
+        Err(SnapshotError::InvalidPayload)
+    ));
+}
+
+#[test]
+fn proven_energy_keeps_provenance_error_precedence_before_shape_validation() {
+    let profile = EnergyProfile::new(RelativeError::TwentyPercent, FailureTarget::OneInThousand);
+    let words: Vec<_> = (0..profile.uniform_words_required())
+        .map(|index| splitmix64(index as u64 ^ 0x0D15_EA5E))
+        .collect();
+    let meter = EnergyDeltaMeter::new(
+        EnergyConfig::for_profile_assuming_uniform_words(profile, &words).unwrap(),
+    )
+    .unwrap();
+    let mut bytes = meter.encode_snapshot().unwrap();
+
+    bytes[32..36].copy_from_slice(&1_u32.to_le_bytes());
+    rewrite_snapshot_crc32c(&mut bytes);
+
+    assert!(matches!(
+        EnergyDeltaMeter::decode_snapshot(&bytes),
+        Err(SnapshotError::ProvenanceRequired)
+    ));
+    assert!(matches!(
+        EnergyDeltaMeter::decode_snapshot_assuming_uniform_rows(&bytes),
+        Err(SnapshotError::InvalidPayload)
+    ));
+}
+
+#[test]
+fn valid_crc_parity_shape_mismatch_reaches_backend_validation() {
+    let mut bytes = hex_bytes(PARITY_EMPTY_V1_HEX);
+    bytes[24..28].copy_from_slice(&65_u32.to_le_bytes());
+
+    assert!(matches!(
+        ParityDeltaMeter::decode_snapshot(&bytes),
+        Err(SnapshotError::ChecksumMismatch)
+    ));
+
+    rewrite_snapshot_crc32c(&mut bytes);
+    assert!(matches!(
+        ParityDeltaMeter::decode_snapshot(&bytes),
+        Err(SnapshotError::InvalidPayload)
+    ));
+}
+
+fn rewrite_snapshot_crc32c(bytes: &mut [u8]) {
+    let checksum_offset = bytes
+        .len()
+        .checked_sub(core::mem::size_of::<u32>())
+        .expect("snapshot contains CRC32C");
+    let checksum = crc32c_bitwise_reference(&bytes[..checksum_offset]);
+    bytes[checksum_offset..].copy_from_slice(&checksum.to_le_bytes());
+}
+
+fn crc32c_bitwise_reference(bytes: &[u8]) -> u32 {
+    const POLYNOMIAL: u32 = 0x82F6_3B78;
+
+    let mut crc = !0_u32;
+    for &byte in bytes {
+        crc ^= u32::from(byte);
+        for _ in 0..8 {
+            let mask = 0_u32.wrapping_sub(crc & 1);
+            crc = (crc >> 1) ^ (POLYNOMIAL & mask);
+        }
+    }
+    !crc
+}
+
 fn hex_bytes(hex: &str) -> Vec<u8> {
     assert_eq!(hex.len() % 2, 0);
     (0..hex.len())

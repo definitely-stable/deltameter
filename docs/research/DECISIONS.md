@@ -889,3 +889,34 @@ Decision:
 - production/public ExactSmallDelta remains NO-GO.
 
 Canonical evidence: docs/M6-D11-FIXED-REDUCTION-EVIDENCE.md.
+
+
+### D38 — B2 exact Energy shape preflight is accepted as resource hardening
+
+After B1's table-driven CRC32C was accepted and merged, M6-B2 moved full Energy
+backend-shape validation ahead of row allocation.
+
+The candidate preserves the checksum-before-backend boundary and the public
+`ProvenanceRequired` precedence, reuses existing Energy dimension rules and adds no
+snapshot-core transport cap.
+
+Valid-CRC malformed fixtures now exercise backend validation directly. Parity code
+requires no structural rewrite because it already checks config-derived packed-state
+bytes before allocating its state vector.
+
+Canonical hosted measurement at implementation head
+`dfa859508f3be81e5e5c7a7d9683aa2aa6138e63` reports valid Energy decode movement
+between -0.097% and +0.190%, i.e. noise-scale. A dedicated 229,364-byte valid-CRC
+shape-rejection fixture improves by 3.544%.
+
+Decision:
+
+- ACCEPT B2 for stronger allocation/resource invariants and test coverage;
+- do not claim a newly fixed arbitrary-primary-allocation vulnerability;
+- do not claim a valid-decode speedup;
+- keep outer transport admission separate;
+- proceed next to one isolated B3 direct Energy decoded-state construction
+  experiment;
+- keep further CRC slicing/fusion and sign-mask fusion deferred.
+
+Canonical evidence: docs/M6-B2-STRUCTURAL-VALIDATION-EVIDENCE.md.

@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use deltameter::{
     EnergyConfig, EnergyDeltaMeter, EnergyProfile, EnergyRowHash, FailureTarget, ParityConfig,
-    ParityDeltaMeter, RelativeError,
+    ParityDeltaMeter, RelativeError, SnapshotError,
 };
 
 fn main() {
@@ -66,6 +66,38 @@ fn main() {
             );
         }
     }
+    {
+        const ROWS: usize = 4095;
+        let rows = (0..ROWS)
+            .map(|i| {
+                let c: Vec<_> = (0..6).map(|j| mix((i * 6 + j) as u64)).collect();
+                EnergyRowHash::from_coefficients([c[0], c[1]], [c[2], c[3], c[4], c[5]])
+            })
+            .collect();
+        let meter = EnergyDeltaMeter::new(EnergyConfig::new(1, rows).unwrap()).unwrap();
+        let mut bytes = meter.encode_snapshot().unwrap();
+        bytes[24..32].copy_from_slice(&2_u64.to_le_bytes());
+        rewrite_snapshot_crc32c(&mut bytes);
+        assert!(matches!(
+            EnergyDeltaMeter::decode_snapshot(&bytes),
+            Err(SnapshotError::InvalidPayload)
+        ));
+        measure(
+            "decode-reject",
+            "energy-valid-crc-shape",
+            "bucket-count-mismatch",
+            bytes.len(),
+            samples,
+            repeats,
+            || {
+                assert!(matches!(
+                    EnergyDeltaMeter::decode_snapshot(black_box(&bytes)),
+                    Err(SnapshotError::InvalidPayload)
+                ));
+            },
+        );
+    }
+
     for (name, rows, levels) in [("parity-standard", 256, 64), ("parity-padded", 17, 13)] {
         for content in ["empty", "sequential", "full-width"] {
             let mut meter = ParityDeltaMeter::new(ParityConfig::new(rows, levels, 7).unwrap());
@@ -127,6 +159,21 @@ fn keys(content: &str) -> impl Iterator<Item = u64> {
     let count = if content == "empty" { 0 } else { 256 };
     let full_width = content == "full-width";
     (0..count).map(move |key| if full_width { mix(key) } else { key })
+}
+
+fn rewrite_snapshot_crc32c(bytes: &mut [u8]) {
+    const POLYNOMIAL: u32 = 0x82F6_3B78;
+
+    let checksum_offset = bytes.len() - core::mem::size_of::<u32>();
+    let mut crc = !0_u32;
+    for &byte in &bytes[..checksum_offset] {
+        crc ^= u32::from(byte);
+        for _ in 0..8 {
+            let mask = 0_u32.wrapping_sub(crc & 1);
+            crc = (crc >> 1) ^ (POLYNOMIAL & mask);
+        }
+    }
+    bytes[checksum_offset..].copy_from_slice(&(!crc).to_le_bytes());
 }
 
 fn mix(mut x: u64) -> u64 {
