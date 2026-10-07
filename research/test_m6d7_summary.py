@@ -125,6 +125,63 @@ class SummaryValidationTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             summary.validate_run(metadata(), rows)
 
+    def test_high_degree_phase_aggregation_sums_all_degrees(self):
+        rows = complete_rows()
+        tops = [
+            row
+            for row in rows
+            if row["kind"] == "scenario"
+            and row["corpus"] == "d4"
+            and row["scenario"] == "d8"
+        ]
+        degree_rows = {
+            degree: [
+                row
+                for row in rows
+                if row["kind"] == "degree"
+                and row["corpus"] == "d4"
+                and row["scenario"] == "d8"
+                and row["degree"] == degree
+            ]
+            for degree in range(3, 9)
+        }
+
+        for row in degree_rows[4]:
+            row["trace_ns"] = 40
+            row["gcd_ns"] = 10
+            row["division_ns"] = 2
+
+        totals = summary.aggregate_high_degree_phases(tops, degree_rows)
+
+        self.assertEqual(totals["control_ns"], 1000)
+        self.assertEqual(totals["trace_ns"], 100)
+        self.assertEqual(totals["gcd_ns"], 25)
+        self.assertEqual(totals["division_ns"], 7)
+
+    def test_high_degree_phase_aggregation_fails_closed_on_missing_degree(self):
+        rows = complete_rows()
+        tops = [
+            row
+            for row in rows
+            if row["kind"] == "scenario"
+            and row["corpus"] == "d4"
+            and row["scenario"] == "d8"
+        ]
+        degree_rows = {
+            degree: [
+                row
+                for row in rows
+                if row["kind"] == "degree"
+                and row["corpus"] == "d4"
+                and row["scenario"] == "d8"
+                and row["degree"] == degree
+            ]
+            for degree in range(3, 8)
+        }
+
+        with self.assertRaises(SystemExit):
+            summary.aggregate_high_degree_phases(tops, degree_rows)
+
 
 if __name__ == "__main__":
     unittest.main()
