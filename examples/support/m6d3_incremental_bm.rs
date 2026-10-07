@@ -199,8 +199,7 @@ impl IncrementalBmDecoder {
             return Ok(());
         }
 
-        let inverse =
-            gf64_inv(self.previous_discrepancy).ok_or(LabError::DecodeFailure)?;
+        let inverse = gf64_inv(self.previous_discrepancy).ok_or(LabError::DecodeFailure)?;
         let scale = gf64_mul(discrepancy, inverse);
         let old_connection = self.connection.clone();
 
@@ -255,10 +254,7 @@ pub fn fresh_full_sequence(
     Ok(sequence)
 }
 
-pub fn fresh_connection(
-    sketch: &PinSketch64Lab,
-    max_elements: usize,
-) -> Result<Vec<u64>, D3Error> {
+pub fn fresh_connection(sketch: &PinSketch64Lab, max_elements: usize) -> Result<Vec<u64>, D3Error> {
     let sequence = fresh_full_sequence(sketch, max_elements)?;
     let mut state = IncrementalBmDecoder::new();
     for value in sequence {
@@ -268,10 +264,7 @@ pub fn fresh_connection(
     Ok(state.connection_polynomial())
 }
 
-pub fn prefix(
-    source: &PinSketch64Lab,
-    capacity: usize,
-) -> Result<PinSketch64Lab, D3Error> {
+pub fn prefix(source: &PinSketch64Lab, capacity: usize) -> Result<PinSketch64Lab, D3Error> {
     if capacity == 0 || capacity > source.capacity() {
         return Err(LabError::InvalidCapacity.into());
     }
@@ -352,10 +345,7 @@ fn poly_gcd(left: &[u64], right: &[u64]) -> Result<Vec<u64>, D3Error> {
     Ok(a)
 }
 
-fn poly_div_rem(
-    dividend: &[u64],
-    divisor: &[u64],
-) -> Result<(Vec<u64>, Vec<u64>), D3Error> {
+fn poly_div_rem(dividend: &[u64], divisor: &[u64]) -> Result<(Vec<u64>, Vec<u64>), D3Error> {
     let mut remainder = dividend.to_vec();
     let mut divisor = divisor.to_vec();
     trim(&mut remainder);
@@ -369,8 +359,7 @@ fn poly_div_rem(
     }
 
     let divisor_inverse =
-        gf64_inv(*divisor.last().ok_or(LabError::DecodeFailure)?)
-            .ok_or(LabError::DecodeFailure)?;
+        gf64_inv(*divisor.last().ok_or(LabError::DecodeFailure)?).ok_or(LabError::DecodeFailure)?;
     let mut quotient = vec![0_u64; remainder.len() - divisor.len() + 1];
 
     while !remainder.is_empty() && remainder.len() >= divisor.len() {
@@ -391,11 +380,7 @@ fn poly_div_rem(
     Ok((quotient, remainder))
 }
 
-fn poly_mul_mod(
-    left: &[u64],
-    right: &[u64],
-    modulus: &[u64],
-) -> Result<Vec<u64>, D3Error> {
+fn poly_mul_mod(left: &[u64], right: &[u64], modulus: &[u64]) -> Result<Vec<u64>, D3Error> {
     if left.is_empty() || right.is_empty() {
         return Ok(Vec::new());
     }
