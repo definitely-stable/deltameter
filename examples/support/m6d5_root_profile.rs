@@ -53,13 +53,6 @@ impl RootProfile {
         Ok(())
     }
 
-    pub fn degree_two_self_ns(&self) -> u128 {
-        self.self_ns[2]
-    }
-
-    pub fn higher_degree_self_ns(&self) -> u128 {
-        self.self_ns[3..].iter().sum()
-    }
 }
 
 #[derive(Debug)]
