@@ -737,3 +737,43 @@ Decision:
 - production/public ExactSmallDelta remains NO-GO.
 
 Canonical evidence: docs/M6-D8-GF64-SQUARE-EVIDENCE.md.
+
+
+### D35 — Trace remains the only common material bottleneck after D8
+
+M6-D9 re-profiles the accepted D8 decoder without changing its algorithm.
+
+The decision threshold was frozen before measurement: a phase must account for at
+least 25% of accepted D8 d=8 latency in every one of the five deterministic corpora
+to remain a common material bottleneck. Profiler validity additionally requires at
+most +5% median d=8 wall overhead per corpus.
+
+Hosted evidence passes the validity gate with only ~0.5-1.0% profiler overhead.
+
+For d=8:
+
+~~~text
+trace         median 62.208%, range 57.545-80.590%
+GCD           median 35.486%, range  8.088-39.307%
+division      median  0.820%, range  0.554- 2.773%
+quadratic     median  0.772%, range  0.632- 3.003%
+verification  median  0.088%, range  0.079- 0.358%
+~~~
+
+Only trace clears the common-material gate.
+
+Trace operation counts show 2.5-3.1 generic reduction multiplications per
+coefficient-square operation across the five d=8 corpora. This is not timing
+attribution.
+
+Decision:
+
+- keep D9 profiling-only;
+- authorize one narrower trace-internal measurement slice;
+- do not preselect generic multiplication, reduction, GCD, cubic/quartic roots,
+  SIMD/CLMUL, tables or caches;
+- if the narrower measurement finds no independently material trace component, stop
+  algebraic decoder micro-optimization and move to maintained-state system comparison;
+- production/public ExactSmallDelta remains NO-GO.
+
+Canonical evidence: docs/M6-D9-POST-D8-PROFILE-EVIDENCE.md.
