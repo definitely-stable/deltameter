@@ -1,0 +1,19 @@
+{
+  "format": "deltameter.m6d13a.v1",
+  "base_main": "e63a70ff10374a622a77f0a897441024613b11f6",
+  "riblt_pin": "4afa6bc06cb2237d9ea273a51d97a7e05b3f573b",
+  "header_bytes": 48,
+  "max_keys": 1048576,
+  "pin_stages": [1, 2, 4, 8],
+  "riblt_max_cells": 1024,
+  "n": [64, 8192, 65536],
+  "d": [0, 1, 2, 3, 4, 5, 8, 9, 16, 64],
+  "families": [212, 213, 214, 215, 216],
+  "shapes": ["balanced", "add", "remove"],
+  "rtt_ms": [0, 1, 10, 50, 100],
+  "bandwidth_mbps": [1, 10, 100, 1000],
+  "updates_per_session": [0, 1, 8, 64],
+  "sessions_per_build": [1, 10, 100],
+  "final_verification": "reverse_canonical_list_and_ack",
+  "performance_decision": "NOT_MEASURED"
+}
