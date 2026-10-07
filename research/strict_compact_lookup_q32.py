@@ -128,8 +128,9 @@ def table_text(table: list[int]) -> str:
     return "".join(f"{value}\n" for value in table)
 
 
-def build_payload() -> dict:
-    table = build_thresholds()
+def build_payload(table: list[int] | None = None) -> dict:
+    if table is None:
+        table = build_thresholds()
     encoded = table_text(table).encode("ascii")
     finite = [value for value in table if value != SENTINEL]
     first_sentinel = next(
@@ -175,7 +176,7 @@ def main() -> int:
     args = parser.parse_args()
 
     table = build_thresholds()
-    summary = build_payload()
+    summary = build_payload(table)
 
     if args.table_out is not None:
         args.table_out.parent.mkdir(parents=True, exist_ok=True)
