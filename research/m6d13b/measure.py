@@ -16,9 +16,11 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "m6d13b0"))
 
-from model import CONTRACT, d11_wire, direct_wire, riblt_wire  # noqa: E402
+from model import CONTRACT, d11_wire, direct_wire, require, riblt_wire  # noqa: E402
 from readiness import (  # noqa: E402
+    parse_record,
     validate_check,
+    validate_memory,
     validate_ready,
     validate_riblt_check,
     validate_riblt_ready,
@@ -62,6 +64,60 @@ class Worker:
             self.process.stdin.flush()
             self.process.stdin.close()
         self.process.wait(timeout=30)
+
+
+def validate_rust_pair_ready(
+    line: str, mode: str, left_len: int, right_len: int
+) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "ready", "not Rust pair-ready record")
+    for key in (
+        "source_build_ns",
+        "sketch_build_ns",
+        "clk_tck",
+        "source_len",
+        "source_a_cap",
+        "source_b_cap",
+        "sketch_payload_bytes",
+    ):
+        require(key in fields, f"missing Rust pair-ready {key}")
+    require(fields["clk_tck"] > 0, "invalid Rust pair CLK_TCK")
+    require(fields["source_len"] == left_len, "Rust pair left length")
+    require(fields["source_a_cap"] >= left_len, "Rust pair A capacity")
+    require(fields["source_b_cap"] >= right_len, "Rust pair B capacity")
+    require(
+        fields["sketch_payload_bytes"] == (146 if mode == "d11" else 0),
+        "Rust pair sketch payload",
+    )
+    validate_memory(fields)
+    return fields
+
+
+def validate_go_pair_ready(
+    line: str, left_len: int, right_len: int
+) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "ready", "not RIBLT pair-ready record")
+    for key in (
+        "source_build_ns",
+        "clk_tck",
+        "source_len",
+        "source_a_cap",
+        "source_b_cap",
+        "runtime_alloc_bytes",
+        "runtime_heap_sys_bytes",
+    ):
+        require(key in fields, f"missing RIBLT pair-ready {key}")
+    require(fields["clk_tck"] > 0, "invalid RIBLT pair CLK_TCK")
+    require(fields["source_len"] == left_len, "RIBLT pair left length")
+    require(fields["source_a_cap"] >= left_len, "RIBLT pair A capacity")
+    require(fields["source_b_cap"] >= right_len, "RIBLT pair B capacity")
+    require(
+        fields["runtime_heap_sys_bytes"] >= fields["runtime_alloc_bytes"],
+        "RIBLT pair heap accounting",
+    )
+    validate_memory(fields)
+    return fields
 
 
 def key_text(keys: list[int]) -> str:
@@ -150,12 +206,15 @@ def rust_arm(
     worker = Worker(worker_path)
     rows: list[dict[str, object]] = []
     try:
-        ready = validate_ready(
-            worker.request(
-                f"init_pair {mode} {key_text(initial_left)} {key_text(initial_right)}"
-            ),
-            mode,
+        ready_line = worker.request(
+            f"init_pair {mode} {key_text(initial_left)} {key_text(initial_right)}"
         )
+        if schedules is None:
+            ready = validate_rust_pair_ready(
+                ready_line, mode, len(initial_left), len(initial_right)
+            )
+        else:
+            ready = validate_ready(ready_line, mode)
         build_ns = ready["source_build_ns"] + ready["sketch_build_ns"]
 
         session_schedules = schedules if schedules is not None else [[]]
@@ -235,9 +294,15 @@ def riblt_arm(
     worker = Worker(worker_path)
     rows: list[dict[str, object]] = []
     try:
-        ready = validate_riblt_ready(
-            worker.request(f"init_pair {key_text(initial_left)} {key_text(initial_right)}")
+        ready_line = worker.request(
+            f"init_pair {key_text(initial_left)} {key_text(initial_right)}"
         )
+        if schedules is None:
+            ready = validate_go_pair_ready(
+                ready_line, len(initial_left), len(initial_right)
+            )
+        else:
+            ready = validate_riblt_ready(ready_line)
         build_ns = ready["source_build_ns"]
 
         session_schedules = schedules if schedules is not None else [[]]
