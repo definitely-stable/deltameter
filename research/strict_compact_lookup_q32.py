@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from decimal import (
     Decimal,
     ROUND_CEILING,
@@ -56,44 +57,62 @@ def log_bound_for_q(observed: int, q: int) -> Decimal:
     return TWO.ln() - Decimal(ROWS) * bernoulli_kl(x, p)
 
 
+def _float_kl(x: float, p: float) -> float:
+    if x == 0.0:
+        return -math.log1p(-p)
+    return x * math.log(x / p) + (1.0 - x) * math.log(
+        (1.0 - x) / (1.0 - p)
+    )
+
+
 def threshold_for_count(observed: int, target_kl: Decimal) -> int:
     if not (0 <= observed < ROWS // 2):
         raise ValueError("observed")
 
-    x = Decimal(observed) / ROWS
-    max_kl = bernoulli_kl(x, HALF)
+    x_decimal = Decimal(observed) / ROWS
+    max_kl = bernoulli_kl(x_decimal, HALF)
 
     if max_kl <= target_kl:
         return SENTINEL
 
+    # Binary64 is proposal generation only. The emitted integer is accepted
+    # solely after the Decimal inequality below is checked.
+    x = observed / ROWS
+    target = float(target_kl)
     low = x
-    high = HALF
+    high = math.nextafter(0.5, 0.0)
 
-    for _ in range(BISECTION_STEPS):
-        middle = (low + high) / TWO
-        value = bernoulli_kl(x, middle)
-        if value >= target_kl:
+    for _ in range(FLOAT_BISECTION_STEPS):
+        middle = (low + high) / 2.0
+        if _float_kl(x, middle) >= target:
             high = middle
         else:
             low = middle
 
-    if not (bernoulli_kl(x, high) >= target_kl):
-        raise AssertionError("high endpoint must remain on conservative side")
+    normalized = -ROWS * math.log1p(-2.0 * high)
+    q = max(1, math.ceil(normalized * Q_SCALE))
+    if q >= U64_MAX:
+        raise OverflowError("finite Q32 proposal does not fit u64")
 
-    normalized_upper = -Decimal(ROWS) * (ONE - TWO * high).ln()
-    scaled = normalized_upper * Q_SCALE
-    q = int(scaled.to_integral_value(rounding=ROUND_CEILING))
-
-    if q <= 0 or q >= U64_MAX:
-        raise OverflowError("finite Q32 threshold does not fit u64")
-
-    # Ensure the quantized point is still on the conservative side according
-    # to the same high-precision arithmetic. Incrementing only widens U.
     log_alpha = ALPHA.ln()
+
+    # Repair upward until the high-precision evaluator proves this quantized
+    # point is on the conservative side of the crossing.
     while log_bound_for_q(observed, q) > log_alpha:
         q += 1
         if q >= U64_MAX:
             raise OverflowError("Q32 repair overflow")
+
+    # Tighten to the smallest Q32 value still certified conservative by the
+    # same high-precision evaluator. This makes generation deterministic and
+    # prevents proposal precision from affecting the committed table.
+    while q > 1 and log_bound_for_q(observed, q - 1) <= log_alpha:
+        q -= 1
+
+    if log_bound_for_q(observed, q) > log_alpha:
+        raise AssertionError("final Q32 threshold is not conservative")
+    if q > 1 and log_bound_for_q(observed, q - 1) <= log_alpha:
+        raise AssertionError("final Q32 threshold is not minimal")
 
     return q
 
@@ -161,7 +180,7 @@ def build_payload(table: list[int] | None = None) -> dict:
         "table_bytes": len(table) * 8,
         "table_sha256": hashlib.sha256(encoded).hexdigest(),
         "generator_precision_digits": PRECISION,
-        "bisection_steps": BISECTION_STEPS,
+        "float_proposal_bisection_steps": FLOAT_BISECTION_STEPS,
         "proof_status": (
             "prototype conservative high-precision generator; "
             "independent interval/rational certification still required"
