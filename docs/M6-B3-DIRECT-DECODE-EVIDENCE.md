@@ -44,6 +44,12 @@ Artifact:
 The paired run used exact base/head SHAs above and the existing four-round balanced
 AB/BA protocol.
 
+The final evidence-only PR head was synchronized onto current main
+`a7492c8999cbe9c446f515d5a60ffe7b5bc4ba99` after independent M6-D12 merged.
+That synchronization does not alter the measured B3 candidate or its base/head
+performance evidence; it only replays the retained documentation and regression
+test on the newer main.
+
 ## Candidate
 
 After B2 exact structural preflight and config reconstruction, the candidate:
