@@ -211,7 +211,6 @@ fn main() {
     }
 }
 
-
 fn validate_arithmetic_control() {
     let polynomial = [0x0123_4567_89AB_CDEF, 0xDEAD_BEEF_CAFE_BABE];
     let modulus = [0xA5A5_5A5A_F0F0_0F0F, 0x1357_9BDF_2468_ACE0, 1];
@@ -221,11 +220,7 @@ fn validate_arithmetic_control() {
     );
 }
 
-fn validate_decoder_controls(
-    left: &PinSketch64Lab,
-    right: &PinSketch64Lab,
-    expected: &[u64],
-) {
+fn validate_decoder_controls(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64]) {
     for (limit, capacity) in STAGES {
         let sketch = difference_prefix(left, right, capacity);
         let locator = fresh_locator(&sketch, limit).unwrap();
