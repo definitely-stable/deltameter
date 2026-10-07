@@ -844,3 +844,48 @@ Correct benchmark fixtures are `B=512,R=9` for Energy-small (37,340 bytes) and
 
 Canonical audit: docs/M6-B-CODEC-DECODER-RESEARCH-AUDIT.md.  
 Execution plan: docs/superpowers/plans/2026-10-07-m6b-post-research.md.
+
+
+### D38 — Fixed-constant trace reduction is accepted for private research
+
+M6-D11 follows D10's measured reduction selector and changes only multiplication
+inside trace polynomial reduction.
+
+A factor-frame-local plan represents each fixed modulus coefficient with 16
+positional nibble tables. Generic multiplication outside trace reduction, D8 scalar
+squaring, D6 quadratic roots, GCD/division, field representation, protocol and
+verification remain unchanged.
+
+The performance threshold was frozen before measurement:
+
+~~~text
+every d=8 corpus >= 10%
+aggregate d=8 >= 15%
+every d=8 process median > 0%
+d=3/4/5 corpus medians >= -2%
+~~~
+
+Canonical hosted evidence reports:
+
+~~~text
+D4 d=8    51.614%
+D5 d=8    45.916%
+D6 d=8    66.087%
+D7a d=8   51.228%
+D7b d=8   47.342%
+aggregate 51.166%
+~~~
+
+d=3 improves ~12.7-12.8%, d=4 ~48.8-50.3% and d=5 ~37.7-46.2%.
+Correctness remains bit-equivalent/end-to-end exact on the frozen matrix.
+
+Decision:
+
+- accept the fixed-constant reduction plan for the private research decoder;
+- explicitly drop parent-frame plans before recursive factorization;
+- retain the table-memory trade-off as private research only;
+- do not generalize this into a global GF(2^64) multiplier or public state;
+- re-profile accepted D11 before choosing another algebraic optimization;
+- production/public ExactSmallDelta remains NO-GO.
+
+Canonical evidence: docs/M6-D11-FIXED-REDUCTION-EVIDENCE.md.

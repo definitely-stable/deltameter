@@ -426,3 +426,36 @@ finish/synchronize B1
 
 B2 and B3 must not be bundled into one performance verdict. See the
 [post-research plan](superpowers/plans/2026-10-07-m6b-post-research.md).
+
+
+## M6-D11 fixed-constant reduction result
+
+D11 changes only multiplication inside degree>=3 trace polynomial reduction.
+
+For every monic factor frame, an ephemeral fixed-constant `ReductionPlan` turns
+each modulus coefficient into 16 positional nibble tables. The real timed candidate
+includes plan construction; the plan is dropped before child recursion.
+
+Across the five deterministic d=8 corpora, paired end-to-end reductions versus
+accepted D8 are:
+
+~~~text
+D4    51.614%
+D5    45.916%
+D6    66.087%
+D7a   51.228%
+D7b   47.342%
+
+aggregate median 51.166%
+~~~
+
+The predeclared gate required >=10% in every corpus and >=15% aggregate. d=3/4/5
+guardrails also pass and false-success total is zero.
+
+Verdict: **ACCEPT D11 for private research.** The ~2 KiB table payload per fixed
+coefficient (up to ~16 KiB for an audited degree-8 frame) is a private research
+trade-off, not a production layout decision.
+
+Next: re-profile accepted D11 before selecting any further algebraic work.
+
+See [M6-D11 evidence](M6-D11-FIXED-REDUCTION-EVIDENCE.md).
