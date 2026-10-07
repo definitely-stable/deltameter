@@ -71,10 +71,7 @@ pub fn poly_square_mod_monic(polynomial: &[u64], modulus: &[u64]) -> Result<Vec<
     Ok(remainder)
 }
 
-pub fn fresh_locator(
-    sketch: &PinSketch64Lab,
-    max_elements: usize,
-) -> Result<Vec<u64>, D4Error> {
+pub fn fresh_locator(sketch: &PinSketch64Lab, max_elements: usize) -> Result<Vec<u64>, D4Error> {
     if max_elements > sketch.capacity() {
         return Err(LabError::InvalidDecodeLimit.into());
     }
@@ -211,8 +208,7 @@ fn berlekamp_massey(sequence: &[u64]) -> Result<Vec<u64>, D4Error> {
             continue;
         }
 
-        let inverse =
-            gf64_inv(previous_discrepancy).ok_or(LabError::DecodeFailure)?;
+        let inverse = gf64_inv(previous_discrepancy).ok_or(LabError::DecodeFailure)?;
         let scale = gf64_mul(discrepancy, inverse);
         let old_connection = connection.clone();
 
@@ -282,10 +278,7 @@ fn factor_linear_roots_generic(polynomial: &[u64]) -> Result<Vec<u64>, D4Error> 
     Err(LabError::DecodeFailure.into())
 }
 
-fn trace_polynomial_mod_generic(
-    coefficient: u64,
-    modulus: &[u64],
-) -> Result<Vec<u64>, D4Error> {
+fn trace_polynomial_mod_generic(coefficient: u64, modulus: &[u64]) -> Result<Vec<u64>, D4Error> {
     let mut trace = Vec::new();
     let mut term = vec![0, coefficient];
 
