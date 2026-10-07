@@ -1,6 +1,6 @@
 # M6-D13-A — Comparator/system protocol foundation
 
-Status: **FROZEN FOR FOUNDATION v1; no performance measurements or conclusions.**
+Status: **FROZEN FOR FOUNDATION v2; no performance measurements or conclusions.**
 Issue #52; parents #19/#14. Baseline: `e63a70ff10374a622a77f0a897441024613b11f6`.
 Machine contract: `research/m6d13a/protocol.json`. The protocol-only commit is
 recorded in git before implementation. Amendments require a new version before
@@ -13,14 +13,17 @@ D11 is the accepted decoder; D12 says STOP_ALGEBRAIC_MICRO_OPT. B1/B2 ACCEPT and
 B3 NO-GO do not change this comparison. Frozen historical modules stay unchanged.
 See D2 evidence/comparator audit and D11/D12 evidence in this directory.
 
-Compare direct exact transfer, maintained D11 guarded PinSketch, and the official
-Rateless IBLT **external Go comparator**, pinned to
+Compare direct exact transfer, maintained D11 guarded PinSketch, and an explicitly
+scoped Rateless IBLT **pull/power-of-two external Go comparator**, pinned to
 `yangl1996/riblt@4afa6bc06cb2237d9ea273a51d97a7e05b3f573b`.
 Its example's u64 SipHash(123,456), dependency go.mod/go.sum and mapping are used
 unchanged. This is a trusted deterministic fixture, not an adversarial guarantee.
 No Rust port, theoretical 1.35d byte substitution, or library dependency is used.
 The Go/Rust language/runtime difference prevents attributing CPU differences to
-algorithms alone; it is explicitly part of a future system comparison.
+algorithms alone; it is explicitly part of a future system comparison. The pull
+lane is not the natural upstream streaming transport and by itself may not select or
+reject the rateless architecture. A faithful streaming comparator is a mandatory
+D13-B0 readiness item before any architecture-level verdict.
 
 Alternatives rejected for this slice: a new unvalidated Rust RIBLT port (too much
 semantic drift); a formula-only RIBLT mock (cannot establish physical bytes,
@@ -56,7 +59,10 @@ Max source keys=1,048,576; max frame payload=8*max_keys+8 bytes.
 Each B->A request plus A->B data response costs exactly one model RTT (two
 messages). No extra ACK per data response and no overlapped requests. Target-list
 parameter=0. List payload=u64 count followed by strictly increasing LE u64 keys.
-Direct sends the full target list in one exchange. No identity compression.
+Direct sends the full target list in one exchange. Receipt of that validated
+canonical target list is terminal success at B under this reliable/ordered
+transport model; it is not sent back to A as a redundant second O(N) verification
+list. No identity compression.
 
 D11 requests k=1,2,4,8. Data consists of the **new** odd syndrome words only;
 first response also carries one byte zero presence (0 or 1). Capacities=2,3,5,9;
@@ -64,33 +70,46 @@ increment payload=17,8,16,32. Receiver retains prefix and merges with its local
 prefix; every attempt uses accepted D11 and a fresh locator. Stop on candidate,
 not oracle d. After all rejects request the complete A list: four failed RTTs
 and all 73 syndrome bytes remain charged. Thus d>8 is not secretly known to the
-session. False successful over-capacity candidates are caught at verification.
+session. The complete exact fallback is terminal once validated; it is not
+reverse-list verified again. False successful over-capacity sketch candidates are
+caught at verification before an exact fallback.
 
-RIBLT data cells are exactly 24 bytes: Symbol u64, Hash u64, Count i64, LE.
+RIBLT pull data cells are exactly 24 bytes: Symbol u64, Hash u64, Count i64, LE.
 Request cumulative cells=1,2,4,8,...,1024; only new cells are sent. TryDecode after
 each received cell but report success only at batch boundary, paying for the
 **whole requested batch**. Prior encoder/decoder state persists across batches.
 A zero-cell `Decoded()` is never success. At 1024 cells without candidate,
 request full A list. These finite caps are resource policy, not knowledge of d.
 
+This lane intentionally measures `riblt_pull_pow2`, not natural rateless streaming.
+The upstream implementation describes Alice streaming coded symbols while Bob
+repeatedly decodes and signals stop. Power-of-two pull can add batch overshoot and
+avoidable feedback RTTs. Therefore D13-B0 must add a separately frozen streaming
+lane before any conclusion about the rateless architecture itself. Pull results may
+only be reported as pull-transport results.
+
 ## Oracle versus independent final verification
 
 The untimed harness oracle computes A symmetric_difference B and exact equality.
 It cannot drive decoder success, stage growth or ordinary fallback.
 
-A candidate is provisional. In the primary exact-verified system mode B sends
-its entire reconstructed canonical list to A (VERIFY), A compares against A and
-returns ACK parameter 1/0. This costs another RTT, two headers and 8+8|B'| bytes.
-All arms use the same verification. Guard/all-syndrome cancellation is **not**
-this boundary. A failed verification is counted as a false candidate; a sketch
-arm requests exact A once and repeats verification, retaining all earlier cost.
-A failed direct/fallback verification aborts. No successful completion after
-malformed messages, stale generations, worker failure or timeout.
+A **sketch-derived** candidate is provisional. B sends its reconstructed canonical
+list to A (VERIFY), A compares against A and returns ACK parameter 1/0. This costs
+another RTT, two headers and 8+8|B'| bytes. Guard/all-syndrome cancellation is
+**not** this boundary. A failed verification is counted as a false candidate and
+the sketch arm then requests exact A once, retaining all earlier cost.
 
-Report candidate-transfer subtotal separately from exact-verified total. A
-future digest tier would need its own contract, algorithm, collision budget,
-bytes and CPU before measurement; it is absent here. Exact verification can
-dominate bandwidth, which is a legitimate result of this chosen contract.
+A complete direct/fallback A list is different: it is the exact representation
+being synchronized. Under the frozen reliable/ordered transport and canonical-list
+decoder, receiving and validating that list is terminal at B. Re-sending the same
+O(N) list to A would measure a common audit mode rather than the minimum exact
+synchronization protocol and would systematically overcharge direct/fallback.
+
+No successful completion follows malformed messages, stale generations, worker
+failure or timeout. Report sketch transfer, sketch verification and exact fallback
+separately. A future compact digest-verification tier would need its own contract,
+algorithm, collision budget, bytes and CPU before measurement; it is absent here
+and cannot inherit an `Exact` claim.
 
 ## Maintained state and update cost
 
@@ -128,14 +147,18 @@ tracked capacity accounting plus external per-process peak evidence is complete.
 
 ## Frozen workloads and future measurement gates
 
-N=64,8192,65536 target-source scale; five D4/D5/D6/D7a/D7b-derived seed families;
-d=0,1,2,3,4,5,8,9,16,64; balanced/add-only/remove-only shapes. N refers to initial
+Foundation correctness grid: N=64,8192,65536; five D4/D5/D6/D7a/D7b-derived
+seed families; d=0,1,2,3,4,5,8,9,16,64; balanced/add-only/remove-only shapes. N refers to initial
 B size; record actual |A|/|B|. Full-width bijective splitmix64 key generation,
 with deterministic zero/high-bit/u64::MAX edge fixtures separately. d<=2N;
 validate exact cardinality, never silently drop collisions. Boundary 8/9 is
 mandatory in every N/seed/shape. Empty, duplicate, malformed, forced exhaustion,
 false-candidate, replay and capacity-limit cases are correctness controls.
 No probability distribution is inferred from this grid or averaged silently.
+This foundation grid only supports conclusions inside N<=65,536 and d<=64.
+Before an architecture-level D13-B verdict, a separately frozen scaling extension
+must include N=1,048,576 with d=128/512/1024 and a natural RIBLT cap/exhaustion
+case; it need not repeat the full Cartesian seed/shape grid.
 
 Frozen network grid: RTT=0,1,10,50,100 ms; bandwidth=1,10,100,1000 Mbps (decimal).
 T = total non-overlapping CPU + rounds*RTT + 8*application_bytes/(Mbps*1e6).
@@ -151,14 +174,26 @@ GitHub-hosted CI for the PR HEAD. Output `FOUNDATION_PASS`, performance decision
 Missing/duplicate rows, wrong pins, changed frozen source, malformed evidence or
 oracle-driven decisions are hard validity failures, not favorable exclusions.
 
-D13-B may begin only after A review/merge and complete memory/CPU instrumentation.
-Then freeze measurement-source hashes before timing: five independent hosted
-workers, three processes each, six balanced arm permutations per process, all
-raw observations retained. No automatic CI timing threshold. A named grid cell
-is a private system candidate only with >=10% median total-cost reduction versus
-**both** comparators on every worker; report 8/9 separately, all fallbacks, memory
-and update amortization. No aggregate across unrelated network cells. Incomplete
-memory/verification or correctness failure => INVALID, not GO. No qualifying
-cell => STOP_SYSTEM_PRODUCT. Mixed cells => CONDITIONAL_PRIVATE_ONLY; a separate
-product decision is always required. An additional digest tier cannot inherit
-these outcomes. Production/public ExactSmallDelta remains NO-GO.
+D13-B timing may begin only after A review/merge and a separate D13-B0
+measurement-readiness gate completes all of the following:
+
+- native/non-overlapping CPU instrumentation for direct exact, D11 and RIBLT
+  phases; Python orchestration/subprocess control is never treated as algorithm CPU;
+- tracked container/capacity accounting plus per-process peak evidence;
+- genuine persistent multi-session D11 state with the frozen 0/1/8/64 successful
+  membership changes and 1/10/100 sessions-per-build grid;
+- a separately frozen RIBLT streaming comparator faithful to the upstream
+  stream-until-stop model, while retaining `riblt_pull_pow2` as a transport control;
+- the N=1,048,576 and d=128/512/1024 scaling extension plus natural exhaustion.
+
+Only then freeze measurement-source hashes before timing: five independent hosted
+workers, three processes each, balanced arm permutations per process, all raw
+observations retained. No automatic CI timing threshold. A named grid cell is a
+private system candidate only with >=10% median total-cost reduction versus the
+relevant comparators on every worker; report 8/9 separately, all fallbacks, memory
+and update amortization. Pull-only RIBLT results cannot reject the rateless
+architecture. No aggregate across unrelated network cells. Incomplete
+memory/verification or correctness failure => INVALID, not GO. No qualifying cell
+=> STOP_SYSTEM_PRODUCT. Mixed cells => CONDITIONAL_PRIVATE_ONLY; a separate product
+decision is always required. An additional digest tier cannot inherit these
+outcomes. Production/public ExactSmallDelta remains NO-GO.
