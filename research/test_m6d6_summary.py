@@ -10,15 +10,17 @@ def metadata():
         "source_keys": "8192",
         "samples": "4",
         "quadratic_repeats": "128",
+        "corpora": "d4;d5;d6",
         "schedule": "1:2;2:3;4:5;8:9",
         "payloads": "17;25;41;73",
     }
 
 
-def total_row(scenario, d, sample):
+def total_row(corpus, scenario, d, sample):
     final_k, attempts, payload = summary.expected_stage(d)
     return {
         "kind": "total",
+        "corpus": corpus,
         "scenario": scenario,
         "d": d,
         "sample": sample,
@@ -36,6 +38,7 @@ def total_row(scenario, d, sample):
 def micro_row(case, sample):
     return {
         "kind": "quadratic",
+        "corpus": "micro",
         "scenario": case,
         "d": 2,
         "sample": sample,
@@ -52,9 +55,10 @@ def micro_row(case, sample):
 
 def complete_rows():
     rows = []
-    for scenario, d in summary.SCENARIOS.items():
-        for sample in range(4):
-            rows.append(total_row(scenario, d, sample))
+    for corpus in summary.CORPORA:
+        for scenario, d in summary.SCENARIOS.items():
+            for sample in range(4):
+                rows.append(total_row(corpus, scenario, d, sample))
     for case in summary.QUADRATICS:
         for sample in range(4):
             rows.append(micro_row(case, sample))
@@ -65,7 +69,7 @@ class SummaryValidationTests(unittest.TestCase):
     def test_valid_matrix_passes(self):
         summary.validate_run(metadata(), complete_rows())
 
-    def test_missing_row_fails(self):
+    def test_missing_corpus_row_fails(self):
         rows = complete_rows()
         rows.pop()
         with self.assertRaises(SystemExit):
@@ -73,7 +77,13 @@ class SummaryValidationTests(unittest.TestCase):
 
     def test_protocol_change_fails(self):
         rows = complete_rows()
-        target = next(row for row in rows if row["kind"] == "total" and row["scenario"] == "d8")
+        target = next(
+            row
+            for row in rows
+            if row["kind"] == "total"
+            and row["corpus"] == "d5"
+            and row["scenario"] == "d8"
+        )
         target["payload_bytes"] = 74
         with self.assertRaises(SystemExit):
             summary.validate_run(metadata(), rows)
