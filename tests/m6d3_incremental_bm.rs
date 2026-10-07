@@ -1,7 +1,7 @@
-#[path = "../examples/support/m6d_pinsketch64.rs"]
-mod pinsketch64;
 #[path = "../examples/support/m6d3_incremental_bm.rs"]
 mod incremental_bm;
+#[path = "../examples/support/m6d_pinsketch64.rs"]
+mod pinsketch64;
 
 use incremental_bm::{
     D3Error, IncrementalBmDecoder, fresh_connection, fresh_full_sequence, prefix,
@@ -185,12 +185,7 @@ fn over_bound_matrix_remains_rejected() {
     let left = base_set(128, 0xD300_4000);
 
     for difference in [9_usize, 10, 16] {
-        let right = derive_source(
-            &left,
-            difference,
-            0xD300_5000 ^ difference as u64,
-            false,
-        );
+        let right = derive_source(&left, difference, 0xD300_5000 ^ difference as u64, false);
         let left_full = PinSketch64Lab::from_sorted_unique(9, &left).unwrap();
         let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
         let mut decoder = IncrementalBmDecoder::new();
