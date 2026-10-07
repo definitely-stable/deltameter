@@ -176,9 +176,9 @@ func kv(name string, value any) string {
 	return fmt.Sprintf("%s=%v", name, value)
 }
 
-func syncSession(s *state, lane string, cap int) string {
+func syncSession(s *state, lane string, limit int) string {
 	require(lane == "pull" || lane == "stream")
-	require(cap >= 1 && cap <= 1024 && cap&(cap-1) == 0)
+	require(limit >= 1 && limit <= 1024 && limit&(limit-1) == 0)
 
 	cpu0 := processCPUTicks()
 
@@ -203,7 +203,7 @@ func syncSession(s *state, lane string, cap int) string {
 	decoded := false
 
 	if lane == "stream" {
-		for cells < cap {
+		for cells < limit {
 			started := time.Now()
 			coded := enc.ProduceNextCodedSymbol()
 			produceNS += time.Since(started).Nanoseconds()
@@ -223,8 +223,8 @@ func syncSession(s *state, lane string, cap int) string {
 	} else {
 		produced := 0
 		target := 1
-		buffer := make([]riblt.CodedSymbol[item], 0, cap)
-		for target <= cap {
+		buffer := make([]riblt.CodedSymbol[item], 0, limit)
+		for target <= limit {
 			for produced < target {
 				started := time.Now()
 				buffer = append(buffer, enc.ProduceNextCodedSymbol())
