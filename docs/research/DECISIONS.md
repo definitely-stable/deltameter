@@ -1049,3 +1049,66 @@ Decision:
 - production/public ExactSmallDelta remains NO-GO.
 
 Canonical evidence: docs/M6-D13B0-MEASUREMENT-READINESS-EVIDENCE.md.
+
+
+### D44 — M6-D13-B stops the current reconciliation-backend product lane
+
+D13-B measures the complete maintained-state system contract after D13-B0 declared
+the measurement substrate ready.
+
+The valid source head is
+`3161119129bb033c39ad5c403ca46de14b7664b9`. Hosted run
+`37651049535` contributes five independent workers, three replicate families per
+worker, 3,900 raw observations and 360 named
+`(N,U,sessions/build,RTT,bandwidth)` cells.
+
+The frozen gate requires at least 10% modeled total-cost reduction versus direct
+exact on every worker for the same named cell.
+
+Result:
+
+~~~text
+D11 qualifying cells                 0 / 360
+RIBLT stream-lower-bound cells       0 / 360
+
+best D11 cell:
+  N=65,536 U=1 S=100 RTT=0 bandwidth=1 Mbps
+  worst-worker improvement          -0.0424%
+  median-worker improvement         -0.0356%
+
+best optimistic stream_lb cell:
+  same named cell
+  worst-worker improvement          -0.4352%
+  median-worker improvement         -0.2978%
+~~~
+
+The result is explained by the exact-verification contract, not by a single noisy
+decoder benchmark. Direct sends the canonical target list once. A successful
+sketch/rateless candidate still sends a full canonical list for independent
+verification, in addition to sketch/coded-symbol bytes and extra feedback RTTs.
+
+The hosted boundary confirms that cost directly. At N=65,536,d=8, direct uses
+524,392 application bytes and one RTT; D11 uses 524,849 bytes and five RTTs. D11
+native compute is also ~2.889 ms versus ~0.363 ms direct. At d=9 D11 safely falls
+back in 15/15 observations but remains more expensive.
+
+At N=1,048,576 direct native synchronization is ~3.2-3.3 ms on the sparse scaling
+guard. D11 is ~9.7-10.4 ms with expected exact fallback. The pinned optimistic
+RIBLT stream lane is ~3.34-5.33 s and about 260+ MiB median HWM because the upstream
+lifecycle reimports retained source state each session.
+
+Decision:
+
+- record **STOP_SYSTEM_PRODUCT** for the current M6 reconciliation-backend program;
+- do not productionize D11/ExactSmallDelta from M6;
+- do not add a public reconciliation/network API from this evidence;
+- do not pivot M6 to the pinned RIBLT implementation;
+- keep D12 STOP_ALGEBRAIC_MICRO_OPT binding;
+- retain D11 and accepted D1-D11 optimizations as private research/reference code;
+- direct exact remains the system baseline under the current exact-verification
+  contract;
+- a compact probabilistic/digest verification tier or genuinely maintained rateless
+  implementation would be a materially new protocol and requires a new program;
+- production/public ExactSmallDelta remains NO-GO.
+
+Canonical evidence: docs/M6-D13B-SYSTEM-EVIDENCE.md.
