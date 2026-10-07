@@ -114,10 +114,6 @@ impl IncrementalBmDecoder {
         sketch: &PinSketch64Lab,
         max_elements: usize,
     ) -> Result<Vec<u64>, D3Error> {
-        if max_elements > sketch.capacity() {
-            return Err(LabError::InvalidDecodeLimit.into());
-        }
-
         let zero_count = usize::from(sketch.zero_present());
         if zero_count > max_elements {
             return Err(LabError::CandidateExceedsCapacity.into());
@@ -127,49 +123,7 @@ impl IncrementalBmDecoder {
             return Err(LabError::InvalidDecodeLimit.into());
         }
 
-        let locator = self.connection_polynomial();
-        if locator.is_empty() {
-            return Err(LabError::DecodeFailure.into());
-        }
-
-        let degree = locator.len() - 1;
-        if degree > nonzero_limit {
-            return Err(LabError::DecodeFailure.into());
-        }
-
-        let mut roots = if degree == 0 {
-            Vec::new()
-        } else {
-            let mut root_polynomial: Vec<u64> = locator.into_iter().rev().collect();
-            trim(&mut root_polynomial);
-            make_monic(&mut root_polynomial)?;
-            factor_linear_roots(&root_polynomial)?
-        };
-
-        roots.sort_unstable();
-        if roots.windows(2).any(|pair| pair[0] == pair[1])
-            || roots.contains(&0)
-            || roots.len() != degree
-        {
-            return Err(LabError::InvalidRoots.into());
-        }
-
-        if sketch.zero_present() {
-            roots.push(0);
-            roots.sort_unstable();
-        }
-        if roots.len() > max_elements {
-            return Err(LabError::CandidateExceedsCapacity.into());
-        }
-
-        let rebuilt = PinSketch64Lab::from_sorted_unique(sketch.capacity(), &roots)?;
-        if rebuilt.odd_syndromes() != sketch.odd_syndromes()
-            || rebuilt.zero_present() != sketch.zero_present()
-        {
-            return Err(LabError::DecodeFailure.into());
-        }
-
-        Ok(roots)
+        decode_with_locator(sketch, max_elements, &self.connection_polynomial())
     }
 
     pub fn connection_polynomial(&self) -> Vec<u64> {
@@ -256,12 +210,75 @@ pub fn fresh_full_sequence(
 
 pub fn fresh_connection(sketch: &PinSketch64Lab, max_elements: usize) -> Result<Vec<u64>, D3Error> {
     let sequence = fresh_full_sequence(sketch, max_elements)?;
+    fresh_connection_from_sequence(&sequence)
+}
+
+pub fn fresh_connection_from_sequence(sequence: &[u64]) -> Result<Vec<u64>, D3Error> {
     let mut state = IncrementalBmDecoder::new();
-    for value in sequence {
+    for &value in sequence {
         state.sequence.push(value);
         state.process_last_term()?;
     }
     Ok(state.connection_polynomial())
+}
+
+pub fn decode_with_locator(
+    sketch: &PinSketch64Lab,
+    max_elements: usize,
+    locator: &[u64],
+) -> Result<Vec<u64>, D3Error> {
+    if max_elements > sketch.capacity() {
+        return Err(LabError::InvalidDecodeLimit.into());
+    }
+
+    let zero_count = usize::from(sketch.zero_present());
+    if zero_count > max_elements {
+        return Err(LabError::CandidateExceedsCapacity.into());
+    }
+    let nonzero_limit = max_elements - zero_count;
+
+    if locator.is_empty() {
+        return Err(LabError::DecodeFailure.into());
+    }
+
+    let degree = locator.len() - 1;
+    if degree > nonzero_limit {
+        return Err(LabError::DecodeFailure.into());
+    }
+
+    let mut roots = if degree == 0 {
+        Vec::new()
+    } else {
+        let mut root_polynomial: Vec<u64> = locator.iter().copied().rev().collect();
+        trim(&mut root_polynomial);
+        make_monic(&mut root_polynomial)?;
+        factor_linear_roots(&root_polynomial)?
+    };
+
+    roots.sort_unstable();
+    if roots.windows(2).any(|pair| pair[0] == pair[1])
+        || roots.contains(&0)
+        || roots.len() != degree
+    {
+        return Err(LabError::InvalidRoots.into());
+    }
+
+    if sketch.zero_present() {
+        roots.push(0);
+        roots.sort_unstable();
+    }
+    if roots.len() > max_elements {
+        return Err(LabError::CandidateExceedsCapacity.into());
+    }
+
+    let rebuilt = PinSketch64Lab::from_sorted_unique(sketch.capacity(), &roots)?;
+    if rebuilt.odd_syndromes() != sketch.odd_syndromes()
+        || rebuilt.zero_present() != sketch.zero_present()
+    {
+        return Err(LabError::DecodeFailure.into());
+    }
+
+    Ok(roots)
 }
 
 pub fn prefix(source: &PinSketch64Lab, capacity: usize) -> Result<PinSketch64Lab, D3Error> {
