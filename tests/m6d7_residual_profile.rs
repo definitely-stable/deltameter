@@ -10,7 +10,10 @@ mod trace_square;
 use pinsketch64::PinSketch64Lab;
 use quadratic::decode_with_locator_quadratic;
 use residual_profile::decode_with_locator_profiled_d6;
-use trace_square::{decode_with_locator_specialized, fresh_locator};
+use trace_square::{
+    decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
+    generic_square_mod, poly_square_mod_monic,
+};
 
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
 
@@ -106,9 +109,21 @@ fn difference_prefix(
 #[test]
 fn profiled_post_d6_path_matches_accepted_d6() {
     let corpora = [
-        (0xD400_BA5E_0000_0001, 0xD400_D1FF_0000_0000, 0xD400_5A5A_0000_0000),
-        (0xD500_BA5E_0000_0001, 0xD500_D1FF_0000_0000, 0xD500_5A5A_0000_0000),
-        (0xD600_BA5E_0000_0001, 0xD600_D1FF_0000_0000, 0xD600_5A5A_0000_0000),
+        (
+            0xD400_BA5E_0000_0001,
+            0xD400_D1FF_0000_0000,
+            0xD400_5A5A_0000_0000,
+        ),
+        (
+            0xD500_BA5E_0000_0001,
+            0xD500_D1FF_0000_0000,
+            0xD500_5A5A_0000_0000,
+        ),
+        (
+            0xD600_BA5E_0000_0001,
+            0xD600_D1FF_0000_0000,
+            0xD600_5A5A_0000_0000,
+        ),
     ];
 
     for (left_salt, right_salt, add_mask) in corpora {
@@ -166,6 +181,9 @@ fn degree_two_uses_only_quadratic_solver_accounting() {
     let profiled = decode_with_locator_profiled_d6(&sketch, 2, &locator);
     assert!(profiled.result.is_ok());
     profiled.profile.validate_accounting().unwrap();
+    let mut aggregate = residual_profile::RootProfile::default();
+    aggregate.merge(&profiled.profile);
+    assert_eq!(aggregate.factor_calls, profiled.profile.factor_calls);
 
     assert_eq!(profiled.profile.factor_calls[2], 1);
     assert_eq!(profiled.profile.quadratic_calls[2], 1);
@@ -231,10 +249,18 @@ fn full_width_zero_and_invalid_limit_semantics_remain_frozen() {
         );
     }
 
-    // Keep a direct D4 control reachable in this target as a regression oracle.
-    let locator = fresh_locator(&PinSketch64Lab::from_sorted_unique(3, &[1, 2]).unwrap(), 2).unwrap();
+    // Keep independent D4 controls reachable in this target as regression oracles.
     let direct = PinSketch64Lab::from_sorted_unique(3, &[1, 2]).unwrap();
-    assert!(
-        decode_with_locator_specialized(&direct, 2, &locator).is_ok()
+    let locator = fresh_locator(&direct, 2).unwrap();
+    assert_eq!(
+        decode_with_locator_generic(&direct, 2, &locator),
+        decode_with_locator_specialized(&direct, 2, &locator)
+    );
+
+    let polynomial = [0x0123_4567_89AB_CDEF, 0xDEAD_BEEF_CAFE_BABE];
+    let modulus = [0xA5A5_5A5A_F0F0_0F0F, 0x1357_9BDF_2468_ACE0, 1];
+    assert_eq!(
+        generic_square_mod(&polynomial, &modulus).unwrap(),
+        poly_square_mod_monic(&polynomial, &modulus).unwrap()
     );
 }
