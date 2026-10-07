@@ -359,3 +359,29 @@ Verdict: **GO only to a narrower trace-internal measurement slice.** Do not sele
 another algebraic candidate yet.
 
 See [M6-D9 evidence](M6-D9-POST-D8-PROFILE-EVIDENCE.md).
+
+
+## M6-D10 trace-internal replay result
+
+D10 measures the trace internals selected by D9 without changing accepted D8.
+
+Offline replay over exact collected operands closes to 97.8-99.4% of accepted
+square/mod timing across the five d=8 corpora.
+
+Square/mod itself accounts for 99.75-99.93% of full trace replay. Within square/mod:
+
+~~~text
+modulus preparation   1.9-2.8%
+square-build          5.0-6.7%
+net polynomial reduction 88.3-92.4%
+trace accumulation    0.5-0.7% of full trace
+~~~
+
+The predeclared selector required net reduction >=50% of square/mod in every
+corpus; the measured minimum is 88.299%.
+
+Verdict: **GO to one isolated polynomial-reduction experiment only.** No general
+GF(2^64) rewrite, GCD/division change, SIMD/CLMUL/unsafe or protocol change is
+authorized.
+
+See [M6-D10 evidence](M6-D10-TRACE-INTERNAL-EVIDENCE.md).
