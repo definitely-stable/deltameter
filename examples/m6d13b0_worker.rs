@@ -10,11 +10,11 @@ mod fixed_reduction;
 #[path = "support/m6d_pinsketch64.rs"]
 mod pinsketch64;
 #[allow(dead_code)]
-#[path = "support/m6d4_trace_square.rs"]
-mod trace_square;
-#[allow(dead_code)]
 #[path = "support/m6d6_quadratic.rs"]
 mod quadratic;
+#[allow(dead_code)]
+#[path = "support/m6d4_trace_square.rs"]
+mod trace_square;
 
 use pinsketch64::PinSketch64Lab;
 use std::fs;
@@ -50,11 +50,9 @@ impl Endpoint {
     fn rebuild_matches(&self) -> bool {
         match &self.sketch {
             None => true,
-            Some(sketch) => {
-                PinSketch64Lab::from_sorted_unique(CAPACITY, &self.keys)
-                    .map(|rebuilt| rebuilt == *sketch)
-                    .unwrap_or(false)
-            }
+            Some(sketch) => PinSketch64Lab::from_sorted_unique(CAPACITY, &self.keys)
+                .map(|rebuilt| rebuilt == *sketch)
+                .unwrap_or(false),
         }
     }
 }
@@ -166,9 +164,21 @@ fn rss_bytes() -> (u64, u64) {
     let mut hwm = 0;
     for line in status.lines() {
         if let Some(value) = line.strip_prefix("VmRSS:") {
-            rss = value.split_whitespace().next().unwrap().parse::<u64>().unwrap() * 1024;
+            rss = value
+                .split_whitespace()
+                .next()
+                .unwrap()
+                .parse::<u64>()
+                .unwrap()
+                * 1024;
         } else if let Some(value) = line.strip_prefix("VmHWM:") {
-            hwm = value.split_whitespace().next().unwrap().parse::<u64>().unwrap() * 1024;
+            hwm = value
+                .split_whitespace()
+                .next()
+                .unwrap()
+                .parse::<u64>()
+                .unwrap()
+                * 1024;
         }
     }
     (rss, hwm)
@@ -177,7 +187,11 @@ fn rss_bytes() -> (u64, u64) {
 fn clk_tck() -> u64 {
     let output = Command::new("getconf").arg("CLK_TCK").output().unwrap();
     assert!(output.status.success());
-    String::from_utf8(output.stdout).unwrap().trim().parse().unwrap()
+    String::from_utf8(output.stdout)
+        .unwrap()
+        .trim()
+        .parse()
+        .unwrap()
 }
 
 fn kv(name: &str, value: impl std::fmt::Display) -> String {
@@ -249,12 +263,8 @@ fn sync_d11(state: &mut State) -> String {
         let decoded = trace_square::fresh_locator(&difference, limit)
             .ok()
             .and_then(|locator| {
-                fixed_reduction::decode_with_locator_fixed_reduction(
-                    &difference,
-                    limit,
-                    &locator,
-                )
-                .ok()
+                fixed_reduction::decode_with_locator_fixed_reduction(&difference, limit, &locator)
+                    .ok()
             });
         decode_ns += decode_started.elapsed().as_nanos();
         final_k = limit;
@@ -396,7 +406,10 @@ fn main() {
                     kv("source_len", state_ref.a.keys.len()),
                     kv("source_a_cap", state_ref.a.keys.capacity()),
                     kv("source_b_cap", state_ref.b.keys.capacity()),
-                    kv("sketch_payload_bytes", if mode == Mode::D11 { 146 } else { 0 }),
+                    kv(
+                        "sketch_payload_bytes",
+                        if mode == Mode::D11 { 146 } else { 0 },
+                    ),
                     kv("vmrss_bytes", rss),
                     kv("vmhwm_bytes", hwm),
                 ]
