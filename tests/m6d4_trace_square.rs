@@ -11,7 +11,8 @@ use incremental_bm::{
 };
 use pinsketch64::PinSketch64Lab;
 use trace_square::{
-    D4Error, decode_with_locator_specialized, generic_square_mod, poly_square_mod_monic,
+    D4Error, decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
+    generic_square_mod, poly_square_mod_monic,
 };
 
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
@@ -187,7 +188,10 @@ fn specialized_root_path_matches_frozen_decoder_and_oracle() {
             );
             assert_eq!(decoder.linear_complexity() + 1, locator.len());
 
+            assert_eq!(fresh_locator(&sketch, limit).unwrap(), locator);
             let frozen = decode_with_locator(&sketch, limit, &locator);
+            let generic = decode_with_locator_generic(&sketch, limit, &locator);
+            assert_eq!(generic, frozen, "generic control d={difference} limit={limit}");
             let specialized = decode_with_locator_specialized(&sketch, limit, &locator);
 
             match (frozen, specialized) {
@@ -239,7 +243,9 @@ fn specialized_root_path_preserves_over_bound_rejects() {
             let locator = decoder.connection_polynomial();
             assert_eq!(locator, fresh_connection_from_sequence(&sequence).unwrap());
 
+            assert_eq!(fresh_locator(&sketch, limit).unwrap(), locator);
             assert!(decode_with_locator(&sketch, limit, &locator).is_err());
+            assert!(decode_with_locator_generic(&sketch, limit, &locator).is_err());
             assert!(decode_with_locator_specialized(&sketch, limit, &locator).is_err());
         }
     }
@@ -263,11 +269,16 @@ fn specialized_root_path_preserves_zero_and_full_width_values() {
         let locator = decoder.connection_polynomial();
         assert_eq!(locator, fresh_connection_from_sequence(&sequence).unwrap());
 
+        assert_eq!(fresh_locator(&sketch, limit).unwrap(), locator);
         if let Ok(candidate) = decode_with_locator_specialized(&sketch, limit, &locator) {
             assert_eq!(candidate, expected);
             assert_eq!(
                 candidate,
                 decode_with_locator(&sketch, limit, &locator).unwrap()
+            );
+            assert_eq!(
+                candidate,
+                decode_with_locator_generic(&sketch, limit, &locator).unwrap()
             );
             return;
         }
