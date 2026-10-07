@@ -15,7 +15,10 @@ use std::time::Instant;
 
 use pinsketch64::PinSketch64Lab;
 use root_profile::{RootProfile, decode_with_locator_profiled};
-use trace_square::{decode_with_locator_specialized, fresh_locator};
+use trace_square::{
+    D4Error, decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
+    generic_square_mod, poly_square_mod_monic,
+};
 
 const SOURCE_KEYS: usize = 8_192;
 const SAMPLES: usize = 4;
@@ -72,6 +75,8 @@ fn main() {
     println!(
         "record,kind,scenario,d,sample,degree,outcome,final_k,attempts,rtts,payload_bytes,control_ns,profile_wall_ns,factor_wall_ns,verification_ns,factor_calls,trace_attempts,square_calls,self_ns,trace_ns,gcd_ns,division_ns,false_success"
     );
+
+    validate_arithmetic_control();
 
     let left = canonical_keys(SOURCE_KEYS, 0xD500_BA5E_0000_0001);
     let scenarios = [
@@ -139,6 +144,7 @@ fn main() {
 
         let left_full = PinSketch64Lab::from_sorted_unique(9, &left).unwrap();
         let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
+        validate_decoder_controls(&left_full, &right_full, &expected);
 
         // Warm both paths outside measurements.
         black_box(run_control(&left_full, &right_full, &expected));
@@ -205,6 +211,43 @@ fn main() {
     }
 }
 
+
+fn validate_arithmetic_control() {
+    let polynomial = [0x0123_4567_89AB_CDEF, 0xDEAD_BEEF_CAFE_BABE];
+    let modulus = [0xA5A5_5A5A_F0F0_0F0F, 0x1357_9BDF_2468_ACE0, 1];
+    assert_eq!(
+        generic_square_mod(&polynomial, &modulus).unwrap(),
+        poly_square_mod_monic(&polynomial, &modulus).unwrap()
+    );
+}
+
+fn validate_decoder_controls(
+    left: &PinSketch64Lab,
+    right: &PinSketch64Lab,
+    expected: &[u64],
+) {
+    for (limit, capacity) in STAGES {
+        let sketch = difference_prefix(left, right, capacity);
+        let locator = fresh_locator(&sketch, limit).unwrap();
+
+        let frozen = sketch.decode_candidate_with_limit(limit);
+        let generic = decode_with_locator_generic(&sketch, limit, &locator);
+        let specialized = decode_with_locator_specialized(&sketch, limit, &locator);
+        let profiled = decode_with_locator_profiled(&sketch, limit, &locator);
+
+        assert_eq!(generic, frozen.clone().map_err(D4Error::from));
+        assert_eq!(specialized, frozen.clone().map_err(D4Error::from));
+        assert_eq!(profiled.result, specialized);
+        profiled.profile.validate_accounting().unwrap();
+
+        if expected.len() <= limit {
+            assert_eq!(frozen.unwrap(), expected);
+        } else {
+            assert!(frozen.is_err());
+        }
+    }
+}
+
 fn run_control(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64]) -> ControlResult {
     let started = Instant::now();
     let mut candidate = None;
@@ -258,12 +301,9 @@ fn run_profiled(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64])
         final_k = limit;
         payload_bytes = prefix_payload_bytes(capacity);
 
-        match profiled.result {
-            Ok(roots) => {
-                candidate = Some(roots);
-                break;
-            }
-            Err(_) => {}
+        if let Ok(roots) = profiled.result {
+            candidate = Some(roots);
+            break;
         }
     }
 
