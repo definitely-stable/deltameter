@@ -27,9 +27,7 @@ fn derive_source(base: &[u64], difference: usize, salt: u64, include_zero: bool)
     let add = difference - remove;
     let mut values = base[remove..].to_vec();
     for index in 0..add {
-        values.push(splitmix64(
-            salt ^ 0xA5A5_5A5A_0000_0000 ^ index as u64,
-        ));
+        values.push(splitmix64(salt ^ 0xA5A5_5A5A_0000_0000 ^ index as u64));
     }
     if include_zero {
         values.push(0);
@@ -80,14 +78,9 @@ fn prefixes_are_exact_and_extensions_append_only_suffix_words() {
 
     for (new_capacity, expected_added) in [(3, 1), (5, 2), (9, 4)] {
         let before = received.odd_syndromes().to_vec();
-        let added = received
-            .extend_prefix_from(&full, new_capacity)
-            .unwrap();
+        let added = received.extend_prefix_from(&full, new_capacity).unwrap();
         assert_eq!(added, expected_added);
-        assert_eq!(
-            &received.odd_syndromes()[..before.len()],
-            before.as_slice()
-        );
+        assert_eq!(&received.odd_syndromes()[..before.len()], before.as_slice());
         assert_eq!(
             received.odd_syndromes(),
             &full.odd_syndromes()[..new_capacity]
@@ -191,12 +184,7 @@ fn over_bound_stages_never_claim_exact_oracle_success() {
     let left = base_set(128, 0xD200_1000);
 
     for difference in [9_usize, 10, 16] {
-        let right = derive_source(
-            &left,
-            difference,
-            0xD200_2000 ^ difference as u64,
-            false,
-        );
+        let right = derive_source(&left, difference, 0xD200_2000 ^ difference as u64, false);
         let expected = symmetric_difference(&left, &right);
         assert_eq!(expected.len(), difference);
 
