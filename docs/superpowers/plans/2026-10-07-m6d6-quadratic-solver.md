@@ -1,6 +1,6 @@
 # M6-D6 — Deterministic quadratic root solver
 
-Status: implementation in progress. Issue: #34. Parent: #19 / #14.
+Status: implementation/evidence complete in PR #35; **ACCEPT private, factor-tree dependent**. Issue: #34. Parent: #19 / #14.
 
 ## Goal
 
@@ -139,3 +139,26 @@ NO-GO is valid.
 
 Do not add matrix precomputation, unsafe/SIMD/CLMUL, alternative field representation
 or another root specialization in the same evidence slice.
+
+
+## Completion record
+
+Canonical measured head: `1b982b9288f36a8a2e858ba9da846989a552360d`.
+
+Hosted gates:
+
+- M6-D6 #6 / `37586264293`;
+- Rust #245 / `37586264300`;
+- Research #258 / `37586264319`.
+
+Canonical evidence: [M6-D6 quadratic evidence](../../M6-D6-QUADRATIC-EVIDENCE.md).
+
+Verdict:
+
+- deterministic quadratic solver correctness: ACCEPT;
+- private decoder optimization: ACCEPT;
+- performance is factor-tree dependent, not a universal fixed percentage;
+- d=8 corpus medians: ~3.7%, ~15.3%, ~27.1%;
+- d=2 stable ~39.6%, d=4 stable ~36.5-41.9%;
+- per-solve Gaussian implementation ~10.2 us and not the next bottleneck;
+- next step: post-D6 multi-corpus residual factor profile before any further solver specialization.
