@@ -73,3 +73,24 @@ PR #53. No performance runs were made.
 - Added a further fail-closed gate: in-capacity D11 must reach the expected
   k without hiding decoder breakage behind fallback (regression RED -> GREEN).
   Local foundation suite: 13 tests passed; final hosted HEAD pending.
+
+
+## Protocol v2 review amendment
+
+Formal review identified two winner-changing risks before any timing, so the
+foundation contract is amended before D13-B:
+
+- direct exact and exact fallback now terminate on receipt of the validated
+  canonical A list; they do not pay a redundant second O(N) reverse-list transfer;
+- reverse-list VERIFY/ACK remains mandatory only for provisional sketch candidates;
+- the external Rateless IBLT lane is explicitly named `riblt_pull_pow2`; it is a
+  transport control, not a faithful substitute for upstream stream-until-stop;
+- an architecture-level rateless verdict is blocked until D13-B0 adds a separately
+  frozen streaming comparator;
+- D13-B0 must also add native/non-overlapping CPU accounting, tracked capacity/RSS,
+  genuine persistent multi-session D11 state, and a scaling extension at
+  N=1,048,576 with d=128/512/1024 plus natural exhaustion.
+
+The foundation correctness grid remains intentionally bounded to N<=65,536 and
+d<=64. No performance conclusion is permitted from that boundary. Protocol v2
+requires a fresh untimed exact-head inventory before merge.
