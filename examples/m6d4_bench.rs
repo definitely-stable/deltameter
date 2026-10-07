@@ -66,7 +66,7 @@ fn main() {
     println!("schedule=1:2;2:3;4:5;8:9");
     println!("payloads=17;25;41;73");
     println!(
-        "record,kind,scenario,d,degree,outcome,operations,attempts,rtts,payload_bytes,generic_ns,specialized_ns,locator_ns,false_success"
+        "record,kind,scenario,d,degree,outcome,operations,final_k,attempts,rtts,payload_bytes,generic_ns,specialized_ns,locator_ns,false_success"
     );
 
     run_square_micro();
@@ -151,6 +151,7 @@ fn main() {
                 scenario.d,
                 metrics.outcome.as_str(),
                 1,
+                metrics.final_k,
                 metrics.attempts,
                 metrics.attempts,
                 metrics.payload_bytes,
@@ -218,7 +219,7 @@ fn run_square_micro() {
             };
 
             println!(
-                "record,square,degree{degree},0,{degree},na,{SQUARE_REPEATS},0,0,0,{generic_ns},{specialized_ns},0,0"
+                "record,square,degree{degree},0,{degree},na,{SQUARE_REPEATS},0,0,0,0,{generic_ns},{specialized_ns},0,0"
             );
         }
     }
