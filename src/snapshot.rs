@@ -229,15 +229,34 @@ pub(crate) fn push_i64(bytes: &mut Vec<u8>, value: i64) {
     bytes.extend_from_slice(&value.to_le_bytes());
 }
 
+// Compile-time Sarwate table; snapshot-v1 CRC32C parameters stay unchanged.
+const CRC32C_TABLE: [u32; 256] = make_crc32c_table();
+
+const fn make_crc32c_table() -> [u32; 256] {
+    let mut table = [0_u32; 256];
+    let mut index = 0;
+
+    while index < table.len() {
+        let mut crc = index as u32;
+        let mut bit = 0;
+        while bit < 8 {
+            let mask = 0_u32.wrapping_sub(crc & 1);
+            crc = (crc >> 1) ^ (CRC32C_REVERSED_POLYNOMIAL & mask);
+            bit += 1;
+        }
+        table[index] = crc;
+        index += 1;
+    }
+
+    table
+}
+
 fn crc32c(bytes: &[u8]) -> u32 {
     let mut crc = !0_u32;
 
     for &byte in bytes {
-        crc ^= u32::from(byte);
-        for _ in 0..8 {
-            let mask = 0_u32.wrapping_sub(crc & 1);
-            crc = (crc >> 1) ^ (CRC32C_REVERSED_POLYNOMIAL & mask);
-        }
+        let table_index = usize::from((crc as u8) ^ byte);
+        crc = (crc >> 8) ^ CRC32C_TABLE[table_index];
     }
 
     !crc
@@ -247,9 +266,54 @@ fn crc32c(bytes: &[u8]) -> u32 {
 mod tests {
     use super::*;
 
+    fn crc32c_bitwise_reference(bytes: &[u8]) -> u32 {
+        let mut crc = !0_u32;
+
+        for &byte in bytes {
+            crc ^= u32::from(byte);
+            for _ in 0..8 {
+                let mask = 0_u32.wrapping_sub(crc & 1);
+                crc = (crc >> 1) ^ (CRC32C_REVERSED_POLYNOMIAL & mask);
+            }
+        }
+
+        !crc
+    }
+
     #[test]
     fn crc32c_matches_castagnoli_reference_vector() {
         assert_eq!(crc32c(b"123456789"), 0xE306_9283);
+        assert_eq!(crc32c(b"123456789"), crc32c_bitwise_reference(b"123456789"));
+    }
+
+    #[test]
+    fn table_crc32c_matches_bitwise_reference_for_every_single_byte() {
+        for byte in 0_u8..=u8::MAX {
+            let input = [byte];
+            assert_eq!(crc32c(&input), crc32c_bitwise_reference(&input));
+        }
+    }
+
+    #[test]
+    fn table_crc32c_matches_bitwise_reference_across_deterministic_lengths() {
+        let mut bytes = vec![0_u8; 4096];
+        let mut state = 0xD3A5_7EED_5EED_C0DE_u64;
+        for byte in &mut bytes {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            *byte = state as u8;
+        }
+
+        for len in [
+            0, 1, 2, 3, 7, 8, 15, 16, 31, 32, 63, 64, 255, 256, 1024, 4096,
+        ] {
+            assert_eq!(
+                crc32c(&bytes[..len]),
+                crc32c_bitwise_reference(&bytes[..len]),
+                "len={len}"
+            );
+        }
     }
 
     #[test]
