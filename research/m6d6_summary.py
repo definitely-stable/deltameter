@@ -12,6 +12,7 @@ from collections import defaultdict
 
 HEADER = [
     "kind",
+    "corpus",
     "scenario",
     "d",
     "sample",
@@ -37,6 +38,7 @@ INT_FIELDS = {
     "false_success",
 }
 
+CORPORA = {"d4", "d5", "d6"}
 SCENARIOS = {
     "d0": 0,
     "d1-zero": 1,
@@ -49,7 +51,6 @@ SCENARIOS = {
     "d10": 10,
     "d16": 16,
 }
-
 QUADRATICS = {"q0", "q1", "q2", "q3"}
 
 
@@ -111,6 +112,7 @@ def validate_run(metadata, rows):
         "source_keys": "8192",
         "samples": "4",
         "quadratic_repeats": "128",
+        "corpora": "d4;d5;d6",
         "schedule": "1:2;2:3;4:5;8:9",
         "payloads": "17;25;41;73",
     }
@@ -127,28 +129,30 @@ def validate_run(metadata, rows):
             raise SystemExit("false-success observed")
 
         if row["kind"] == "total":
+            if row["corpus"] not in CORPORA:
+                raise SystemExit(f"unexpected corpus {row['corpus']}")
             if row["scenario"] not in SCENARIOS:
                 raise SystemExit(f"unexpected scenario {row['scenario']}")
             d = SCENARIOS[row["scenario"]]
             if row["d"] != d:
-                raise SystemExit(f"{row['scenario']}: wrong d")
+                raise SystemExit(f"{row['corpus']}/{row['scenario']}: wrong d")
             final_k, attempts, payload = expected_stage(d)
             expected_outcome = "exact" if d <= 8 else "rejected"
             if row["outcome"] != expected_outcome:
-                raise SystemExit(f"{row['scenario']}: wrong outcome")
+                raise SystemExit(f"{row['corpus']}/{row['scenario']}: wrong outcome")
             if (
                 row["final_k"] != final_k
                 or row["attempts"] != attempts
                 or row["rtts"] != attempts
                 or row["payload_bytes"] != payload
             ):
-                raise SystemExit(f"{row['scenario']}: frozen protocol changed")
+                raise SystemExit(f"{row['corpus']}/{row['scenario']}: frozen protocol changed")
             if row["d4_ns"] <= 0 or row["d6_ns"] <= 0:
-                raise SystemExit(f"{row['scenario']}: non-positive timing")
-            totals[(row["scenario"], row["sample"])].append(row)
+                raise SystemExit(f"{row['corpus']}/{row['scenario']}: non-positive timing")
+            totals[(row["corpus"], row["scenario"], row["sample"])].append(row)
         elif row["kind"] == "quadratic":
-            if row["scenario"] not in QUADRATICS:
-                raise SystemExit(f"unexpected quadratic {row['scenario']}")
+            if row["corpus"] != "micro" or row["scenario"] not in QUADRATICS:
+                raise SystemExit("unexpected quadratic record")
             if (
                 row["d"] != 2
                 or row["outcome"] != "exact"
@@ -164,17 +168,20 @@ def validate_run(metadata, rows):
         else:
             raise SystemExit(f"unexpected kind {row['kind']}")
 
-    for scenario in SCENARIOS:
-        for sample in range(4):
-            if len(totals[(scenario, sample)]) != 1:
-                raise SystemExit(f"{scenario} sample={sample}: incomplete total matrix")
+    for corpus in CORPORA:
+        for scenario in SCENARIOS:
+            for sample in range(4):
+                if len(totals[(corpus, scenario, sample)]) != 1:
+                    raise SystemExit(
+                        f"{corpus}/{scenario} sample={sample}: incomplete total matrix"
+                    )
 
     for scenario in QUADRATICS:
         for sample in range(4):
             if len(micros[(scenario, sample)]) != 1:
                 raise SystemExit(f"{scenario} sample={sample}: incomplete quadratic matrix")
 
-    expected_rows = len(SCENARIOS) * 4 + len(QUADRATICS) * 4
+    expected_rows = len(CORPORA) * len(SCENARIOS) * 4 + len(QUADRATICS) * 4
     if len(rows) != expected_rows:
         raise SystemExit(f"expected {expected_rows} rows, got {len(rows)}")
 
@@ -183,8 +190,12 @@ def median(values):
     return statistics.median(values)
 
 
-def paired_reductions(rows):
-    values = [(1.0 - row["d6_ns"] / row["d4_ns"]) * 100.0 for row in rows]
+def reductions(rows):
+    return [(1.0 - row["d6_ns"] / row["d4_ns"]) * 100.0 for row in rows]
+
+
+def paired_summary(rows):
+    values = reductions(rows)
     per_run = [median(values[start : start + 4]) for start in range(0, len(values), 4)]
     return median(values), min(per_run), max(per_run)
 
@@ -211,12 +222,13 @@ def main() -> int:
     micros = defaultdict(list)
     for row in rows:
         if row["kind"] == "total":
-            totals[row["scenario"]].append(row)
+            totals[(row["corpus"], row["scenario"])].append(row)
         else:
             micros[row["scenario"]].append(row)
 
-    print("format=deltameter.m6d6-summary.v1")
+    print("format=deltameter.m6d6-summary.v2")
     print(f"runs={len(paths)}")
+    print("corpora=3")
     print("logical_gate=PASS")
     print("false_success_total=0")
 
@@ -224,6 +236,7 @@ def main() -> int:
     writer.writerow(
         [
             "decode",
+            "corpus",
             "scenario",
             "d",
             "outcome",
@@ -239,41 +252,76 @@ def main() -> int:
         ]
     )
 
+    for corpus in sorted(CORPORA):
+        for scenario, d in sorted(SCENARIOS.items(), key=lambda item: item[1]):
+            samples = totals[(corpus, scenario)]
+            reduction, run_min, run_max = paired_summary(samples)
+            first = samples[0]
+            writer.writerow(
+                [
+                    "decode",
+                    corpus,
+                    scenario,
+                    d,
+                    first["outcome"],
+                    first["final_k"],
+                    first["attempts"],
+                    first["payload_bytes"],
+                    f"{median(row['d4_ns'] for row in samples):.0f}",
+                    f"{median(row['d6_ns'] for row in samples):.0f}",
+                    f"{reduction:.3f}",
+                    f"{run_min:.3f}",
+                    f"{run_max:.3f}",
+                    len(samples),
+                ]
+            )
+
+    writer.writerow(
+        [
+            "aggregate",
+            "scenario",
+            "d",
+            "d4_ns",
+            "d6_ns",
+            "median_reduction_percent",
+            "corpus_median_min_percent",
+            "corpus_median_max_percent",
+            "samples",
+        ]
+    )
     for scenario, d in sorted(SCENARIOS.items(), key=lambda item: item[1]):
-        samples = totals[scenario]
-        reduction, run_min, run_max = paired_reductions(samples)
-        first = samples[0]
+        samples = []
+        corpus_medians = []
+        for corpus in sorted(CORPORA):
+            corpus_rows = totals[(corpus, scenario)]
+            samples.extend(corpus_rows)
+            corpus_medians.append(median(reductions(corpus_rows)))
         writer.writerow(
             [
-                "decode",
+                "aggregate",
                 scenario,
                 d,
-                first["outcome"],
-                first["final_k"],
-                first["attempts"],
-                first["payload_bytes"],
                 f"{median(row['d4_ns'] for row in samples):.0f}",
                 f"{median(row['d6_ns'] for row in samples):.0f}",
-                f"{reduction:.3f}",
-                f"{run_min:.3f}",
-                f"{run_max:.3f}",
+                f"{median(reductions(samples)):.3f}",
+                f"{min(corpus_medians):.3f}",
+                f"{max(corpus_medians):.3f}",
                 len(samples),
             ]
         )
 
-    writer.writerow(
-        [
-            "quadratic",
-            "case",
-            "ns_per_solve",
-            "samples",
-        ]
-    )
+    writer.writerow(["quadratic", "case", "ns_per_solve", "samples"])
     repeats = 128
     for case in sorted(QUADRATICS):
         samples = micros[case]
-        ns_per_solve = median(row["d6_ns"] / repeats for row in samples)
-        writer.writerow(["quadratic", case, f"{ns_per_solve:.3f}", len(samples)])
+        writer.writerow(
+            [
+                "quadratic",
+                case,
+                f"{median(row['d6_ns'] / repeats for row in samples):.3f}",
+                len(samples),
+            ]
+        )
 
     return 0
 
