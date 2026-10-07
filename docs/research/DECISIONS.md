@@ -777,3 +777,38 @@ Decision:
 - production/public ExactSmallDelta remains NO-GO.
 
 Canonical evidence: docs/M6-D9-POST-D8-PROFILE-EVIDENCE.md.
+
+
+### D36 — Polynomial reduction is the stable post-D8 trace-internal bottleneck
+
+M6-D10 uses offline replay of exact operands collected from accepted D8
+factorization. No per-operation timers are inserted into the decoder.
+
+The replay decomposition validity interval was frozen at 70-130%. Observed additive
+closure is 97.829-99.387% across the five d=8 corpora.
+
+Full square/mod consumes 99.753-99.931% of full trace replay. Its internal
+decomposition is:
+
+~~~text
+modulus preparation   1.929-2.842%
+square-build          5.043-6.719%
+net reduction        88.299-92.428%
+trace accumulation    0.537-0.708% of full trace
+~~~
+
+The predeclared selector required net polynomial reduction to exceed 50% of
+square/mod in every corpus. It clears that threshold by a wide margin.
+
+Decision:
+
+- keep D10 measurement-only;
+- authorize exactly one safe-Rust bit-equivalent polynomial-reduction experiment;
+- preserve D8 scalar square, factor tree, D6 quadratic solver, GCD/division, field
+  representation, protocol and verification;
+- do not broaden this into a generic GF(2^64) rewrite;
+- if the isolated reduction experiment fails the end-to-end gate, stop algebraic
+  decoder micro-optimization and move to maintained-state system comparison;
+- production/public ExactSmallDelta remains NO-GO.
+
+Canonical evidence: docs/M6-D10-TRACE-INTERNAL-EVIDENCE.md.
