@@ -116,7 +116,7 @@ M6-C measured result: **ACCEPT**. Final paired hosted evidence reports about 68â
 | M6-A | [#16](https://github.com/definitely-stable/deltameter/issues/16) | Two-process estimator-assisted decision experiment; GO/NO-GO before public workflow expansion |
 | M6-B | [#17](https://github.com/definitely-stable/deltameter/issues/17) | CRC/decoder improvements evaluated individually |
 | M6-C | [#18](https://github.com/definitely-stable/deltameter/issues/18) | Bit-equivalent sign optimization with setup and steady-state evidence |
-| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1/D2 LAB-GO; D3 BM NO-GO; D4 trace-square ACCEPT; D5 profiling gate; D6 quadratic solver ACCEPT with factor-tree-dependent benefit; production/public ExactSmallDelta remains NO-GO |
+| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1/D2 LAB-GO; D3 BM NO-GO; D4 trace-square ACCEPT; D5 profile; D6 quadratic ACCEPT; D7 rejects another degree-specific solver and selects the general trace path; production/public ExactSmallDelta remains NO-GO |
 
 M6-B/C require M6-0 measurement and may proceed before M6-A completion if their independent evidence justifies it. After M6-0, M6-A and the read-only/source-audit portion of M6-D should proceed in parallel. M6-D production adoption still depends on M6-A product evidence, so research can inform the experiment without prematurely committing to an exact backend. One coherent PR per slice. No automatic merge/release is implied.
 
@@ -260,3 +260,37 @@ precomputation/cache optimization.
 
 Next: profile the post-D6 residual factor path across multiple corpora before any
 degree-3/4/high-degree specialization. See [M6-D6 evidence](M6-D6-QUADRATIC-EVIDENCE.md).
+
+
+## M6-D7 residual root profile result
+
+D7 is a profile-only slice over the accepted D6 decoder.
+
+Five deterministic 8192-key corpora show that the dominant residual polynomial
+degree is not stable enough to justify another degree-specific solver.
+
+For d=8:
+
+~~~text
+degree 3 share: ~5.7-71.5%
+degree 4 share: ~13.6-82.3%
+~~~
+
+Some corpora are degree-3 dominated, others degree-4 dominated, and one has a
+near split.
+
+The common phase is much more stable: degree>=3 trace self work consumes roughly
+63-83% of accepted D6 latency across all five d=8 corpora. GCD is secondary and
+corpus-dependent; division, accepted quadratic work and candidate verification are
+not the next bottlenecks.
+
+Verdict:
+
+- immediate cubic solver: NO-GO;
+- immediate quartic solver: NO-GO;
+- next candidate: one bit-equivalent safe-Rust GF(2^64) scalar-squaring
+  specialization inside the shared trace square/mod path;
+- keep generic multiplication/GCD/field representation/protocol unchanged in that
+  experiment.
+
+See [M6-D7 evidence](M6-D7-RESIDUAL-ROOT-PROFILE-EVIDENCE.md).

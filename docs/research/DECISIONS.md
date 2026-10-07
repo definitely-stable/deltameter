@@ -656,3 +656,41 @@ Decision:
 - production/public ExactSmallDelta remains NO-GO.
 
 Canonical evidence: docs/M6-D6-QUADRATIC-EVIDENCE.md.
+
+
+### D33 — Residual degree dominance is unstable; optimize the common trace path instead
+
+M6-D7 profiles the accepted D6 decoder across five deterministic corpora without
+changing the factorization algorithm.
+
+After degree-two specialization, no single higher degree remains a stable global
+bottleneck.
+
+For exact d=8 workloads:
+
+~~~text
+degree 3 share: median ~28.5%, range ~5.7-71.5%
+degree 4 share: median ~29.2%, range ~13.6-82.3%
+degree 5 share: median ~8.2%, range ~6.8-23.4%
+degree 8 share: median ~3.8%, range ~3.1-10.7%
+~~~
+
+The dominant degree flips between degree 3 and degree 4 depending on the factor tree.
+
+However, summing the common degree>=3 trace phase shows a stable cross-corpus
+bottleneck. For d=8, trace self time is roughly 63-83% of accepted D6 control
+latency across all five corpora. GCD is secondary and more variable; successful
+division and candidate verification are small.
+
+Decision:
+
+- do not start an isolated cubic solver;
+- do not start an isolated quartic solver;
+- do not optimize D6 Artin-Schreier setup;
+- keep D6 quadratic specialization and all D2 protocol semantics frozen;
+- authorize one general safe-Rust trace-path experiment, beginning with a
+  bit-equivalent GF(2^64) scalar-squaring specialization only;
+- do not bundle generic multiplication, GCD/division, SIMD/CLMUL, unsafe or field
+  representation changes in that experiment.
+
+Canonical evidence: docs/M6-D7-RESIDUAL-ROOT-PROFILE-EVIDENCE.md.
