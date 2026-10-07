@@ -1,6 +1,6 @@
 # M6-D3 — Incremental Berlekamp–Massey state reuse
 
-Status: implementation in progress. Issue: #28. Parent: #19 / #14.
+Status: implementation/evidence complete in PR #29; **performance NO-GO for Candidate A**. Issue: #28. Parent: #19 / #14.
 
 ## Goal
 
@@ -118,3 +118,21 @@ No root-finding specialization is allowed before Candidate A is measured.
 ## Boundaries
 
 Private lab only; stable safe Rust; no unsafe; no FFI; no runtime dependency; no snapshot-v1 or Coverage changes; GitHub-hosted runners only.
+
+
+## Completion record
+
+Measured implementation head: `872c4ee818777fcc26d722e68de74a2aed2750c6`.
+
+Hosted evidence: `m6d3-incremental-bm #5 / 37567202464`.
+
+Canonical evidence: [M6-D3 incremental BM evidence](../../M6-D3-INCREMENTAL-BM-EVIDENCE.md).
+
+Verdict:
+
+- incremental BM correctness/equivalence: ACCEPT;
+- Candidate A as a performance optimization: NO-GO;
+- d=2..8 end-to-end change: approximately -0.3% to +0.6%;
+- BM share at d=8: about 0.07% of candidate decoder CPU;
+- cached-even-syndrome Candidate B: skipped by measurement because reconstruction is ~1.3–1.4 us versus ~100 ms root-factor/verification;
+- next permitted target: isolated safe-Rust trace/root-factor specialization with D2 bytes/RTTs frozen.
