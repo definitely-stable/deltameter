@@ -276,6 +276,31 @@ def percent(part, whole):
     return 0.0 if whole == 0 else part / whole * 100.0
 
 
+HIGH_DEGREE_PHASE_FIELDS = ("trace_ns", "gcd_ns", "division_ns")
+
+
+def aggregate_high_degree_phases(top_rows, degree_rows):
+    """Aggregate median local phase time across degree >= 3 factor frames."""
+    if not top_rows:
+        raise SystemExit("missing scenario control rows")
+
+    control = median(row["control_ns"] for row in top_rows)
+    if control <= 0:
+        raise SystemExit("non-positive scenario control median")
+
+    totals = {"control_ns": control}
+    for field in HIGH_DEGREE_PHASE_FIELDS:
+        total = 0
+        for degree in range(3, 9):
+            samples = degree_rows.get(degree)
+            if not samples:
+                raise SystemExit(f"missing degree {degree} rows for aggregate phase")
+            total += median(row[field] for row in samples)
+        totals[field] = total
+
+    return totals
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         raise SystemExit("usage: m6d7_summary.py ARTIFACT_DIR")
@@ -472,6 +497,88 @@ def main() -> int:
                     f"{min(shares):.3f}",
                     f"{max(shares):.3f}",
                     nonzero,
+                ]
+            )
+
+    phase_shares = defaultdict(dict)
+    writer.writerow(
+        [
+            "aggregate_phase",
+            "corpus",
+            "scenario",
+            "d",
+            "trace_ns",
+            "gcd_ns",
+            "division_ns",
+            "trace_of_control_percent",
+            "gcd_of_control_percent",
+            "division_of_control_percent",
+            "samples",
+        ]
+    )
+
+    for corpus in CORPORA:
+        for scenario, d in ordered_scenarios:
+            tops = top[(corpus, scenario)]
+            degree_rows = {
+                degree: degrees[(corpus, scenario, degree)]
+                for degree in range(3, 9)
+            }
+            totals = aggregate_high_degree_phases(tops, degree_rows)
+            control = totals["control_ns"]
+
+            shares = {
+                field: percent(totals[field], control)
+                for field in HIGH_DEGREE_PHASE_FIELDS
+            }
+            for field, share in shares.items():
+                phase_shares[(scenario, field)][corpus] = share
+
+            writer.writerow(
+                [
+                    "aggregate_phase",
+                    corpus,
+                    scenario,
+                    d,
+                    f"{totals['trace_ns']:.0f}",
+                    f"{totals['gcd_ns']:.0f}",
+                    f"{totals['division_ns']:.0f}",
+                    f"{shares['trace_ns']:.3f}",
+                    f"{shares['gcd_ns']:.3f}",
+                    f"{shares['division_ns']:.3f}",
+                    len(tops),
+                ]
+            )
+
+    writer.writerow(
+        [
+            "aggregate_phase_range",
+            "scenario",
+            "d",
+            "phase",
+            "median_control_share_percent",
+            "corpus_min_percent",
+            "corpus_max_percent",
+            "corpora",
+        ]
+    )
+
+    for scenario, d in ordered_scenarios:
+        for field in HIGH_DEGREE_PHASE_FIELDS:
+            shares = [
+                phase_shares[(scenario, field)][corpus]
+                for corpus in CORPORA
+            ]
+            writer.writerow(
+                [
+                    "aggregate_phase_range",
+                    scenario,
+                    d,
+                    field.removesuffix("_ns"),
+                    f"{median(shares):.3f}",
+                    f"{min(shares):.3f}",
+                    f"{max(shares):.3f}",
+                    len(shares),
                 ]
             )
 
