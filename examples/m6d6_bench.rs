@@ -33,6 +33,14 @@ struct Scenario {
     include_zero: bool,
 }
 
+#[derive(Clone, Copy)]
+struct Corpus {
+    name: &'static str,
+    left_salt: u64,
+    right_salt: u64,
+    add_mask: u64,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Outcome {
     Exact,
@@ -66,119 +74,103 @@ fn main() {
     println!("source_keys={SOURCE_KEYS}");
     println!("samples={SAMPLES}");
     println!("quadratic_repeats={QUADRATIC_REPEATS}");
+    println!("corpora=d4;d5;d6");
     println!("schedule=1:2;2:3;4:5;8:9");
     println!("payloads=17;25;41;73");
     println!(
-        "record,kind,scenario,d,sample,outcome,final_k,attempts,rtts,payload_bytes,d4_ns,d6_ns,false_success"
+        "record,kind,corpus,scenario,d,sample,outcome,final_k,attempts,rtts,payload_bytes,d4_ns,d6_ns,false_success"
     );
 
     validate_arithmetic_control();
     run_quadratic_micro();
 
-    let left = canonical_keys(SOURCE_KEYS, 0xD600_BA5E_0000_0001);
-    let scenarios = [
-        Scenario {
-            name: "d0",
-            d: 0,
-            include_zero: false,
-        },
-        Scenario {
-            name: "d1-zero",
-            d: 1,
-            include_zero: true,
-        },
-        Scenario {
-            name: "d2",
-            d: 2,
-            include_zero: false,
-        },
-        Scenario {
-            name: "d3",
-            d: 3,
-            include_zero: false,
-        },
-        Scenario {
+    let corpora = [
+        Corpus {
             name: "d4",
-            d: 4,
-            include_zero: false,
+            left_salt: 0xD400_BA5E_0000_0001,
+            right_salt: 0xD400_D1FF_0000_0000,
+            add_mask: 0xD400_5A5A_0000_0000,
         },
-        Scenario {
+        Corpus {
             name: "d5",
-            d: 5,
-            include_zero: false,
+            left_salt: 0xD500_BA5E_0000_0001,
+            right_salt: 0xD500_D1FF_0000_0000,
+            add_mask: 0xD500_5A5A_0000_0000,
         },
-        Scenario {
-            name: "d8",
-            d: 8,
-            include_zero: false,
-        },
-        Scenario {
-            name: "d9",
-            d: 9,
-            include_zero: false,
-        },
-        Scenario {
-            name: "d10",
-            d: 10,
-            include_zero: false,
-        },
-        Scenario {
-            name: "d16",
-            d: 16,
-            include_zero: false,
+        Corpus {
+            name: "d6",
+            left_salt: 0xD600_BA5E_0000_0001,
+            right_salt: 0xD600_D1FF_0000_0000,
+            add_mask: 0xD600_5A5A_0000_0000,
         },
     ];
+    let scenarios = [
+        Scenario { name: "d0", d: 0, include_zero: false },
+        Scenario { name: "d1-zero", d: 1, include_zero: true },
+        Scenario { name: "d2", d: 2, include_zero: false },
+        Scenario { name: "d3", d: 3, include_zero: false },
+        Scenario { name: "d4", d: 4, include_zero: false },
+        Scenario { name: "d5", d: 5, include_zero: false },
+        Scenario { name: "d8", d: 8, include_zero: false },
+        Scenario { name: "d9", d: 9, include_zero: false },
+        Scenario { name: "d10", d: 10, include_zero: false },
+        Scenario { name: "d16", d: 16, include_zero: false },
+    ];
 
-    for scenario in scenarios {
-        let right = derive_source(
-            &left,
-            scenario.d,
-            0xD600_D1FF_0000_0000 ^ scenario.d as u64,
-            scenario.include_zero,
-        );
-        let expected = symmetric_difference(&left, &right);
-        assert_eq!(expected.len(), scenario.d);
-
-        let left_full = PinSketch64Lab::from_sorted_unique(9, &left).unwrap();
-        let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
-        validate_controls(&left_full, &right_full, &expected);
-
-        // Warm both complete paths before balanced AB/BA measurements.
-        black_box(run_complete(&left_full, &right_full, &expected, false));
-        black_box(run_complete(&left_full, &right_full, &expected, true));
-
-        for sample in 0..SAMPLES {
-            let (d4, d6) = if sample % 2 == 0 {
-                (
-                    run_complete(&left_full, &right_full, &expected, false),
-                    run_complete(&left_full, &right_full, &expected, true),
-                )
-            } else {
-                let d6 = run_complete(&left_full, &right_full, &expected, true);
-                let d4 = run_complete(&left_full, &right_full, &expected, false);
-                (d4, d6)
-            };
-
-            assert_eq!(d4.outcome, d6.outcome);
-            assert_eq!(d4.final_k, d6.final_k);
-            assert_eq!(d4.attempts, d6.attempts);
-            assert_eq!(d4.payload_bytes, d6.payload_bytes);
-            assert_eq!(d4.candidate, d6.candidate);
-
-            println!(
-                "record,total,{},{},{},{},{},{},{},{},{},{},{}",
-                scenario.name,
+    for corpus in corpora {
+        let left = canonical_keys(SOURCE_KEYS, corpus.left_salt);
+        for scenario in scenarios {
+            let right = derive_source(
+                &left,
                 scenario.d,
-                sample,
-                d4.outcome.as_str(),
-                d4.final_k,
-                d4.attempts,
-                d4.attempts,
-                d4.payload_bytes,
-                d4.elapsed_ns,
-                d6.elapsed_ns,
-                u8::from(d4.outcome == Outcome::FalseSuccess)
+                corpus.right_salt ^ scenario.d as u64,
+                corpus.add_mask,
+                scenario.include_zero,
             );
+            let expected = symmetric_difference(&left, &right);
+            assert_eq!(expected.len(), scenario.d);
+
+            let left_full = PinSketch64Lab::from_sorted_unique(9, &left).unwrap();
+            let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
+            validate_controls(&left_full, &right_full, &expected);
+
+            black_box(run_complete(&left_full, &right_full, &expected, false));
+            black_box(run_complete(&left_full, &right_full, &expected, true));
+
+            for sample in 0..SAMPLES {
+                let (d4, d6) = if sample % 2 == 0 {
+                    (
+                        run_complete(&left_full, &right_full, &expected, false),
+                        run_complete(&left_full, &right_full, &expected, true),
+                    )
+                } else {
+                    let d6 = run_complete(&left_full, &right_full, &expected, true);
+                    let d4 = run_complete(&left_full, &right_full, &expected, false);
+                    (d4, d6)
+                };
+
+                assert_eq!(d4.outcome, d6.outcome);
+                assert_eq!(d4.final_k, d6.final_k);
+                assert_eq!(d4.attempts, d6.attempts);
+                assert_eq!(d4.payload_bytes, d6.payload_bytes);
+                assert_eq!(d4.candidate, d6.candidate);
+
+                println!(
+                    "record,total,{},{},{},{},{},{},{},{},{},{},{},{}",
+                    corpus.name,
+                    scenario.name,
+                    scenario.d,
+                    sample,
+                    d4.outcome.as_str(),
+                    d4.final_k,
+                    d4.attempts,
+                    d4.attempts,
+                    d4.payload_bytes,
+                    d4.elapsed_ns,
+                    d6.elapsed_ns,
+                    u8::from(d4.outcome == Outcome::FalseSuccess)
+                );
+            }
         }
     }
 }
@@ -205,7 +197,7 @@ fn run_quadratic_micro() {
                 black_box(quadratic_roots_monic(black_box(&polynomial)).unwrap());
             }
             let elapsed = started.elapsed().as_nanos();
-            println!("record,quadratic,q{case},2,{sample},exact,2,1,0,0,0,{elapsed},0");
+            println!("record,quadratic,micro,q{case},2,{sample},exact,2,1,0,0,0,{elapsed},0");
         }
     }
 }
@@ -332,7 +324,13 @@ const fn prefix_payload_bytes(stored_capacity: usize) -> usize {
     1 + stored_capacity * 8
 }
 
-fn derive_source(base: &[u64], difference: usize, salt: u64, include_zero: bool) -> Vec<u64> {
+fn derive_source(
+    base: &[u64],
+    difference: usize,
+    salt: u64,
+    add_mask: u64,
+    include_zero: bool,
+) -> Vec<u64> {
     if difference == 0 {
         return base.to_vec();
     }
@@ -348,7 +346,7 @@ fn derive_source(base: &[u64], difference: usize, salt: u64, include_zero: bool)
     let add = difference - remove;
     let mut values = base[remove..].to_vec();
     for index in 0..add {
-        values.push(splitmix64(salt ^ 0xD600_5A5A_0000_0000 ^ index as u64));
+        values.push(splitmix64(salt ^ add_mask ^ index as u64));
     }
     values.sort_unstable();
     values.dedup();
