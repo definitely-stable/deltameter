@@ -229,6 +229,36 @@ def build_payload() -> dict:
         low_d_anchors(8192, 65536),
     ]
 
+    by_state = {
+        profile["state_bytes"]: profile
+        for profile in profiles
+    }
+    profile_32k = by_state[32768]
+    profile_64k = by_state[65536]
+    profile_8k = by_state[8192]
+
+    if profile_32k["worst_q95_u_over_d"] > 1.5:
+        raise AssertionError("32 KiB profile missed frozen q95 width gate")
+    if profile_32k["worst_q99_u_over_d"] > 1.5:
+        raise AssertionError("32 KiB profile missed 1.5x q99 diagnostic")
+    if profile_64k["worst_q95_u_over_d"] > 1.5:
+        raise AssertionError("64 KiB profile missed frozen q95 width gate")
+    if profile_8k["worst_q95_u_over_d"] <= 1.5:
+        raise AssertionError("8 KiB profile unexpectedly crossed frozen q95 gate")
+
+    anchor_summary = {}
+    for profile in anchors:
+        passing = [
+            row["d"]
+            for row in profile["points"]
+            if row["q95"]["u_over_d"] <= 1.5
+        ]
+        anchor_summary[str(profile["state_bytes"])] = {
+            "first_reported_d_with_q95_at_most_1_5": (
+                min(passing) if passing else None
+            )
+        }
+
     return {
         "model": "strict-compact-fixed-d-width-certificate-v1",
         "coverage_delta": 1e-6,
@@ -242,6 +272,14 @@ def build_payload() -> dict:
         ),
         "profiles": profiles,
         "low_d_anchors": anchors,
+        "anchor_summary": anchor_summary,
+        "product_signal": {
+            "8_kib_q95_gate": "MISS",
+            "32_kib_q95_gate": "PASS",
+            "32_kib_q99_at_1_5x": "PASS",
+            "64_kib_q95_gate": "PASS",
+            "phase_a_direction": "CONTINUE_NUMERICAL_ROUNDING_AND_RANGE_CLOSURE",
+        },
     }
 
 
