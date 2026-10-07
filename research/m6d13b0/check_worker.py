@@ -34,7 +34,10 @@ class Worker:
 
     def close(self) -> None:
         if self.process.poll() is None:
-            self.request("quit")
+            assert self.process.stdin is not None
+            self.process.stdin.write("quit\n")
+            self.process.stdin.flush()
+            self.process.stdin.close()
         self.process.wait(timeout=5)
 
 
