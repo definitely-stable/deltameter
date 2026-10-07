@@ -515,3 +515,35 @@ Decision:
 - next optimize cumulative retry CPU by decoder-state reuse without changing the D2 byte/RTT protocol.
 
 Canonical evidence: docs/M6-D2-INCREMENTAL-PREFIX-EVIDENCE.md.
+
+
+### D29 — Incremental Berlekamp–Massey reuse is not the decoder bottleneck
+
+M6-D3 freezes the D2 communication protocol and continues Berlekamp–Massey state across guarded prefix growth instead of recomputing it from the first syndrome after every retry.
+
+The incremental state is algebraically equivalent to fresh BM at every audited stage. Locator polynomials, D1 candidates and the exact oracle agree for the complete d<=8 matrix; d=9/10/16 remains rejected.
+
+Hosted phase decomposition shows that this correctness-preserving reuse does not materially reduce end-to-end decoder CPU:
+
+~~~text
+d=2  -0.279%
+d=3  +0.113%
+d=4  +0.519%
+d=5  +0.505%
+d=8  +0.566%
+~~~
+
+At d=8, incremental BM itself is about 74 us, roughly 0.07% of ~106.9 ms candidate decoder CPU. Root factorization plus candidate verification consumes essentially all remaining time.
+
+Fresh even-syndrome reconstruction is only about 1.3–1.4 us at the largest audited stages, so a standalone even-syndrome cache cannot materially change the result and is skipped.
+
+Decision:
+
+- retain incremental BM only as correctness/diagnostic evidence;
+- reject Candidate A as a performance optimization;
+- skip the proposed even-syndrome cache as independently negligible;
+- keep D2 bytes, RTTs, guard semantics and exact-u64 mapping frozen;
+- move the next experiment to safe-Rust root factorization, beginning with characteristic-2 polynomial squaring and monic reduction inside the trace loop;
+- do not add unsafe CLMUL/SIMD, randomized splitting or multiple root-finding changes in the same slice.
+
+Canonical evidence: docs/M6-D3-INCREMENTAL-BM-EVIDENCE.md.

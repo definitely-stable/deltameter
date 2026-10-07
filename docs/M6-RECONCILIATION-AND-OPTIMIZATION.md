@@ -116,7 +116,7 @@ M6-C measured result: **ACCEPT**. Final paired hosted evidence reports about 68�
 | M6-A | [#16](https://github.com/definitely-stable/deltameter/issues/16) | Two-process estimator-assisted decision experiment; GO/NO-GO before public workflow expansion |
 | M6-B | [#17](https://github.com/definitely-stable/deltameter/issues/17) | CRC/decoder improvements evaluated individually |
 | M6-C | [#18](https://github.com/definitely-stable/deltameter/issues/18) | Bit-equivalent sign optimization with setup and steady-state evidence |
-| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1 guarded PinSketch64 reference + D2 nested-prefix LAB-GO; production/public exact reconciliation remains gated |
+| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1 guarded reference + D2 nested-prefix LAB-GO; D3 BM reuse performance NO-GO; production/public exact reconciliation remains gated |
 
 M6-B/C require M6-0 measurement and may proceed before M6-A completion if their independent evidence justifies it. After M6-0, M6-A and the read-only/source-audit portion of M6-D should proceed in parallel. M6-D production adoption still depends on M6-A product evidence, so research can inform the experiment without prematurely committing to an exact backend. One coherent PR per slice. No automatic merge/release is implied.
 
@@ -159,3 +159,16 @@ Hosted evidence reports exact-oracle completion for all d<=8 frozen workloads, g
 The retry tax is CPU/RTT rather than communication. The reference decoder reaches about 89.6 ms cumulative decode CPU at d=8 because failed earlier stages are decoded again.
 
 Verdict: private LAB-GO only. The next justified optimization is decoder-state reuse while freezing D2 bytes/RTTs. See [M6-D2 evidence](M6-D2-INCREMENTAL-PREFIX-EVIDENCE.md) and [Rateless IBLT comparison boundary](M6-D2-RIBLET-COMPARATOR.md).
+
+
+## M6-D3 incremental BM result
+
+D3 keeps the D2 1/2/4/8 guarded-prefix protocol byte-for-byte unchanged and reuses Berlekamp–Massey state across retries.
+
+Correctness is exact against the frozen reference: the incremental syndrome sequence and locator polynomial equal fresh recomputation at every audited stage, and D3 candidates equal D1 candidates and the exact symmetric-difference oracle.
+
+The optimization verdict is **NO-GO**. Hosted decomposition shows approximately -0.3% to +0.6% end-to-end change for d=2..8. At d=8, incremental BM is only about 74 us while root factorization plus candidate verification is about 106.84 ms.
+
+The previously proposed even-syndrome cache is also skipped: measured reconstruction is about 1.3–1.4 us, far below the dominant root-factor cost.
+
+Next permitted candidate: preserve all D2/D3 semantics and optimize only the deterministic trace/root-factor path, beginning with characteristic-2 polynomial squaring and monic reduction. See [M6-D3 evidence](M6-D3-INCREMENTAL-BM-EVIDENCE.md).

@@ -176,11 +176,11 @@ Status: M6-0 complete; merged in PR #20. Parent issue: #14.
 - M6-A / #16: complete in PR #21; estimator-assisted admission is NO-GO as a generic/public workflow on the measured matrix (+29.838% application bytes vs direct exact).
 - M6-B / #17: independently measured CRC/decoder resource candidates.
 - M6-C / #18: complete in PR #22; bit-equivalent Energy sign hashing ACCEPT, with about 68–71% lower update latency and negligible amortized setup after the optimized mask builder.
-- M6-D / #19: Phase-1 audit and D1 are complete; D2 / #26 records LAB-GO for a private guarded incremental syndrome-prefix primitive. Production ExactSmallDelta/public reconciliation remains NO-GO. Next research target is retry-decoder state reuse, not another sizing protocol.
+- M6-D / #19: D1 guarded PinSketch64 and D2 nested-prefix LAB-GO are complete. D3 / #28 proves incremental Berlekamp–Massey reuse is correct but performance NO-GO; root factorization/verification dominates decoder CPU. Production ExactSmallDelta/public reconciliation remains NO-GO. Next research target is isolated characteristic-2 trace/root-factor specialization.
 
 Snapshot plus an unchanged full-list exchange is an overhead control, not a demonstrated benefit. M6 may conclude that a proposed workflow is not worthwhile. No public networking API or strict Parity work is implied.
 
-[First-slice implementation plan](superpowers/plans/2026-10-06-m6-foundation.md). M6-0 measured verdict: [evidence](M6-0-EVIDENCE.md). M6-A measured verdict: [NO-GO evidence](M6-A-EVIDENCE.md). M6-C measured verdict: [ACCEPT evidence](M6-C-EVIDENCE.md). M6-D Phase-1 decision: [exact-lane audit](M6-D-EXACT-LANE-AUDIT.md). D1 measured verdict: [PinSketch64 lab evidence](M6-D1-PINSKETCH64-EVIDENCE.md). D2 measured verdict: [incremental prefix evidence](M6-D2-INCREMENTAL-PREFIX-EVIDENCE.md).
+[First-slice implementation plan](superpowers/plans/2026-10-06-m6-foundation.md). M6-0 measured verdict: [evidence](M6-0-EVIDENCE.md). M6-A measured verdict: [NO-GO evidence](M6-A-EVIDENCE.md). M6-C measured verdict: [ACCEPT evidence](M6-C-EVIDENCE.md). M6-D Phase-1 decision: [exact-lane audit](M6-D-EXACT-LANE-AUDIT.md). D1 measured verdict: [PinSketch64 lab evidence](M6-D1-PINSKETCH64-EVIDENCE.md). D2 measured verdict: [incremental prefix evidence](M6-D2-INCREMENTAL-PREFIX-EVIDENCE.md). D3 measured verdict: [incremental BM NO-GO evidence](M6-D3-INCREMENTAL-BM-EVIDENCE.md).
 
 ## Post-v0 candidates
 
