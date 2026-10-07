@@ -148,6 +148,39 @@ def validate_sync(line: str, mode: str) -> dict[str, int]:
     return fields
 
 
+
+def validate_diagnose(line: str) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "diagnose", "not diagnose record")
+    required = (
+        "exact_d",
+        "a_rebuild",
+        "b_rebuild",
+        "maintained_decoded",
+        "maintained_exact",
+        "maintained_k",
+        "fresh_decoded",
+        "fresh_exact",
+        "fresh_k",
+        "candidate_equal",
+    )
+    for key in required:
+        require(key in fields, f"missing {key}")
+    require(fields["a_rebuild"] == 1, "maintained A differs from fresh rebuild")
+    require(fields["b_rebuild"] == 1, "maintained B differs from fresh rebuild")
+    require(fields["candidate_equal"] == 1, "maintained/fresh decoder diverged")
+    require(fields["maintained_k"] in (1, 2, 4, 8), "maintained diagnostic stage")
+    require(fields["fresh_k"] in (1, 2, 4, 8), "fresh diagnostic stage")
+    require(
+        fields["maintained_decoded"] == fields["fresh_decoded"],
+        "maintained/fresh decode outcome differs",
+    )
+    require(
+        fields["maintained_exact"] == fields["fresh_exact"],
+        "maintained/fresh exactness differs",
+    )
+    return fields
+
 def validate_check(line: str) -> dict[str, int]:
     kind, fields = parse_record(line)
     require(kind == "check", "not check record")
