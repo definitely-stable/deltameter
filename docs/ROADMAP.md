@@ -200,3 +200,14 @@ Only after evidence:
 - Public GitHub-hosted runners may be used normally.
 - CI simplicity matters more than artificial runner-minute minimization.
 - No benchmark number becomes a promise until reproduced on named hardware.
+
+
+## M6-D13-A comparator/system foundation
+
+Issue #52 freezes the next system comparison before measurements: direct exact,
+maintained guarded D11 with exact fallback, and pinned external Rateless IBLT.
+See [protocol](M6-D13A-SYSTEM-PROTOCOL.md) and
+[plan](superpowers/plans/2026-10-07-m6d13a-system-foundation.md).
+D13-A correctness/accounting acceptance is distinct from performance or product
+acceptance. Exact final verification is charged; CPU/peak memory remain unmeasured.
+D12 STOP_ALGEBRAIC_MICRO_OPT and public ExactSmallDelta NO-GO remain in force.

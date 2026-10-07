@@ -1,0 +1,66 @@
+name: M6-D13-A system foundation
+on:
+  pull_request:
+    paths:
+      - 'examples/m6d13a_worker.rs'
+      - 'examples/support/**'
+      - 'research/m6d13a/**'
+      - 'docs/M6-D13A-SYSTEM-PROTOCOL.md'
+      - '.github/workflows/m6d13a.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+          cache: false
+      - name: Unit tests and build private worker
+        run: |
+          python3 -m unittest discover -s research/m6d13a -p 'test_*.py'
+          cargo build --release --example m6d13a_worker
+      - name: Checkout pinned external comparator
+        uses: actions/checkout@v5
+        with:
+          repository: yangl1996/riblt
+          ref: 4afa6bc06cb2237d9ea273a51d97a7e05b3f573b
+          path: external-riblt
+          persist-credentials: false
+      - name: Build comparator using upstream locked dependencies
+        run: |
+          test "$(git -C external-riblt rev-parse HEAD)" = 4afa6bc06cb2237d9ea273a51d97a7e05b3f573b
+          mkdir -p external-riblt/cmd/d13a
+          cp research/m6d13a/riblt_worker.go external-riblt/cmd/d13a/main.go
+          cd external-riblt
+          go mod download
+          go mod verify
+          go test ./...
+          go build -mod=readonly -o ../riblt-worker ./cmd/d13a
+          git diff --exit-code -- go.mod go.sum encoder.go decoder.go mapping.go symbol.go
+      - name: Complete untimed matrix
+        run: |
+          mkdir -p d13a-out
+          git rev-parse HEAD > d13a-out/head.txt
+          git -C external-riblt rev-parse HEAD > d13a-out/riblt-head.txt
+          rustc -Vv > d13a-out/rust.txt
+          go version > d13a-out/go.txt
+          uname -a > d13a-out/platform.txt
+          python3 research/m6d13a/run.py --pin-worker target/release/examples/m6d13a_worker --riblt-worker ./riblt-worker --out d13a-out/report.json
+          python3 research/m6d13a/run.py --validate d13a-out/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6d13a-foundation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: d13a-out/
+          if-no-files-found: warn
