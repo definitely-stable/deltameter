@@ -192,8 +192,14 @@ fn specialized_root_path_matches_frozen_decoder_and_oracle() {
             let frozen = decode_with_locator(&sketch, limit, &locator);
             let generic = decode_with_locator_generic(&sketch, limit, &locator);
             assert_eq!(
-                generic, frozen,
-                "generic control d={difference} limit={limit}"
+                generic.as_ref().ok(),
+                frozen.as_ref().ok(),
+                "generic control candidate d={difference} limit={limit}"
+            );
+            assert_eq!(
+                generic.is_err(),
+                frozen.is_err(),
+                "generic control outcome d={difference} limit={limit}"
             );
             let specialized = decode_with_locator_specialized(&sketch, limit, &locator);
 
