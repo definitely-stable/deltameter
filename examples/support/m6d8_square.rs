@@ -75,10 +75,7 @@ fn factor_linear_roots_candidate(polynomial: &[u64]) -> Result<Vec<u64>, D4Error
     Err(LabError::DecodeFailure.into())
 }
 
-fn trace_polynomial_mod_candidate(
-    coefficient: u64,
-    modulus: &[u64],
-) -> Result<Vec<u64>, D4Error> {
+fn trace_polynomial_mod_candidate(coefficient: u64, modulus: &[u64]) -> Result<Vec<u64>, D4Error> {
     let mut trace = Vec::new();
     let mut term = vec![0, coefficient];
 
@@ -147,8 +144,8 @@ fn poly_square_mod_monic_candidate(
 /// bounded below degree 8 and cannot overflow again.
 #[inline]
 pub fn gf64_square_candidate(value: u64) -> u64 {
-    let spread = u128::from(spread32(value as u32))
-        | (u128::from(spread32((value >> 32) as u32)) << 64);
+    let spread =
+        u128::from(spread32(value as u32)) | (u128::from(spread32((value >> 32) as u32)) << 64);
     let low = spread as u64;
     let high = (spread >> 64) as u64;
 
