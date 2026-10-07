@@ -1,5 +1,5 @@
 {
-  "format": "deltameter.m6d13b.v1",
+  "format": "deltameter.m6d13b.v2",
   "base_main": "8b5421709965e88dfbb74cd61eb742321d738efa",
   "issue": 56,
   "d13a_protocol": "deltameter.m6d13a.v2",
@@ -73,5 +73,10 @@
     "STOP_SYSTEM_PRODUCT",
     "INVALID"
   ],
-  "production_exactsmall_delta": "NO_GO"
+  "production_exactsmall_delta": "NO_GO",
+  "amendment": {
+    "invalid_run": 37650626996,
+    "reason": "B0 ready validator assumed equal A/B cardinality for init_pair and rejected the mandatory odd d=9 boundary before any complete worker artifact",
+    "change": "untimed pair-ready validation uses controller-known left/right lengths; measurement phases, workload, wire model and decision gates unchanged"
+  }
 }
