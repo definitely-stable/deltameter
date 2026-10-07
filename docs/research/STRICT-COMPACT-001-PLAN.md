@@ -124,13 +124,21 @@ directly.
 Primary A2 path:
 1. exact tiny fixed-d oracle from A1;
 2. theorem-derived factor-two de-Poissonization checked against that oracle;
-3. scalable binomial lower-tail evaluation;
-4. auditable/certified numerical upper enclosure of those binomial tails;
-5. monotone inversion in d.
+3. apply the standard binomial KL-Chernoff lower-tail bound
+   `G_d(s) <= exp(-m D(s/m || p_j(d)))`;
+4. obtain the closed theorem-derived fixed-d bound
+   `F_d(s) <= min(1, 2 exp(-m D(s/m || p_j(d))))`;
+5. invert this monotone bound in d and combine levels with the frozen Bonferroni
+   budget.
 
-The Krawtchouk fixed-d law remains useful as an independent validator or later
-tightening route if the factor-two penalty materially hurts width, but it is no
-longer required for the first certified backend.
+This route is preferable because the coverage theorem no longer depends on a
+production-size incomplete-beta/Krawtchouk numerical tail evaluator. Numerical
+implementation still must round conservatively, but the probability bound itself
+is analytic.
+
+Exact binomial tails remain a possible width-tightening optimization after the
+closed-form KL construction is evaluated. The Krawtchouk fixed-d law remains an
+independent validator or further tightening route, not a prerequisite.
 
 ### A3 — frozen width frontier
 
@@ -172,6 +180,30 @@ rigorously.
 A tiny exact Fraction oracle plus binary64 Poissonized regression is committed to
 check this theorem-derived inequality on small grids. The proof claim does not rest
 on the floating-point regression.
+
+## Closed-form strict candidate
+
+Combining monotone de-Poissonization with the standard binomial KL-Chernoff tail
+gives a direct finite-sample fixed-d candidate:
+
+`F_fixed_d(s) <= min(1, 2 exp(-m D(s/m || p_j(d))))`.
+
+This is substantially stronger engineering-wise than the original A2 plan: coverage
+does not require evaluating tiny exact binomial probabilities at production m.
+
+A committed tiny-grid regression checks the resulting bound against the exact
+Fraction fixed-d PMFs. A separate width screen evaluates the strict rule under the
+Poissonized observation model only as a diagnostic.
+
+Preliminary diagnostic result at delta=1e-6, J=64:
+- 2 KiB: clearly too wide;
+- 8 KiB: still outside the desired <=1.5x p95 region;
+- 32 KiB: promising, worst tested p95 about 1.35x;
+- 64 KiB: strong, worst tested p95 about 1.24x.
+
+These width figures are not fixed-d guarantees. They are sufficient to justify
+continuing the strict fixed-d construction and to focus product attention on the
+32/64 KiB profiles rather than 2/8 KiB.
 
 ## Initial opportunity signal
 
