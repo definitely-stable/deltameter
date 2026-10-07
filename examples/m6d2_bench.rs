@@ -2,13 +2,13 @@
 //!
 //! Private research harness only. This is not a network protocol or public API.
 
-#[path = "support/m6d_pinsketch64.rs"]
-mod pinsketch64;
+#[path = "support/m6d2_prefix.rs"]
+mod prefix_lab;
 
 use std::hint::black_box;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-use pinsketch64::PinSketch64Lab;
+use prefix_lab::{PinSketch64Lab, extend_prefix, prefix, prefix_payload_bytes};
 
 const SOURCE_KEYS: usize = 8_192;
 const SAMPLES: usize = 3;
@@ -203,9 +203,9 @@ fn run_fixed(
     let (limit, stored_capacity) = fixed_stage(exact_d);
 
     let merge_started = Instant::now();
-    let mut difference = left_full.prefix(stored_capacity).unwrap();
+    let mut difference = prefix(left_full, stored_capacity).unwrap();
     difference
-        .merge(&right_full.prefix(stored_capacity).unwrap())
+        .merge(&prefix(right_full, stored_capacity).unwrap())
         .unwrap();
     let merge_ns = merge_started.elapsed().as_nanos();
 
@@ -230,7 +230,7 @@ fn run_incremental(
     right_full: &PinSketch64Lab,
     expected: &[u64],
 ) -> ProtocolResult {
-    let mut remote = right_full.prefix(STAGES[0].1).unwrap();
+    let mut remote = prefix(right_full, STAGES[0].1).unwrap();
     let mut payload_bytes = prefix_payload_bytes(STAGES[0].1);
     let mut attempts = 0_usize;
     let mut decode_ns = 0_u128;
@@ -240,15 +240,13 @@ fn run_incremental(
     for (stage_index, (limit, stored_capacity)) in STAGES.into_iter().enumerate() {
         if stage_index != 0 {
             let extend_started = Instant::now();
-            let added = remote
-                .extend_prefix_from(right_full, stored_capacity)
-                .unwrap();
+            let added = extend_prefix(&mut remote, right_full, stored_capacity).unwrap();
             extension_ns += extend_started.elapsed().as_nanos();
             payload_bytes += added * 8;
         }
 
         let merge_started = Instant::now();
-        let mut difference = left_full.prefix(stored_capacity).unwrap();
+        let mut difference = prefix(left_full, stored_capacity).unwrap();
         difference.merge(&remote).unwrap();
         merge_ns += merge_started.elapsed().as_nanos();
 
@@ -312,10 +310,6 @@ fn fixed_stage(d: usize) -> (usize, usize) {
         .into_iter()
         .find(|(limit, _)| d <= *limit)
         .unwrap_or_else(|| *STAGES.last().unwrap())
-}
-
-fn prefix_payload_bytes(stored_capacity: usize) -> usize {
-    1 + stored_capacity * 8
 }
 
 fn naive_resend_bytes(attempts: usize) -> usize {
