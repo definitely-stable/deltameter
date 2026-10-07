@@ -116,7 +116,7 @@ M6-C measured result: **ACCEPT**. Final paired hosted evidence reports about 68�
 | M6-A | [#16](https://github.com/definitely-stable/deltameter/issues/16) | Two-process estimator-assisted decision experiment; GO/NO-GO before public workflow expansion |
 | M6-B | [#17](https://github.com/definitely-stable/deltameter/issues/17) | CRC/decoder improvements evaluated individually |
 | M6-C | [#18](https://github.com/definitely-stable/deltameter/issues/18) | Bit-equivalent sign optimization with setup and steady-state evidence |
-| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1 guarded reference + D2 nested-prefix LAB-GO; D3 BM reuse performance NO-GO; production/public exact reconciliation remains gated |
+| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1/D2 LAB-GO; D3 BM performance NO-GO; D4 trace-square ACCEPT for private research; production/public ExactSmallDelta remains NO-GO |
 
 M6-B/C require M6-0 measurement and may proceed before M6-A completion if their independent evidence justifies it. After M6-0, M6-A and the read-only/source-audit portion of M6-D should proceed in parallel. M6-D production adoption still depends on M6-A product evidence, so research can inform the experiment without prematurely committing to an exact backend. One coherent PR per slice. No automatic merge/release is implied.
 
@@ -172,3 +172,21 @@ The optimization verdict is **NO-GO**. Hosted decomposition shows approximately 
 The previously proposed even-syndrome cache is also skipped: measured reconstruction is about 1.3–1.4 us, far below the dominant root-factor cost.
 
 Next permitted candidate: preserve all D2/D3 semantics and optimize only the deterministic trace/root-factor path, beginning with characteristic-2 polynomial squaring and monic reduction. See [M6-D3 evidence](M6-D3-INCREMENTAL-BM-EVIDENCE.md).
+
+
+## M6-D4 trace-square result
+
+**ACCEPT D4 Candidate A for private research; production/public ExactSmallDelta remains NO-GO.**
+
+Canonical hosted implementation `cf6434d4007825b8fc05ebc9b064ce4860d4442b`, run
+37578505762, preserves frozen D2 bytes/RTTs, mapping and guard verification.
+At d=8 the complete decoder median changes from 48.328 to 6.575 ms; median paired
+reduction is 86.384% across 12 pairs in three processes. d=2..5 improve 88.2–93.6%;
+d=0/zero-only d=1 are noise-scale controls. All required CI and correctness gates
+pass. This is hosted empirical evidence, not an SLA or an over-capacity theorem.
+
+Root+verify remains ~98.7% of the d=8 phase sum. Next, after D4 merge, profile factor
+work by degree and verification separately, then evaluate only deterministic
+safe-Rust quadratic specialization if justified. No field-multiply, trace-reuse,
+CLMUL/SIMD or protocol changes are bundled. Stop if the profile does not justify it.
+See [D4 evidence](M6-D4-TRACE-SQUARE-EVIDENCE.md) for provenance and raw observations.

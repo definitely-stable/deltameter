@@ -1,6 +1,6 @@
 # M6-D4 — Characteristic-2 trace-square specialization
 
-Status: implementation in progress. Issue: #30. Parent: #19 / #14.
+Status: **ACCEPT D4 Candidate A for private research; production/public ExactSmallDelta remains NO-GO.** Issue: #30. Parent: #19 / #14.
 
 ## Goal
 
@@ -135,3 +135,16 @@ No unsafe, SIMD, CLMUL, randomized splitting, quadratic formulas, alternative fi
 - Add direct edge-coefficient, canonical trailing-zero and guard-mutation tests.
 - Require exact-head Rust (including release example build), Research and D4
   hosted runs before the verdict; record source hashes and docs-only provenance.
+
+## Completion
+
+Canonical implementation: `cf6434d4007825b8fc05ebc9b064ce4860d4442b`.
+D4 37578505762, Rust 37578505725 and Research 37578505740 all pass on this head.
+The validation-order regression also restores frozen errors before factorization.
+The final d=8 complete decoder is 48.328 -> 6.575 ms, paired reduction 86.384%;
+root+verify remains ~98.7% of the phase sum. Full provenance, raw observations,
+source hashes, false-success inventory and limitations are in
+[the canonical evidence](../../M6-D4-TRACE-SQUARE-EVIDENCE.md).
+
+Next recommended slice, after merge: one deterministic quadratic-specialization
+candidate with degree/verification profiling first; do not implement it in D4.
