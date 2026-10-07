@@ -203,7 +203,7 @@ fn over_bound_matrix_remains_rejected() {
                 "D1 unexpectedly accepted d={difference} limit={limit}"
             );
             assert!(
-                decoder.decode_current(&sketch, limit).is_err(),
+                decode_with_locator(&sketch, limit, &decoder.connection_polynomial()).is_err(),
                 "D3 unexpectedly accepted d={difference} limit={limit}"
             );
         }
@@ -246,7 +246,7 @@ fn full_width_values_keep_exact_identity_semantics() {
     for (limit, stored_capacity) in STAGES {
         let sketch = difference_prefix(&left_full, &right_full, stored_capacity);
         decoder.extend_to(&sketch, limit).unwrap();
-        if let Ok(candidate) = decoder.decode_current(&sketch, limit) {
+        if let Ok(candidate) = decode_with_locator(&sketch, limit, &decoder.connection_polynomial()) {
             assert_eq!(candidate, expected);
             return;
         }
