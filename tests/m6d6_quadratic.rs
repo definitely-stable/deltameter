@@ -6,9 +6,7 @@ mod quadratic;
 mod trace_square;
 
 use pinsketch64::PinSketch64Lab;
-use quadratic::{
-    decode_with_locator_quadratic, quadratic_roots_monic, solve_artin_schreier,
-};
+use quadratic::{decode_with_locator_quadratic, quadratic_roots_monic, solve_artin_schreier};
 use trace_square::{
     D4Error, decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
     generic_square_mod, poly_square_mod_monic,
@@ -148,7 +146,11 @@ fn artin_schreier_solver_recovers_image_elements() {
         let c = gf64_square(value) ^ value;
         let solved = solve_artin_schreier(c).unwrap();
         assert_eq!(gf64_square(solved) ^ solved, c);
-        assert_eq!(solved & 1, 0, "solver must choose the bit-zero canonical preimage");
+        assert_eq!(
+            solved & 1,
+            0,
+            "solver must choose the bit-zero canonical preimage"
+        );
     }
 }
 
@@ -167,10 +169,7 @@ fn quadratic_solver_recovers_deterministic_distinct_root_pairs() {
         (3, 5),
         (1_u64 << 63, u64::MAX),
         (0x0123_4567_89AB_CDEF, 0xDEAD_BEEF_CAFE_BABE),
-        (
-            splitmix64(0xD600_1001),
-            splitmix64(0xD600_1002),
-        ),
+        (splitmix64(0xD600_1001), splitmix64(0xD600_1002)),
     ];
 
     for (left, right) in pairs {
