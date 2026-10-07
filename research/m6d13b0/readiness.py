@@ -153,3 +153,100 @@ def validate_check(line: str) -> dict[str, int]:
     require(kind == "check", "not check record")
     require(fields == {"equal": 1, "a_rebuild": 1, "b_rebuild": 1}, "state mismatch")
     return fields
+
+
+RIBLT_PHASES = [
+    "encoder_import_ns",
+    "decoder_import_ns",
+    "produce_ns",
+    "decode_ns",
+    "apply_ns",
+    "verification_prepare_ns",
+    "fallback_ns",
+]
+
+
+def validate_riblt_ready(line: str) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "ready", "not RIBLT ready record")
+    for key in (
+        "source_build_ns",
+        "clk_tck",
+        "source_len",
+        "source_a_cap",
+        "source_b_cap",
+        "runtime_alloc_bytes",
+        "runtime_heap_sys_bytes",
+    ):
+        require(key in fields, f"missing {key}")
+    require(fields["clk_tck"] > 0, "invalid CLK_TCK")
+    require(fields["source_a_cap"] >= fields["source_len"], "RIBLT A capacity")
+    require(fields["source_b_cap"] >= fields["source_len"], "RIBLT B capacity")
+    require(fields["runtime_heap_sys_bytes"] >= fields["runtime_alloc_bytes"], "Go heap accounting")
+    validate_memory(fields)
+    return fields
+
+
+def validate_riblt_update(line: str, expected_ok: bool) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "update", "not RIBLT update record")
+    for key in ("ok", "exact_ns", "native_total_ns", "cpu_ticks", "source_len", "source_cap"):
+        require(key in fields, f"missing {key}")
+    require(fields["ok"] == int(expected_ok), "RIBLT update outcome")
+    require(fields["native_total_ns"] == fields["exact_ns"], "RIBLT update phase closure")
+    require(fields["source_cap"] >= fields["source_len"], "RIBLT source capacity")
+    return fields
+
+
+def validate_riblt_sync(line: str, lane: str) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "sync", "not RIBLT sync record")
+    required = [
+        "lane",
+        "exact",
+        "fallback",
+        "cells",
+        "batches",
+        *RIBLT_PHASES,
+        "native_total_ns",
+        "cpu_ticks",
+        "clk_tck",
+        "source_a_len",
+        "source_a_cap",
+        "source_b_len",
+        "source_b_cap",
+        "remote_cap",
+        "local_cap",
+        "runtime_alloc_bytes",
+        "runtime_heap_sys_bytes",
+    ]
+    for key in required:
+        require(key in fields, f"missing {key}")
+    expected_lane = 0 if lane == "pull" else 1
+    require(fields["lane"] == expected_lane, "RIBLT lane")
+    require(fields["exact"] == 1, "RIBLT non-exact result")
+    require(fields["cells"] >= 1, "RIBLT zero-cell success")
+    require(fields["batches"] >= 1, "RIBLT batch count")
+    if lane == "stream":
+        require(fields["batches"] == 1, "stream lower-bound batch model")
+    require(
+        fields["native_total_ns"] == sum(fields[key] for key in RIBLT_PHASES),
+        "RIBLT phase closure",
+    )
+    require(fields["source_a_len"] == fields["source_b_len"], "RIBLT source length mismatch")
+    require(fields["source_a_cap"] >= fields["source_a_len"], "RIBLT A capacity")
+    require(fields["source_b_cap"] >= fields["source_b_len"], "RIBLT B capacity")
+    require(fields["runtime_heap_sys_bytes"] >= fields["runtime_alloc_bytes"], "Go heap accounting")
+    validate_memory(fields)
+    if fields["fallback"] == 0:
+        require(fields["fallback_ns"] == 0, "unexpected RIBLT fallback time")
+    else:
+        require(fields["fallback_ns"] > 0, "missing RIBLT fallback time")
+    return fields
+
+
+def validate_riblt_check(line: str) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "check", "not RIBLT check record")
+    require(fields == {"equal": 1}, "RIBLT state mismatch")
+    return fields
