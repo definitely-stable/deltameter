@@ -328,14 +328,14 @@ fn gf64_pow(mut base: u64, mut exponent: u64) -> u64 {
         }
         exponent >>= 1;
         if exponent != 0 {
-            base = gf64_square_scalar(base);
+            base = gf64_square_scalar_reference(base);
         }
     }
     result
 }
 
 #[inline]
-fn gf64_square_scalar(value: u64) -> u64 {
+pub fn gf64_square_scalar_reference(value: u64) -> u64 {
     gf64_mul(value, value)
 }
 
