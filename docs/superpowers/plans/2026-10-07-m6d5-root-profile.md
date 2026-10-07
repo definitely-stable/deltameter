@@ -1,6 +1,6 @@
 # M6-D5 — Root-factor degree and verification profiling gate
 
-Status: implementation in progress. Issue: #32. Parent: #19 / #14.
+Status: profiling/evidence complete in PR #33; **quadratic specialization GO-to-experiment**. Issue: #32. Parent: #19 / #14.
 
 ## Goal
 
@@ -110,3 +110,25 @@ If neither is material enough, stop decoder micro-optimization and move to maint
 ## Boundaries
 
 Profile-only slice. No algorithmic optimization in D5. Safe stable Rust only, no unsafe, SIMD, CLMUL, FFI, new dependency, public API, snapshot or Coverage change. GitHub-hosted runners only.
+
+
+## Completion record
+
+Canonical measured head: `0c86781079f6b88979b3e7ae0730cabe6db12cdd`.
+
+Hosted gates:
+
+- M6-D5 #8 / `37581499080`;
+- Rust #226 / `37581499072`;
+- Research #239 / `37581499073`.
+
+Canonical evidence: [M6-D5 root profile](../../M6-D5-ROOT-PROFILE-EVIDENCE.md).
+
+Decision:
+
+- degree-two self work is material for d=2/3/4/8;
+- d=8 degree-two share is ~27.5% of accepted D4 control latency;
+- verification is ~0.055% at d=8 and is not a justified optimization target;
+- higher-degree work remains the majority at d=8;
+- next slice: one isolated deterministic safe-Rust quadratic solver candidate;
+- D5 itself contains no root algorithm change.
