@@ -156,9 +156,10 @@ fn artin_schreier_solver_recovers_image_elements() {
 
 #[test]
 fn artin_schreier_solver_rejects_trace_one_rhs() {
-    let inconsistent = (1_u64..=u16::MAX as u64)
+    let inconsistent = (0..64)
+        .map(|bit| 1_u64 << bit)
         .find(|&candidate| field_trace(candidate) == 1)
-        .expect("trace-one field element");
+        .expect("trace-one basis element");
     assert!(solve_artin_schreier(inconsistent).is_err());
 }
 
