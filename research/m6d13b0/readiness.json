@@ -22,7 +22,8 @@
         512,
         1024
       ],
-      "shape": "balanced"
+      "shape": "balanced",
+      "natural_exhaustion_d": 2048
     }
   ],
   "rateless_lanes": [
@@ -46,5 +47,6 @@
     "vmrss_bytes",
     "vmhwm_bytes"
   ],
-  "performance_decision": "NOT_MEASURED"
+  "performance_decision": "NOT_MEASURED",
+  "chain_n": 1024
 }
