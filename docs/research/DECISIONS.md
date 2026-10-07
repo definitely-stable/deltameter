@@ -891,7 +891,7 @@ Decision:
 Canonical evidence: docs/M6-D11-FIXED-REDUCTION-EVIDENCE.md.
 
 
-### D38 — B2 exact Energy shape preflight is accepted as resource hardening
+### D39 — B2 exact Energy shape preflight is accepted as resource hardening
 
 After B1's table-driven CRC32C was accepted and merged, M6-B2 moved full Energy
 backend-shape validation ahead of row allocation.
@@ -920,3 +920,50 @@ Decision:
 - keep further CRC slicing/fusion and sign-mask fusion deferred.
 
 Canonical evidence: docs/M6-B2-STRUCTURAL-VALIDATION-EVIDENCE.md.
+
+
+### D40 — Replicated post-D11 residuals stop algebraic specialization
+
+M6-D12 profiles the complete accepted D11 staged decoder rather than assuming that
+the prior trace bottleneck survived a ~50% end-to-end reduction.
+
+The original selector required a phase to account for at least 25% of accepted D11
+d=8 latency in every one of five deterministic corpora. Exact-head reruns placed the
+D6-derived GCD share on both sides of that threshold, so neither outcome was selected
+post hoc.
+
+Before collecting more data, D12 froze a replication closure: five independent
+GitHub-hosted workers, three profiler processes per worker, four balanced samples per
+process, and paired phase/control shares. The 25% threshold itself did not move.
+
+All workers pass logical/correctness gates and the +5% profiler-overhead ceiling.
+
+Across the 25 worker/corpus medians:
+
+~~~text
+prefix        0.017- 0.092%
+locator       3.422-17.951%
+validation    0.003- 0.017%
+plan build    0.363- 2.716%
+trace        18.034-36.786%
+GCD          23.574-74.713%
+division      1.120- 8.434%
+quadratic     1.367- 9.453%
+verification  0.161- 1.113%
+~~~
+
+The D6-derived GCD worker medians are 23.657%, 24.750%, 24.575%, 23.574% and
+23.583%. Therefore GCD is not a replication-stable common-material phase.
+
+Decision:
+
+- stop algebraic decoder micro-optimization after accepted D11;
+- do not start GCD, trace, cubic/quartic, generic field-multiply, D11 table-layout,
+  SIMD/CLMUL or factor-cache work without new system-level evidence;
+- move M6-D to a maintained-state system comparison of accepted private D11
+  PinSketch, direct exact reconciliation and a rateless-style comparator;
+- include maintained state cost, memory, bytes, retries/RTTs, decode CPU and final
+  verification in that comparison;
+- production/public ExactSmallDelta remains NO-GO.
+
+Canonical evidence: docs/M6-D12-POST-D11-PROFILE-EVIDENCE.md.

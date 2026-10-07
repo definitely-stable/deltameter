@@ -487,3 +487,42 @@ security-vulnerability fix or a valid-input speedup.**
 
 Next M6-B candidate is one isolated B3 direct Energy decoded-state construction
 experiment. See [B2 evidence](M6-B2-STRUCTURAL-VALIDATION-EVIDENCE.md).
+
+
+## M6-D12 post-D11 whole-decode residual result
+
+D12 re-profiles the complete accepted D11 staged decode after the fixed-constant
+trace-reduction optimization.
+
+Single-run exact-head summaries exposed a boundary-sensitive D6-derived GCD share
+around the frozen 25% common-material threshold. D12 therefore froze a replication
+closure before collecting more data: five independent GitHub-hosted workers, three
+profiler processes per worker and four paired samples per process.
+
+The original 25% threshold is unchanged. A phase must reach it for every corpus on
+every worker to authorize more algebraic work.
+
+All five workers pass correctness and the +5% profiler-overhead ceiling. Across the
+25 worker/corpus medians:
+
+~~~text
+prefix        0.017- 0.092%
+locator       3.422-17.951%
+validation    0.003- 0.017%
+plan build    0.363- 2.716%
+trace        18.034-36.786%
+GCD          23.574-74.713%
+division      1.120- 8.434%
+quadratic     1.367- 9.453%
+verification  0.161- 1.113%
+~~~
+
+The D6-derived GCD worker medians are 23.657%, 24.750%, 24.575%, 23.574% and
+23.583%. None clears the original threshold.
+
+Verdict: **STOP algebraic decoder micro-optimization.** The next M6-D action is a
+maintained-state system comparison of accepted private D11 PinSketch, direct exact
+reconciliation and a rateless-style comparator. Production/public ExactSmallDelta
+remains NO-GO.
+
+See [M6-D12 evidence](M6-D12-POST-D11-PROFILE-EVIDENCE.md).
