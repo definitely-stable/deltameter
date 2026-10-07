@@ -13,6 +13,13 @@ from parity_full_exact_small import build_payload as build_full_exact_payload
 from parity_level_moments import build_grid as build_parity_grid
 from parity_poissonized import build_payload as build_poissonized_payload
 from parity_truncation_budget import build_payload as build_truncation_payload
+from strict_compact_level_count import build_payload as build_strict_compact_payload
+from strict_compact_depoisson import build_payload as build_strict_depoisson_payload
+from strict_compact_chernoff import build_payload as build_strict_chernoff_payload
+from strict_compact_multilevel_exact import build_payload as build_strict_multilevel_payload
+from strict_compact_width_certificate import build_payload as build_strict_width_certificate_payload
+from strict_compact_poisson_screen import build_payload as build_strict_screen_payload
+from strict_compact_poisson_width import build_payload as build_strict_width_payload
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -35,6 +42,13 @@ def main() -> None:
     parity_full_exact_path = args.out / "parity-full-exact-small.json"
     parity_poissonized_path = args.out / "parity-poissonized.json"
     parity_truncation_path = args.out / "parity-truncation-budget.json"
+    strict_compact_path = args.out / "strict-compact-level-count.json"
+    strict_depoisson_path = args.out / "strict-compact-depoisson.json"
+    strict_chernoff_path = args.out / "strict-compact-chernoff.json"
+    strict_multilevel_path = args.out / "strict-compact-multilevel-exact.json"
+    strict_width_certificate_path = args.out / "strict-compact-width-certificate.json"
+    strict_screen_path = args.out / "strict-compact-poisson-screen.json"
+    strict_width_path = args.out / "strict-compact-poisson-width.json"
 
     write_json(energy_path, build_energy_payload())
     write_json(parity_path, build_parity_grid())
@@ -42,6 +56,13 @@ def main() -> None:
     write_json(parity_full_exact_path, build_full_exact_payload())
     write_json(parity_poissonized_path, build_poissonized_payload())
     write_json(parity_truncation_path, build_truncation_payload())
+    write_json(strict_compact_path, build_strict_compact_payload())
+    write_json(strict_depoisson_path, build_strict_depoisson_payload())
+    write_json(strict_chernoff_path, build_strict_chernoff_payload())
+    write_json(strict_multilevel_path, build_strict_multilevel_payload())
+    write_json(strict_width_certificate_path, build_strict_width_certificate_payload())
+    write_json(strict_screen_path, build_strict_screen_payload())
+    write_json(strict_width_path, build_strict_width_payload())
 
     print(f"wrote {energy_path}")
     print(f"wrote {parity_path}")
@@ -49,6 +70,13 @@ def main() -> None:
     print(f"wrote {parity_full_exact_path}")
     print(f"wrote {parity_poissonized_path}")
     print(f"wrote {parity_truncation_path}")
+    print(f"wrote {strict_compact_path}")
+    print(f"wrote {strict_depoisson_path}")
+    print(f"wrote {strict_chernoff_path}")
+    print(f"wrote {strict_multilevel_path}")
+    print(f"wrote {strict_width_certificate_path}")
+    print(f"wrote {strict_screen_path}")
+    print(f"wrote {strict_width_path}")
 
 
 if __name__ == "__main__":
