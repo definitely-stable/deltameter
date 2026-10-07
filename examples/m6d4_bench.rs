@@ -13,12 +13,12 @@ use std::time::Instant;
 
 use pinsketch64::PinSketch64Lab;
 use trace_square::{
-    decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
+    D4Error, decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
     generic_square_mod, poly_square_mod_monic,
 };
 
 const SOURCE_KEYS: usize = 8_192;
-const SAMPLES: usize = 3;
+const SAMPLES: usize = 4;
 const SQUARE_REPEATS: u64 = 128;
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
 
@@ -135,9 +135,15 @@ fn main() {
         let expected = symmetric_difference(&left, &right);
         assert_eq!(expected.len(), scenario.d);
 
+        let left_full = PinSketch64Lab::from_sorted_unique(9, &left).unwrap();
+        let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
+        assert_eq!(right.len(), SOURCE_KEYS + scenario.d % 2);
+        validate_control(&left_full, &right_full, &expected);
+
+        // Untimed warmup of both complete paths, then balanced AB/BA pairs.
+        run_total(&left_full, &right_full, &expected, true);
+        run_total(&left_full, &right_full, &expected, false);
         for sample in 0..SAMPLES {
-            let left_full = PinSketch64Lab::from_sorted_unique(9, &left).unwrap();
-            let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
             let metrics = run_decode(&left_full, &right_full, &expected, sample % 2 == 0);
 
             println!(
@@ -155,8 +161,94 @@ fn main() {
                 metrics.locator_ns,
                 u8::from(metrics.outcome == Outcome::FalseSuccess)
             );
+
+            let (generic_total, specialized_total) = if sample % 2 == 0 {
+                (
+                    run_total(&left_full, &right_full, &expected, true),
+                    run_total(&left_full, &right_full, &expected, false),
+                )
+            } else {
+                let specialized = run_total(&left_full, &right_full, &expected, false);
+                let generic = run_total(&left_full, &right_full, &expected, true);
+                (generic, specialized)
+            };
+            println!(
+                "record,total,{},{},0,{},{},{},{},{},{},{},{},0,0",
+                scenario.name,
+                scenario.d,
+                metrics.outcome.as_str(),
+                1,
+                metrics.final_k,
+                metrics.attempts,
+                metrics.attempts,
+                metrics.payload_bytes,
+                generic_total,
+                specialized_total,
+            );
         }
     }
+}
+
+// Independent frozen decoder validation is isolated from every timed region.
+// This is an actual control on the measured corpus, not a dead-code keepalive.
+fn validate_control(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64]) {
+    for (limit, capacity) in STAGES {
+        let sketch = difference_prefix(left, right, capacity);
+        let frozen = sketch.decode_candidate_with_limit(limit);
+        let locator = fresh_locator(&sketch, limit).unwrap();
+        let generic = decode_with_locator_generic(&sketch, limit, &locator);
+        let specialized = decode_with_locator_specialized(&sketch, limit, &locator);
+        assert_eq!(generic, frozen.clone().map_err(D4Error::from));
+        assert_eq!(specialized, frozen.clone().map_err(D4Error::from));
+        if expected.len() <= limit {
+            assert_eq!(frozen.unwrap(), expected);
+        } else {
+            assert!(frozen.is_err());
+        }
+    }
+}
+
+// Separately measured cumulative decoder: prefix extraction/merge, fresh
+// locator/BM, root factorization, guard verification and retry loop. Source
+// construction, exact oracle comparison and network transport are excluded.
+fn run_total(
+    left: &PinSketch64Lab,
+    right: &PinSketch64Lab,
+    expected: &[u64],
+    generic: bool,
+) -> u128 {
+    let started = Instant::now();
+    let mut candidate = None;
+    let mut final_k = 8;
+    for (limit, capacity) in STAGES {
+        let sketch = difference_prefix(black_box(left), black_box(right), capacity);
+        let locator = fresh_locator(black_box(&sketch), limit).unwrap();
+        let result = if generic {
+            decode_with_locator_generic(black_box(&sketch), limit, black_box(&locator))
+        } else {
+            decode_with_locator_specialized(black_box(&sketch), limit, black_box(&locator))
+        };
+        if let Ok(roots) = result {
+            candidate = Some(roots);
+            final_k = limit;
+            break;
+        }
+    }
+    black_box(&candidate);
+    let elapsed = started.elapsed().as_nanos();
+    let outcome = classify(candidate.as_ref(), expected, expected.len() <= final_k);
+    let expected_outcome = if expected.len() <= 8 {
+        Outcome::Exact
+    } else {
+        Outcome::Rejected
+    };
+    assert_eq!(outcome, expected_outcome);
+    let expected_k = STAGES
+        .iter()
+        .find(|&&(limit, _)| expected.len() <= limit)
+        .map_or(8, |&(limit, _)| limit);
+    assert_eq!(final_k, expected_k);
+    elapsed
 }
 
 fn run_square_micro() {

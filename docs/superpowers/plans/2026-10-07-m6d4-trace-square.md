@@ -117,3 +117,21 @@ NO-GO is valid if compiler/runtime effects erase the algebraic saving.
 ## Exclusions
 
 No unsafe, SIMD, CLMUL, randomized splitting, quadratic formulas, alternative field representation, public API, snapshot-v1, Coverage change, FFI or runtime dependency in this candidate.
+
+## Review corrections and implementation gates
+
+- Preserve D1/D2/D3 files byte-for-byte. Use the existing D1 decode seam as an
+  independent untimed control on every benchmark scenario/stage, isolated in
+  `validate_control`; no duplicated sketch representation or lint suppression.
+- Four balanced AB/BA samples per process, three complete process runs; both
+  decoder paths warmed before measurements. Fixed D4 corpus seeds are shared
+  between arms, but differ from D2/D3 seeds: cross-slice timings are not paired.
+- Validate exact metadata and complete per-run matrices before printing PASS.
+  Reject invalid counts/timings and test deliberate corruptions in hosted CI.
+- Report medians of paired phase sums, paired reductions and per-run median
+  ranges. Separately time complete cumulative decodes including prefix/merge,
+  fresh locator, root factorization, guard verification and retries; source
+  construction and network transport are outside this maintained-state scope.
+- Add direct edge-coefficient, canonical trailing-zero and guard-mutation tests.
+- Require exact-head Rust (including release example build), Research and D4
+  hosted runs before the verdict; record source hashes and docs-only provenance.

@@ -295,3 +295,43 @@ fn specialized_root_path_preserves_zero_and_full_width_values() {
 
     panic!("specialized full-width case did not decode");
 }
+
+#[test]
+fn square_direct_edge_coefficients_and_trailing_zeros_are_canonical() {
+    let corpus = [0, 1, 2, 1_u64 << 63, u64::MAX];
+    for degree in 1..=8 {
+        for value in corpus {
+            let mut modulus = vec![value; degree];
+            modulus.push(1);
+            for coefficient in corpus {
+                let mut polynomial = vec![coefficient; degree];
+                polynomial.extend_from_slice(&[0, 0]);
+                let result = poly_square_mod_monic(&polynomial, &modulus).unwrap();
+                assert_eq!(result, generic_square_mod(&polynomial, &modulus).unwrap());
+                assert!(result.len() <= degree);
+                assert_ne!(result.last(), Some(&0));
+            }
+        }
+    }
+    assert_eq!(poly_square_mod_monic(&[1, 2], &[1]).unwrap(), vec![]);
+    for modulus in [vec![], vec![0], vec![1, 0, 2]] {
+        assert_eq!(
+            poly_square_mod_monic(&[], &modulus).unwrap_err(),
+            D4Error::InvalidMonicModulus
+        );
+    }
+}
+
+#[test]
+fn guard_mutation_cannot_bypass_candidate_verification() {
+    let sketch = PinSketch64Lab::from_sorted_unique(3, &[1, u64::MAX]).unwrap();
+    let locator = fresh_locator(&sketch, 2).unwrap();
+    let mut bytes = sketch.encode();
+    // Change only the extra guard syndrome; the locator input is unchanged.
+    bytes[32] ^= 1;
+    let damaged = PinSketch64Lab::decode(&bytes).unwrap();
+    assert_eq!(fresh_locator(&damaged, 2).unwrap(), locator);
+    assert!(damaged.decode_candidate_with_limit(2).is_err());
+    assert!(decode_with_locator_generic(&damaged, 2, &locator).is_err());
+    assert!(decode_with_locator_specialized(&damaged, 2, &locator).is_err());
+}
