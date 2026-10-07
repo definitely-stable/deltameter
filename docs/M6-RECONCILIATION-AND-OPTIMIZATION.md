@@ -327,3 +327,35 @@ micro-optimization. If no common residual phase remains materially large, stop a
 move to maintained-state system comparison.
 
 See [M6-D8 evidence](M6-D8-GF64-SQUARE-EVIDENCE.md).
+
+
+## M6-D9 post-D8 residual profile result
+
+D9 is profiling-only over the accepted D8 decoder.
+
+The profiler preserves D8 semantics and adds only D7-style non-overlapping local
+phase timing plus count-only diagnostics inside trace square/mod. Median d=8
+profile-wall overhead is 0.5-1.0% across the five corpora, below the predeclared
+5% validity ceiling.
+
+For d=8, share of accepted D8 control latency:
+
+~~~text
+trace         median 62.2%, range 57.5-80.6%
+GCD           median 35.5%, range  8.1-39.3%
+division      median  0.8%, range  0.6- 2.8%
+quadratic     median  0.8%, range  0.6- 3.0%
+verification  median  0.09%, range 0.08-0.36%
+~~~
+
+The predeclared common-material gate requires >=25% in every corpus. Only trace
+passes.
+
+Count-only diagnostics show roughly 2.5-3.1 generic polynomial-reduction
+multiplications per coefficient-square operation in the d=8 trace paths. Counts do
+not establish timing dominance and do not authorize a multiplication optimization.
+
+Verdict: **GO only to a narrower trace-internal measurement slice.** Do not select
+another algebraic candidate yet.
+
+See [M6-D9 evidence](M6-D9-POST-D8-PROFILE-EVIDENCE.md).
