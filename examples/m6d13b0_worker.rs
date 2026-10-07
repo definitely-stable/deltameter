@@ -271,7 +271,7 @@ fn sync_d11(state: &mut State) -> String {
     let mut fallback_apply_exact_ns = 0_u128;
     let mut fallback_apply_sketch_ns = 0_u128;
     let mut fallback = 0;
-    let candidate_capacity = roots.as_ref().map_or(0, Vec::capacity);
+    let candidate_capacity = roots.as_ref().map_or(0, |value| value.capacity());
 
     if let Some(candidate_roots) = roots {
         let exact_started = Instant::now();
