@@ -488,6 +488,32 @@ security-vulnerability fix or a valid-input speedup.**
 Next M6-B candidate is one isolated B3 direct Energy decoded-state construction
 experiment. See [B2 evidence](M6-B2-STRUCTURAL-VALIDATION-EVIDENCE.md).
 
+## M6-B3 direct decoded-state result
+
+B3 tests the direct one-pass Energy decode candidate selected by the post-research
+plan. It keeps B1/B2 behavior fixed and changes only decoded Energy state
+construction.
+
+The candidate removes explicit counter zero-fill and the later full counter rescan
+from source code, but the hosted end-to-end result is negative:
+
+~~~text
+Energy default decode  +2.452% .. +2.682%
+Energy small decode    +2.912% .. +3.237%
+~~~
+
+All six Energy decode lanes regress. Unchanged Parity decode guardrails remain near
+neutral (-0.149% to +0.545%), so this is not an isolated noisy sample that justifies
+the plan's rerun exception.
+
+Verdict: **NO-GO.** Candidate code is not retained. The result also demonstrates why
+the audit's 736 KiB logical-touch model is not a latency prediction.
+
+M6-B is complete: B1 ACCEPT, B2 ACCEPT, B3 NO-GO. The optional residual CRC selector
+is skipped for this milestone because no remaining codec bottleneck has been
+demonstrated strongly enough to justify another candidate. See
+[M6-B3 evidence](M6-B3-DIRECT-DECODE-EVIDENCE.md).
+
 
 ## M6-D12 post-D11 whole-decode residual result
 
