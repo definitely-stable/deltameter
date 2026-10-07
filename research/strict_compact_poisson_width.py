@@ -163,9 +163,17 @@ def upper_bound_survival(
     rows: int,
     stored_levels: int,
     delta: float,
+    cdf_multiplier: float,
 ) -> float:
-    """Poissonized P[U > candidate_u] for U=min_j U_j(S_j)."""
-    alpha = delta / stored_levels
+    """Poissonized P[U > candidate_u] for U=min_j U_j(S_j).
+
+    cdf_multiplier=1 is the pure Poissonized inversion.
+    cdf_multiplier=2 models the strict fixed-d de-Poissonized rule
+    F_fixed <= 2 * F_poissonized.
+    """
+    if cdf_multiplier < 1.0:
+        raise ValueError("cdf_multiplier must be >= 1")
+    alpha = delta / (stored_levels * cdf_multiplier)
     log_probability = 0.0
 
     for level in range(1, stored_levels + 1):
@@ -188,6 +196,7 @@ def upper_bound_quantile_ratio(
     stored_levels: int,
     delta: float,
     quantile: float,
+    cdf_multiplier: float,
 ) -> float:
     if true_lambda <= 0.0:
         raise ValueError("true lambda must be positive")
@@ -201,7 +210,7 @@ def upper_bound_quantile_ratio(
     for _ in range(128):
         if (
             upper_bound_survival(
-                high, true_lambda, rows, stored_levels, delta
+                high, true_lambda, rows, stored_levels, delta, cdf_multiplier
             )
             <= target_survival
         ):
@@ -213,7 +222,7 @@ def upper_bound_quantile_ratio(
     for _ in range(52):
         middle = (low + high) / 2.0
         survival = upper_bound_survival(
-            middle, true_lambda, rows, stored_levels, delta
+            middle, true_lambda, rows, stored_levels, delta, cdf_multiplier
         )
         if survival > target_survival:
             low = middle
@@ -236,6 +245,11 @@ def build_payload() -> dict:
     quantiles = [0.50, 0.95, 0.99]
 
     rows = []
+    rules = [
+        ("poissonized", 1.0),
+        ("fixed_d_depoissonized", 2.0),
+    ]
+
     for m, state_bytes in profiles:
         for ratio in lambda_over_m:
             lam = m * ratio
@@ -244,33 +258,60 @@ def build_payload() -> dict:
                 "state_bytes": state_bytes,
                 "lambda_over_m": ratio,
             }
-            for quantile in quantiles:
-                value = upper_bound_quantile_ratio(
-                    lam, m, levels, delta, quantile
-                )
-                if not math.isfinite(value) or value < 1.0:
-                    raise AssertionError("invalid width result")
-                result[f"q{int(quantile * 100):02d}_u_over_lambda"] = value
+            for rule_name, multiplier in rules:
+                for quantile in quantiles:
+                    value = upper_bound_quantile_ratio(
+                        lam, m, levels, delta, quantile, multiplier
+                    )
+                    if not math.isfinite(value) or value < 1.0:
+                        raise AssertionError("invalid width result")
+                    result[
+                        f"{rule_name}_q{int(quantile * 100):02d}_u_over_lambda"
+                    ] = value
             rows.append(result)
 
     by_state = {}
     for _m, state_bytes in profiles:
         selected = [row for row in rows if row["state_bytes"] == state_bytes]
         by_state[str(state_bytes)] = {
-            "max_q50": max(row["q50_u_over_lambda"] for row in selected),
-            "max_q95": max(row["q95_u_over_lambda"] for row in selected),
-            "max_q99": max(row["q99_u_over_lambda"] for row in selected),
+            "poissonized": {
+                "max_q50": max(
+                    row["poissonized_q50_u_over_lambda"] for row in selected
+                ),
+                "max_q95": max(
+                    row["poissonized_q95_u_over_lambda"] for row in selected
+                ),
+                "max_q99": max(
+                    row["poissonized_q99_u_over_lambda"] for row in selected
+                ),
+            },
+            "fixed_d_depoissonized_rule_under_poissonized_observations": {
+                "max_q50": max(
+                    row["fixed_d_depoissonized_q50_u_over_lambda"]
+                    for row in selected
+                ),
+                "max_q95": max(
+                    row["fixed_d_depoissonized_q95_u_over_lambda"]
+                    for row in selected
+                ),
+                "max_q99": max(
+                    row["fixed_d_depoissonized_q99_u_over_lambda"]
+                    for row in selected
+                ),
+            },
         }
 
     return {
-        "model": "strict-compact-poissonized-bonferroni-width-v1",
+        "model": "strict-compact-poissonized-bonferroni-width-v2",
         "scope": (
-            "diagnostic Poissonized independent-level model with binary64 "
-            "binomial tails; not fixed-d and not a proof boundary"
+            "diagnostic Poissonized observation model with binary64 binomial tails; "
+            "includes the factor-two tail-budget penalty used by the strict fixed-d "
+            "de-Poissonized rule, but width quantiles themselves are not fixed-d proof"
         ),
         "stored_levels": levels,
         "delta": delta,
-        "alpha_per_level": delta / levels,
+        "poissonized_alpha_per_level": delta / levels,
+        "fixed_d_depoissonized_alpha_per_level": delta / (2 * levels),
         "rows": rows,
         "worst_reported_width_by_state": by_state,
     }
