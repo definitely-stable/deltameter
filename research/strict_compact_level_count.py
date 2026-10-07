@@ -109,6 +109,83 @@ def stochastically_nondecreasing(
     return True
 
 
+
+def cdf(pmf: list[Fraction]) -> list[Fraction]:
+    total = Fraction(0)
+    out: list[Fraction] = []
+    for probability in pmf:
+        total += probability
+        out.append(total)
+    if total != 1:
+        raise AssertionError("CDF mass")
+    return out
+
+
+def bounded_upper_inversion(
+    rows: int,
+    level: int,
+    d_max: int,
+    alpha: Fraction,
+) -> list[int]:
+    """Exact bounded-grid version of U_j(s).
+
+    Returns the largest d in 0..d_max with F_d(s) > alpha. If the crossing lies
+    above d_max, the returned value is d_max, which is conservative for coverage
+    checks restricted to true d<=d_max.
+    """
+    if not (Fraction(0) < alpha < Fraction(1)):
+        raise ValueError("alpha")
+
+    cdfs = [cdf(distribution(rows, level, d)) for d in range(d_max + 1)]
+    bounds: list[int] = []
+    for observed in range(rows + 1):
+        accepted = [
+            d
+            for d in range(d_max + 1)
+            if cdfs[d][observed] > alpha
+        ]
+        bounds.append(max(accepted) if accepted else 0)
+    return bounds
+
+
+def exact_inversion_coverage(
+    rows: int,
+    level: int,
+    d_max: int,
+    alpha: Fraction,
+) -> dict:
+    bounds = bounded_upper_inversion(rows, level, d_max, alpha)
+    worst_failure = Fraction(0)
+    worst_d = 0
+
+    for true_d in range(d_max + 1):
+        pmf = distribution(rows, level, true_d)
+        failure = sum(
+            (
+                probability
+                for observed, probability in enumerate(pmf)
+                if bounds[observed] < true_d
+            ),
+            Fraction(0),
+        )
+        if failure > worst_failure:
+            worst_failure = failure
+            worst_d = true_d
+        if failure > alpha:
+            raise AssertionError(
+                f"one-sided coverage failed: d={true_d} failure={failure} alpha={alpha}"
+            )
+
+    return {
+        "rows": rows,
+        "level": level,
+        "d_max": d_max,
+        "alpha": str(alpha),
+        "worst_failure": str(worst_failure),
+        "worst_d": worst_d,
+        "coverage_holds_on_bounded_grid": True,
+    }
+
 def checked_grid(rows: int, level: int, d_max: int) -> dict:
     previous = distribution(rows, level, 0)
     monotone = True
@@ -153,10 +230,17 @@ def build_payload() -> dict:
     ):
         raise AssertionError("STRICT-COMPACT exact reference failed")
 
+    inversion_cases = [
+        exact_inversion_coverage(rows, level, 24, Fraction(1, 100))
+        for rows in (2, 4, 8)
+        for level in (1, 2, 3)
+    ]
+
     return {
         "model": "strict-compact-level-count-fixed-d-exact-v1",
         "scope": "tiny exact Fraction oracle; not production-size inference",
         "cases": cases,
+        "inversion_cases": inversion_cases,
     }
 
 
