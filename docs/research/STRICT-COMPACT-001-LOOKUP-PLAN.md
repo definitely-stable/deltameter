@@ -63,12 +63,14 @@ This table is static code/data, not per-meter state.
 
 research/strict_compact_lookup_q32.py:
 
-- Python standard-library Decimal only;
-- >=100 decimal digits working precision;
-- monotone bisection in p;
-- ROUND_CEILING Q32 conversion;
+- Python standard library only;
+- binary64 bisection is used only to propose a nearby Q32 integer;
+- 60-digit Decimal arithmetic independently checks the emitted inequality;
+- integer repair moves upward until the candidate is conservative, then downward
+  to the minimal Q32 value that still passes the high-precision check;
 - fail if finite thresholds are not monotone;
-- fail if reconstructed Q32 threshold is below the high-precision crossing;
+- fail if any emitted Q32 value is not on the conservative side according to the
+  high-precision evaluator;
 - emit one-u64-per-line table plus a JSON provenance summary and SHA-256.
 
 This is a prototype numerical generator, not yet the final proof certificate.
