@@ -125,11 +125,25 @@ def run_rust_chain(worker: Worker, mode: str, updates: int, sessions: int):
                 raise ValueError("direct fallback")
         elif updates <= 8:
             if sync["fallback"] != 0:
-                raise ValueError(
-                    "in-capacity D11 fallback "
-                    f"updates={updates} sessions={sessions} session={session} "
-                    f"diagnose={diagnose}"
-                )
+                # A false candidate at an earlier stage k<d is an over-capacity
+                # guard event, not an in-capacity decoder failure. Protocol v2
+                # verifies it independently and charges an exact fallback.
+                # Any other fallback for d<=8 remains a hard readiness failure.
+                if not (
+                    sync["false_candidate"] == 1
+                    and diagnose["maintained_decoded"] == 1
+                    and diagnose["maintained_exact"] == 0
+                    and diagnose["fresh_decoded"] == 1
+                    and diagnose["fresh_exact"] == 0
+                    and diagnose["maintained_k"] < updates
+                ):
+                    raise ValueError(
+                        "unexplained in-capacity D11 fallback "
+                        f"updates={updates} sessions={sessions} session={session} "
+                        f"sync={sync} diagnose={diagnose}"
+                    )
+            elif sync["false_candidate"] != 0:
+                raise ValueError("D11 false-candidate flag without fallback")
         else:
             if sync["fallback"] != 1:
                 raise ValueError("over-capacity D11 did not fall back")
