@@ -196,14 +196,6 @@ fn sync_direct(state: &mut State) -> String {
 
     assert_eq!(state.a.keys, state.b.keys);
     let native_total_ns = serialize_ns + apply_ns;
-    let native_total_ns = prefix_ns
-        + decode_ns
-        + apply_exact_ns
-        + apply_sketch_ns
-        + verification_prepare_ns
-        + fallback_serialize_ns
-        + fallback_apply_exact_ns
-        + fallback_apply_sketch_ns;
     let cpu_ticks = process_cpu_ticks() - cpu0;
     let (rss, hwm) = rss_bytes();
     [
@@ -323,6 +315,14 @@ fn sync_d11(state: &mut State) -> String {
     assert!(state.b.rebuild_matches());
     assert_eq!(state.a.sketch, state.b.sketch);
 
+    let native_total_ns = prefix_ns
+        + decode_ns
+        + apply_exact_ns
+        + apply_sketch_ns
+        + verification_prepare_ns
+        + fallback_serialize_ns
+        + fallback_apply_exact_ns
+        + fallback_apply_sketch_ns;
     let cpu_ticks = process_cpu_ticks() - cpu0;
     let (rss, hwm) = rss_bytes();
     [
