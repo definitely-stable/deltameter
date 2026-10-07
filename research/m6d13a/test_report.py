@@ -2,7 +2,7 @@ import copy
 import hashlib
 import unittest
 
-from protocol import CONTRACT, encode_list, run_session
+from protocol import CONTRACT, Frame, encode_list, run_session
 from run import fixture, source_hashes, validate_report
 from test_protocol import RejectWorker
 
@@ -47,6 +47,7 @@ class ReportTests(unittest.TestCase):
             lambda r: r['rows'][1].update(rounds=0),
             lambda r: r['rows'][1].update(cpu_ns=0),
             lambda r: r['rows'][1].update(fallbacks=0),
+            lambda r: r['rows'][0].update(terminal_exact_transfer=False),
             lambda r: r['rows'][1]['trace'][1].update(payload_bytes=0),
             lambda r: r['rows'][2]['trace'][3].update(parameter=8),
             lambda r: r['rows'][0].update(result_sha256='0'*64),
@@ -58,21 +59,28 @@ class ReportTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     validate_report(damaged, cases)
 
-    def test_failure_after_fallback_cannot_be_reverified_without_repair(self):
+    def test_exact_transfer_is_terminal_not_reverified(self):
         report, cases = self.report()
-        row = report['rows'][1]
-        injected = copy.deepcopy(row['trace'][-2:])
-        injected[1]['parameter'] = 0
-        row['trace'][-2:-2] = injected
-        for i, frame in enumerate(row['trace']):
-            frame['sequence'] = i
+        row = report['rows'][0]
+        a, _ = fixture(*cases[0])
+        identity = tuple(row['session_identity'])
+        payload = encode_list(a)
+        verify = Frame(3, 0, *identity, 2, 0, payload).encode()
+        ack = Frame(4, 0, *identity, 3, 1, b'').encode()
+        injected = [
+            dict(sequence=2, kind=3, parameter=0, direction='B>A',
+                 phase='verification', bytes=len(verify), payload_bytes=len(payload),
+                 sha256=hashlib.sha256(verify).hexdigest()),
+            dict(sequence=3, kind=4, parameter=1, direction='A>B',
+                 phase='verification', bytes=len(ack), payload_bytes=0,
+                 sha256=hashlib.sha256(ack).hexdigest()),
+        ]
+        row['trace'].extend(injected)
         row['rounds'] += 1
         row['messages'] += 2
-        extra = sum(f['bytes'] for f in injected)
-        row['bytes'] += extra
-        row['verification_bytes'] += extra
-        row['false_candidates'] = 1
-        with self.assertRaises(ValueError):
+        row['bytes'] += len(verify) + len(ack)
+        row['verification_bytes'] += len(verify) + len(ack)
+        with self.assertRaisesRegex(ValueError, 'verification without provisional'):
             validate_report(report, cases)
 
     def test_frame_hashes_are_evidence_not_decoration(self):
