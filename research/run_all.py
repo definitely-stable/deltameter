@@ -13,6 +13,7 @@ from parity_full_exact_small import build_payload as build_full_exact_payload
 from parity_level_moments import build_grid as build_parity_grid
 from parity_poissonized import build_payload as build_poissonized_payload
 from parity_truncation_budget import build_payload as build_truncation_payload
+from strict_compact_level_count import build_payload as build_strict_compact_payload
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -35,6 +36,7 @@ def main() -> None:
     parity_full_exact_path = args.out / "parity-full-exact-small.json"
     parity_poissonized_path = args.out / "parity-poissonized.json"
     parity_truncation_path = args.out / "parity-truncation-budget.json"
+    strict_compact_path = args.out / "strict-compact-level-count.json"
 
     write_json(energy_path, build_energy_payload())
     write_json(parity_path, build_parity_grid())
@@ -42,6 +44,7 @@ def main() -> None:
     write_json(parity_full_exact_path, build_full_exact_payload())
     write_json(parity_poissonized_path, build_poissonized_payload())
     write_json(parity_truncation_path, build_truncation_payload())
+    write_json(strict_compact_path, build_strict_compact_payload())
 
     print(f"wrote {energy_path}")
     print(f"wrote {parity_path}")
@@ -49,6 +52,7 @@ def main() -> None:
     print(f"wrote {parity_full_exact_path}")
     print(f"wrote {parity_poissonized_path}")
     print(f"wrote {parity_truncation_path}")
+    print(f"wrote {strict_compact_path}")
 
 
 if __name__ == "__main__":
