@@ -293,11 +293,7 @@ fn run_incremental(
     }
 }
 
-fn classify(
-    decoded: Result<Vec<u64>, LabError>,
-    expected: &[u64],
-    within_limit: bool,
-) -> Outcome {
+fn classify(decoded: Result<Vec<u64>, LabError>, expected: &[u64], within_limit: bool) -> Outcome {
     match decoded {
         Ok(candidate) if candidate == expected && within_limit => Outcome::Exact,
         Ok(_) => Outcome::FalseSuccess,
