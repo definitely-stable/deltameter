@@ -91,8 +91,10 @@ fn decode_list(bytes: &[u8]) -> Vec<u64> {
     let count = u64::from_le_bytes(bytes[..8].try_into().unwrap()) as usize;
     assert_eq!(bytes.len(), 8 + count * 8);
     let mut keys = Vec::with_capacity(count);
-    for chunk in bytes[8..].chunks_exact(8) {
-        keys.push(u64::from_le_bytes(chunk.try_into().unwrap()));
+    let (chunks, remainder) = bytes[8..].as_chunks::<8>();
+    assert!(remainder.is_empty());
+    for chunk in chunks {
+        keys.push(u64::from_le_bytes(*chunk));
     }
     assert!(keys.windows(2).all(|pair| pair[0] < pair[1]));
     keys
