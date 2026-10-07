@@ -1,6 +1,6 @@
 # M6-D13-B0 — measurement readiness contract
 
-Status: **FROZEN BEFORE TIMING IMPLEMENTATION**. Issue #54; parents #19/#14.
+Status: **MEASUREMENT_READY; no performance verdict**. Issue #54; parents #19/#14.
 Baseline: `7b5bbdbc7b278c58b85d1e3732d68ac70ee371df` (merged D13-A protocol v2).
 
 B0 does not select a system winner. It exists to prove that a later D13-B comparison
@@ -191,3 +191,9 @@ ACCEPT requires:
 - frozen source hashes for the later D13-B measurement implementation.
 
 B0 records no system performance verdict and no API/product decision.
+
+Canonical readiness evidence:
+[M6-D13-B0 measurement-readiness evidence](M6-D13B0-MEASUREMENT-READINESS-EVIDENCE.md).
+The measurement-source implementation is frozen by
+`research/m6d13b0/frozen-sources.json`; documentation-only closure does not alter
+those sources.
