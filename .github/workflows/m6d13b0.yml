@@ -14,10 +14,11 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+
 jobs:
-  readiness:
+  core:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
         with:
@@ -73,9 +74,69 @@ jobs:
           python3 research/m6d13b0/check_riblt.py \
             ./riblt-b0-worker \
             d13b0-out/riblt-partial.json
+      - name: Run persistent session-chain inventory
+        run: |
+          python3 research/m6d13b0/run_readiness.py \
+            --rust-worker target/release/examples/m6d13b0_worker \
+            --riblt-worker ./riblt-b0-worker \
+            --mode chains \
+            --out d13b0-out/chains.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: m6d13b0-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          name: m6d13b0-core-${{ github.run_id }}-${{ github.run_attempt }}
           path: d13b0-out/
+          if-no-files-found: warn
+
+  scaling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+          cache: false
+      - name: Build persistent Rust worker
+        run: cargo build --release --example m6d13b0_worker
+      - name: Checkout pinned Rateless IBLT
+        uses: actions/checkout@v5
+        with:
+          repository: yangl1996/riblt
+          ref: 4afa6bc06cb2237d9ea273a51d97a7e05b3f573b
+          path: external-riblt
+          persist-credentials: false
+      - name: Build pinned pull/stream adapter
+        run: |
+          test "$(git -C external-riblt rev-parse HEAD)" = 4afa6bc06cb2237d9ea273a51d97a7e05b3f573b
+          mkdir -p external-riblt/cmd/d13b0
+          cp research/m6d13b0/riblt_worker.go external-riblt/cmd/d13b0/main.go
+          cd external-riblt
+          go mod download
+          go mod verify
+          go build -mod=readonly -o ../riblt-b0-worker ./cmd/d13b0
+      - name: Run sparse 1M scaling readiness
+        run: |
+          mkdir -p d13b0-scaling
+          git rev-parse HEAD > d13b0-scaling/head.txt
+          git -C external-riblt rev-parse HEAD > d13b0-scaling/riblt-head.txt
+          rustc -Vv > d13b0-scaling/rust.txt
+          go version > d13b0-scaling/go.txt
+          uname -a > d13b0-scaling/platform.txt
+          python3 research/m6d13b0/run_readiness.py \
+            --rust-worker target/release/examples/m6d13b0_worker \
+            --riblt-worker ./riblt-b0-worker \
+            --mode scaling \
+            --out d13b0-scaling/scaling.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6d13b0-scaling-${{ github.run_id }}-${{ github.run_attempt }}
+          path: d13b0-scaling/
           if-no-files-found: warn
