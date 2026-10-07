@@ -322,6 +322,29 @@ func syncSession(s *state, lane string, limit int) string {
 	return strings.Join(fields, " ")
 }
 
+
+func initializeState(s *state, left, right []item) string {
+	started := time.Now()
+	s.a = copyKeys(left)
+	s.b = copyKeys(right)
+	buildNS := time.Since(started).Nanoseconds()
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+	rss, hwm := rssBytes()
+	return strings.Join([]string{
+		"ready",
+		kv("source_build_ns", buildNS),
+		kv("clk_tck", s.clkTck),
+		kv("source_len", len(s.a)),
+		kv("source_a_cap", cap(s.a)),
+		kv("source_b_cap", cap(s.b)),
+		kv("runtime_alloc_bytes", mem.Alloc),
+		kv("runtime_heap_sys_bytes", mem.HeapSys),
+		kv("vmrss_bytes", rss),
+		kv("vmhwm_bytes", hwm),
+	}, " ")
+}
+
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(make([]byte, 4096), 40000000)
@@ -337,25 +360,12 @@ func main() {
 		case "init":
 			require(len(parts) == 2)
 			keys := parseKeys(parts[1])
-			started := time.Now()
-			s.a = copyKeys(keys)
-			s.b = copyKeys(keys)
-			buildNS := time.Since(started).Nanoseconds()
-			var mem runtime.MemStats
-			runtime.ReadMemStats(&mem)
-			rss, hwm := rssBytes()
-			response = strings.Join([]string{
-				"ready",
-				kv("source_build_ns", buildNS),
-				kv("clk_tck", s.clkTck),
-				kv("source_len", len(s.a)),
-				kv("source_a_cap", cap(s.a)),
-				kv("source_b_cap", cap(s.b)),
-				kv("runtime_alloc_bytes", mem.Alloc),
-				kv("runtime_heap_sys_bytes", mem.HeapSys),
-				kv("vmrss_bytes", rss),
-				kv("vmhwm_bytes", hwm),
-			}, " ")
+			response = initializeState(&s, keys, keys)
+		case "init_pair":
+			require(len(parts) == 3)
+			left := parseKeys(parts[1])
+			right := parseKeys(parts[2])
+			response = initializeState(&s, left, right)
 		case "update":
 			require(len(parts) == 3)
 			value, err := strconv.ParseUint(parts[2], 16, 64)
