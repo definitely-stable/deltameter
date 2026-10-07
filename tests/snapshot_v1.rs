@@ -300,6 +300,20 @@ fn crc32c_bitwise_reference(bytes: &[u8]) -> u32 {
     !crc
 }
 
+#[test]
+fn valid_crc_energy_row_energy_overflow_remains_invalid_payload() {
+    let mut bytes = hex_bytes(ENERGY_NEGATIVE_V1_HEX);
+    let counter_offset = 24 + 16 + 48;
+    bytes[counter_offset..counter_offset + 8].copy_from_slice(&i64::MIN.to_le_bytes());
+    bytes[counter_offset + 8..counter_offset + 16].copy_from_slice(&i64::MIN.to_le_bytes());
+    rewrite_snapshot_crc32c(&mut bytes);
+
+    assert!(matches!(
+        EnergyDeltaMeter::decode_snapshot(&bytes),
+        Err(SnapshotError::InvalidPayload)
+    ));
+}
+
 fn hex_bytes(hex: &str) -> Vec<u8> {
     assert_eq!(hex.len() % 2, 0);
     (0..hex.len())
