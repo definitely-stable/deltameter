@@ -1,15 +1,17 @@
 #[path = "../examples/support/m6d3_incremental_bm.rs"]
 mod incremental_bm;
-#[path = "../examples/support/m6d4_trace_square.rs"]
-mod trace_square;
 #[path = "../examples/support/m6d_pinsketch64.rs"]
 mod pinsketch64;
+#[path = "../examples/support/m6d4_trace_square.rs"]
+mod trace_square;
 
 use incremental_bm::{
     decode_with_locator, fresh_connection_from_sequence, fresh_full_sequence, prefix,
 };
 use pinsketch64::PinSketch64Lab;
-use trace_square::{D4Error, decode_with_locator_specialized, generic_square_mod, poly_square_mod_monic};
+use trace_square::{
+    D4Error, decode_with_locator_specialized, generic_square_mod, poly_square_mod_monic,
+};
 
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
 
@@ -126,7 +128,8 @@ fn specialized_square_mod_matches_generic_control() {
                             ^ case.rotate_left(19)
                             ^ index as u64,
                     );
-                    polynomial.push(mixed ^ corpus[(degree + index + case as usize) % corpus.len()]);
+                    polynomial
+                        .push(mixed ^ corpus[(degree + index + case as usize) % corpus.len()]);
                 }
 
                 let generic = generic_square_mod(&polynomial, &modulus).unwrap();
