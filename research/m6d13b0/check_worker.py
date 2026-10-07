@@ -7,7 +7,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from readiness import validate_check, validate_ready, validate_sync, validate_update
+from readiness import (
+    validate_check,
+    validate_diagnose,
+    validate_ready,
+    validate_sync,
+    validate_update,
+)
 
 
 class Worker:
@@ -88,6 +94,37 @@ def main() -> int:
             raise ValueError("d=9 did not exercise exact fallback")
         report["d11_sync_d9"] = d9
         report["d11_check_d9"] = validate_check(worker.request("check"))
+
+        # Deterministic B0 witness: true d=8, but the k=1 guarded prefix admits a
+        # provisional false candidate. Maintained and fresh sketches/decoders agree,
+        # proving this is an over-capacity guard event rather than persistence drift.
+        witness_base = list(range(1, 1025))
+        witness_start = (1 << 63) + 8_010_000
+        witness_target = witness_base[4:] + list(range(witness_start, witness_start + 4))
+        ready = worker.request(
+            f"init_pair d11 {key_text(witness_target)} {key_text(witness_base)}"
+        )
+        report["d11_false_candidate_ready"] = validate_ready(ready, "d11")
+        diagnose = validate_diagnose(worker.request("diagnose"))
+        if not (
+            diagnose["exact_d"] == 8
+            and diagnose["a_rebuild"] == 1
+            and diagnose["b_rebuild"] == 1
+            and diagnose["maintained_decoded"] == 1
+            and diagnose["maintained_exact"] == 0
+            and diagnose["maintained_k"] == 1
+            and diagnose["fresh_decoded"] == 1
+            and diagnose["fresh_exact"] == 0
+            and diagnose["fresh_k"] == 1
+            and diagnose["candidate_equal"] == 1
+        ):
+            raise ValueError(f"D11 false-candidate witness changed: {diagnose}")
+        report["d11_false_candidate_diagnose"] = diagnose
+        witness_sync = validate_sync(worker.request("sync"), "d11")
+        if witness_sync["fallback"] != 1 or witness_sync["false_candidate"] != 1:
+            raise ValueError("D11 false-candidate witness did not charge exact fallback")
+        report["d11_false_candidate_sync"] = witness_sync
+        report["d11_false_candidate_check"] = validate_check(worker.request("check"))
 
         report["decision"] = "MEASUREMENT_PARTIAL_PASS"
         Path(sys.argv[2]).write_text(json.dumps(report, indent=2) + "\n")
