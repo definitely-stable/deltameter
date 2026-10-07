@@ -568,3 +568,33 @@ persistent multi-session D11 state, a faithful RIBLT streaming lane and a larger
 scaling extension. D13-A correctness/accounting acceptance is distinct from
 performance or product acceptance. D12 STOP_ALGEBRAIC_MICRO_OPT and public
 ExactSmallDelta NO-GO remain in force.
+
+
+## M6-D13-B0 measurement-readiness result
+
+D13-B0 implements the measurement substrate required by D13-A protocol v2 without
+selecting a system winner.
+
+The private Rust worker retains exact and D11 state across session chains, measures
+native non-overlapping phases and records source/candidate capacity plus Linux
+RSS/HWM and process-CPU cross-checks. The external Go adapter remains pinned to the
+official RIBLT source and exposes both the concrete pull comparator and an optimistic
+stream receiver-completion lower bound.
+
+Hosted readiness covers 1,776 persistent-chain rows for 0/1/8/64 updates and
+1/10/100 sessions per build, plus a sparse one-million-key scaling inventory for
+d=128/512/1024 and natural rateless exhaustion. Measurement sources are frozen by
+Git blob hashes.
+
+A new deterministic witness is retained: true d=8 can produce a provisional false
+candidate at the earlier k=1 stage. Maintained and fresh rebuilds agree exactly, so
+this is not state drift. It confirms that the extra-syndrome guard remains empirical
+rather than a theorem. Verification catches the candidate and exact fallback stays
+charged. D13-B must report these events rather than hiding them inside generic
+fallback counts.
+
+Verdict: **MEASUREMENT_READY only.** Proceed to the frozen D13-B hosted system
+comparison after final exact-head CI. No algebraic decoder work, public
+ExactSmallDelta API or product GO is authorized.
+
+See [D13-B0 evidence](M6-D13B0-MEASUREMENT-READINESS-EVIDENCE.md).
