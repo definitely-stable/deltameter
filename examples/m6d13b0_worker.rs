@@ -218,6 +218,7 @@ fn sync_direct(state: &mut State) -> String {
         "sync".to_string(),
         kv("exact", 1),
         kv("fallback", 0),
+        kv("false_candidate", 0),
         kv("final_k", 0),
         kv("serialize_ns", serialize_ns),
         kv("apply_exact_ns", apply_ns),
@@ -344,6 +345,7 @@ fn sync_d11(state: &mut State) -> String {
     let mut fallback_apply_exact_ns = 0_u128;
     let mut fallback_apply_sketch_ns = 0_u128;
     let mut fallback = 0;
+    let mut false_candidate = 0;
     let candidate_capacity = roots.as_ref().map_or(0, |value| value.capacity());
 
     if let Some(candidate_roots) = roots {
@@ -361,6 +363,7 @@ fn sync_d11(state: &mut State) -> String {
         verification_prepare_ns = verify_started.elapsed().as_nanos();
 
         if !verified {
+            false_candidate = 1;
             fallback = 1;
         }
     } else {
@@ -402,6 +405,7 @@ fn sync_d11(state: &mut State) -> String {
         "sync".to_string(),
         kv("exact", 1),
         kv("fallback", fallback),
+        kv("false_candidate", false_candidate),
         kv("final_k", final_k),
         kv("serialize_ns", 0),
         kv("apply_exact_ns", apply_exact_ns),
