@@ -429,13 +429,17 @@ fn main() {
                 };
                 let exact_ns = exact_started.elapsed().as_nanos();
 
-                let sketch_started = Instant::now();
-                if ok {
+                let sketch_ns = if ok {
                     if let Some(sketch) = &mut state.a.sketch {
+                        let sketch_started = Instant::now();
                         sketch.toggle(key);
+                        sketch_started.elapsed().as_nanos()
+                    } else {
+                        0
                     }
-                }
-                let sketch_ns = sketch_started.elapsed().as_nanos();
+                } else {
+                    0
+                };
 
                 let ticks = process_cpu_ticks() - cpu0;
                 if !ok {
