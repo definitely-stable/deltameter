@@ -82,6 +82,20 @@ class ReportTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_report(report, cases)
 
+    def test_within_capacity_rejection_is_not_foundation_success(self):
+        report, cases = self.report()
+        case = (64, 212, 8, 'balanced')
+        a, b = fixture(*case)
+        # Reuse the valid report shape, but an always-rejecting D11 worker
+        # must not hide a broken in-capacity decoder behind exact fallback.
+        row = run_session(a, b, 1, RejectWorker())
+        row['case'] = list(case)
+        row['target_sha256'] = hashlib.sha256(encode_list(a)).hexdigest()
+        row['result_sha256'] = hashlib.sha256(encode_list(row.pop('final'))).hexdigest()
+        report['rows'] = [row]
+        with self.assertRaisesRegex(ValueError, 'in-capacity'):
+            validate_report(report, [case])
+
     def test_full_matrix_unique_and_exact_cardinality(self):
         from run import matrix
         cases = matrix()

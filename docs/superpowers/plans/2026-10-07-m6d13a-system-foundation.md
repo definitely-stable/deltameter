@@ -46,7 +46,7 @@ Files: `research/m6d13a/run.py`, `.github/workflows/m6d13a.yml`.
   kind/parameter/length/hash; CPU and allocated peak remain null.
 - [x] Reject missing/extra/duplicate rows, mismatched protocol/source hashes,
   inconsistent counters and wrong verdict; test artifact mutations.
-- [ ] Upload report, environment, hashes and raw traces on hosted CI.
+- [x] Upload report, environment, hashes and raw traces on hosted CI.
 - [ ] Final review, PR, exact-head CI; no merge or performance claim implied.
 
 ## Execution/review record
@@ -67,3 +67,9 @@ PR #53. No performance runs were made.
   performance grid remains a D13-B instrumentation requirement, not completed here.
 - Local checkout has no push credentials; GitHub API publishes commit trees and
   fast-forward updates with an expected-head lease. Remote trees match local work.
+
+- First complete hosted foundation inventory passed: run `37625532197`, 1,350
+  rows. It predates review hardening and is not the final acceptance run.
+- Added a further fail-closed gate: in-capacity D11 must reach the expected
+  k without hiding decoder breakage behind fallback (regression RED -> GREEN).
+  Local foundation suite: 13 tests passed; final hosted HEAD pending.

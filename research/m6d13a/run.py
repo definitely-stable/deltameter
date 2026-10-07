@@ -200,6 +200,10 @@ def validate_report(report, expected_cases=None):
             if row['lane'] == 1:
                 stages = list(zip([1, 2, 4, 8], [17, 8, 16, 32]))
                 require(staged == stages[:len(staged)] and staged, 'prefix schedule')
+                if row['case'][2] <= 8:
+                    expected_k = next(k for k in (1, 2, 4, 8) if row['case'][2] <= k)
+                    require(not direct and verification == [1] and staged[-1][0] == expected_k,
+                            'in-capacity decoder failed or skipped a stage')
                 require(not direct or verification == [0, 1] or len(staged) == 4, 'early fallback')
             else:
                 previous = 0
