@@ -25,10 +25,7 @@ pub fn generic_square_mod(polynomial: &[u64], modulus: &[u64]) -> Result<Vec<u64
 }
 
 /// Characteristic-2 square followed by direct reduction against monic modulus.
-pub fn poly_square_mod_monic(
-    polynomial: &[u64],
-    modulus: &[u64],
-) -> Result<Vec<u64>, D4Error> {
+pub fn poly_square_mod_monic(polynomial: &[u64], modulus: &[u64]) -> Result<Vec<u64>, D4Error> {
     let mut modulus = modulus.to_vec();
     trim(&mut modulus);
     if modulus.is_empty() || modulus.last() != Some(&1) {
