@@ -116,7 +116,7 @@ M6-C measured result: **ACCEPT**. Final paired hosted evidence reports about 68â
 | M6-A | [#16](https://github.com/definitely-stable/deltameter/issues/16) | Two-process estimator-assisted decision experiment; GO/NO-GO before public workflow expansion |
 | M6-B | [#17](https://github.com/definitely-stable/deltameter/issues/17) | CRC/decoder improvements evaluated individually |
 | M6-C | [#18](https://github.com/definitely-stable/deltameter/issues/18) | Bit-equivalent sign optimization with setup and steady-state evidence |
-| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | Phase-1 audit selects pure-Rust PinSketch64 for private lab evaluation; production adoption remains gated |
+| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1 guarded PinSketch64 reference + D2 nested-prefix LAB-GO; production/public exact reconciliation remains gated |
 
 M6-B/C require M6-0 measurement and may proceed before M6-A completion if their independent evidence justifies it. After M6-0, M6-A and the read-only/source-audit portion of M6-D should proceed in parallel. M6-D production adoption still depends on M6-A product evidence, so research can inform the experiment without prematurely committing to an exact backend. One coherent PR per slice. No automatic merge/release is implied.
 
@@ -139,3 +139,23 @@ Verdict:
 The lab mapping is exact over the complete u64 domain: nonzero keys map identically into GF(2^64), while key zero is carried by one separate XOR-composable presence bit.
 
 Successful decode is not final verification. The lab uses an exact oracle; any production verifier must be independent from the same syndrome equations.
+
+
+## M6-D2 guarded incremental prefix result
+
+D2 replaces Energy-first sizing in the audited small-d lab with a nested guarded PinSketch64 prefix.
+
+Frozen stages:
+
+~~~text
+k=1 -> k=2 -> k=4 -> k=8
+stored syndromes = k + 1 guard
+~~~
+
+The incremental arm sends each odd syndrome at most once. Cumulative bytes therefore equal the ideal fixed-known-k payload: 17, 25, 41 or 73 bytes for the audited stages. Naive full-prefix resend costs 42, 83 or 156 bytes once retries occur.
+
+Hosted evidence reports exact-oracle completion for all d<=8 frozen workloads, guarded rejection for d=9/10/16 and zero false-success in the matrix. This remains empirical guard evidence, not a theorem or independent final verification.
+
+The retry tax is CPU/RTT rather than communication. The reference decoder reaches about 89.6 ms cumulative decode CPU at d=8 because failed earlier stages are decoded again.
+
+Verdict: private LAB-GO only. The next justified optimization is decoder-state reuse while freezing D2 bytes/RTTs. See [M6-D2 evidence](M6-D2-INCREMENTAL-PREFIX-EVIDENCE.md) and [Rateless IBLT comparison boundary](M6-D2-RIBLET-COMPARATOR.md).
