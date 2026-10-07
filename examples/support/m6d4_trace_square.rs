@@ -99,8 +99,9 @@ pub fn decode_with_locator_generic(
     max_elements: usize,
     locator: &[u64],
 ) -> Result<Vec<u64>, D4Error> {
+    let degree = validate_locator(sketch, max_elements, locator)?;
     let roots = factor_locator_generic(locator)?;
-    finish_candidate(sketch, max_elements, locator, roots)
+    finish_candidate(sketch, max_elements, degree, roots)
 }
 
 pub fn decode_with_locator_specialized(
@@ -108,8 +109,9 @@ pub fn decode_with_locator_specialized(
     max_elements: usize,
     locator: &[u64],
 ) -> Result<Vec<u64>, D4Error> {
+    let degree = validate_locator(sketch, max_elements, locator)?;
     let roots = factor_locator_specialized(locator)?;
-    finish_candidate(sketch, max_elements, locator, roots)
+    finish_candidate(sketch, max_elements, degree, roots)
 }
 
 fn factor_locator_generic(locator: &[u64]) -> Result<Vec<u64>, D4Error> {
@@ -140,12 +142,12 @@ fn factor_locator_specialized(locator: &[u64]) -> Result<Vec<u64>, D4Error> {
     factor_linear_roots_specialized(&root_polynomial)
 }
 
-fn finish_candidate(
+// Preserve frozen D1/D3 rejection order before any root-factor work.
+fn validate_locator(
     sketch: &PinSketch64Lab,
     max_elements: usize,
     locator: &[u64],
-    mut roots: Vec<u64>,
-) -> Result<Vec<u64>, D4Error> {
+) -> Result<usize, D4Error> {
     if max_elements > sketch.capacity() {
         return Err(LabError::InvalidDecodeLimit.into());
     }
@@ -164,6 +166,15 @@ fn finish_candidate(
         return Err(LabError::DecodeFailure.into());
     }
 
+    Ok(degree)
+}
+
+fn finish_candidate(
+    sketch: &PinSketch64Lab,
+    max_elements: usize,
+    degree: usize,
+    mut roots: Vec<u64>,
+) -> Result<Vec<u64>, D4Error> {
     roots.sort_unstable();
     if roots.windows(2).any(|pair| pair[0] == pair[1])
         || roots.contains(&0)
