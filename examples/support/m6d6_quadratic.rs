@@ -353,6 +353,11 @@ fn gf64_pow(mut base: u64, mut exponent: u64) -> u64 {
     result
 }
 
+/// Frozen D6 scalar square exposed only as a D8 differential oracle.
+pub fn gf64_square_reference_for_d8(value: u64) -> u64 {
+    gf64_square(value)
+}
+
 #[inline]
 fn gf64_square(value: u64) -> u64 {
     gf64_mul(value, value)
