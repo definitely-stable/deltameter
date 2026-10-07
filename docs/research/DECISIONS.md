@@ -572,3 +572,39 @@ the maintained-state system end to end.
 Canonical evidence: [M6-D4 trace square](../M6-D4-TRACE-SQUARE-EVIDENCE.md), including
 raw runs, source hashes, exact-head CI and measurement limitations. D1/D2/D3 files,
 public API, snapshot-v1 and Coverage are unchanged.
+
+
+### D31 — Degree-two root work is material enough for one isolated solver experiment
+
+M6-D5 profiles the accepted D4 root path without changing its factorization algorithm.
+
+The profiler assigns non-overlapping local self time to recursive factor frames by
+current polynomial degree, measures candidate verification separately, and keeps the
+accepted D4 decoder as an uninstrumented control.
+
+Canonical hosted evidence on AMD EPYC 9V45, Rust 1.99.0:
+
+~~~text
+d=8 accepted D4 control       ~7.137 ms
+d=8 factor wall               ~7.125 ms
+d=8 degree-two self work      ~1.964 ms
+d=8 degree >=3 self work      ~5.130 ms
+d=8 verification              ~0.0039 ms
+~~~
+
+Degree-two work is therefore about 27.6% of factor wall and 27.5% of accepted D4
+control latency at d=8. It is also material at d=2/3/4. Verification is ~0.055%
+at d=8 and is not the next optimization target.
+
+Decision:
+
+- D5 remains profile-only;
+- authorize one separate deterministic safe-Rust quadratic solver experiment;
+- keep all degree >=3 splitting, D4 trace-square, D2 bytes/RTTs and guard semantics frozen;
+- do not expect another order-of-magnitude gain: the measured d=8 removable upper
+  bound is roughly one quarter of current latency;
+- reject the quadratic candidate if paired hosted evidence does not produce a
+  reproducible material end-to-end reduction;
+- do not bundle field multiplication, SIMD/CLMUL, randomized splitting or protocol changes.
+
+Canonical evidence: docs/M6-D5-ROOT-PROFILE-EVIDENCE.md.
