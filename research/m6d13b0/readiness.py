@@ -98,6 +98,7 @@ def validate_sync(line: str, mode: str) -> dict[str, int]:
     required = [
         "exact",
         "fallback",
+        "false_candidate",
         "final_k",
         *SYNC_PHASES,
         "native_total_ns",
@@ -124,7 +125,12 @@ def validate_sync(line: str, mode: str) -> dict[str, int]:
     validate_memory(fields)
 
     if mode == "direct":
-        require(fields["fallback"] == 0 and fields["final_k"] == 0, "direct protocol")
+        require(
+            fields["fallback"] == 0
+            and fields["false_candidate"] == 0
+            and fields["final_k"] == 0,
+            "direct protocol",
+        )
         require(fields["prefix_ns"] == fields["decode_ns"] == 0, "direct decoder work")
         require(fields["apply_sketch_ns"] == 0, "direct sketch work")
         require(fields["verification_prepare_ns"] == 0, "direct verification")
@@ -138,6 +144,11 @@ def validate_sync(line: str, mode: str) -> dict[str, int]:
     else:
         require(fields["final_k"] in (1, 2, 4, 8), "D11 stage")
         require(fields["serialize_ns"] == 0 and fields["payload_len"] == 0, "D11 direct leak")
+        require(fields["false_candidate"] in (0, 1), "D11 false-candidate flag")
+        require(
+            fields["false_candidate"] <= fields["fallback"],
+            "false candidate without fallback",
+        )
         if fields["fallback"] == 0:
             require(fields["fallback_serialize_ns"] == 0, "unexpected fallback serialize")
             require(fields["fallback_apply_exact_ns"] == 0, "unexpected fallback apply")
