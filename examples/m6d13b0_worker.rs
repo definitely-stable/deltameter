@@ -366,6 +366,54 @@ fn sync_d11(state: &mut State) -> String {
     .join(" ")
 }
 
+
+fn parse_mode(value: &str) -> Mode {
+    match value {
+        "direct" => Mode::Direct,
+        "d11" => Mode::D11,
+        _ => panic!("invalid mode"),
+    }
+}
+
+fn initialize(mode: Mode, left: Vec<u64>, right: Vec<u64>, clock: u64) -> (State, String) {
+    let source_started = Instant::now();
+    let mut a = Endpoint::exact(left);
+    let mut b = Endpoint::exact(right);
+    let source_build_ns = source_started.elapsed().as_nanos();
+
+    let sketch_started = Instant::now();
+    if mode == Mode::D11 {
+        a.build_sketch();
+        b.build_sketch();
+    }
+    let sketch_build_ns = sketch_started.elapsed().as_nanos();
+
+    let (rss, hwm) = rss_bytes();
+    let state = State {
+        mode,
+        a,
+        b,
+        clk_tck: clock,
+    };
+    let output = [
+        "ready".to_string(),
+        kv("source_build_ns", source_build_ns),
+        kv("sketch_build_ns", sketch_build_ns),
+        kv("clk_tck", clock),
+        kv("source_len", state.a.keys.len()),
+        kv("source_a_cap", state.a.keys.capacity()),
+        kv("source_b_cap", state.b.keys.capacity()),
+        kv(
+            "sketch_payload_bytes",
+            if mode == Mode::D11 { 146 } else { 0 },
+        ),
+        kv("vmrss_bytes", rss),
+        kv("vmhwm_bytes", hwm),
+    ]
+    .join(" ");
+    (state, output)
+}
+
 fn main() {
     let clock = clk_tck();
     let mut state: Option<State> = None;
@@ -376,46 +424,19 @@ fn main() {
         let parts: Vec<_> = line.split_whitespace().collect();
         let output = match parts.as_slice() {
             ["init", mode, keys] => {
-                let mode = match *mode {
-                    "direct" => Mode::Direct,
-                    "d11" => Mode::D11,
-                    _ => panic!("invalid mode"),
-                };
+                let mode = parse_mode(mode);
                 let keys = parse_keys(keys);
-                let source_started = Instant::now();
-                let mut a = Endpoint::exact(keys.clone());
-                let mut b = Endpoint::exact(keys);
-                let source_build_ns = source_started.elapsed().as_nanos();
-                let sketch_started = Instant::now();
-                if mode == Mode::D11 {
-                    a.build_sketch();
-                    b.build_sketch();
-                }
-                let sketch_build_ns = sketch_started.elapsed().as_nanos();
-                let (rss, hwm) = rss_bytes();
-                state = Some(State {
-                    mode,
-                    a,
-                    b,
-                    clk_tck: clock,
-                });
-                let state_ref = state.as_ref().unwrap();
-                [
-                    "ready".to_string(),
-                    kv("source_build_ns", source_build_ns),
-                    kv("sketch_build_ns", sketch_build_ns),
-                    kv("clk_tck", clock),
-                    kv("source_len", state_ref.a.keys.len()),
-                    kv("source_a_cap", state_ref.a.keys.capacity()),
-                    kv("source_b_cap", state_ref.b.keys.capacity()),
-                    kv(
-                        "sketch_payload_bytes",
-                        if mode == Mode::D11 { 146 } else { 0 },
-                    ),
-                    kv("vmrss_bytes", rss),
-                    kv("vmhwm_bytes", hwm),
-                ]
-                .join(" ")
+                let (new_state, output) = initialize(mode, keys.clone(), keys, clock);
+                state = Some(new_state);
+                output
+            }
+            ["init_pair", mode, left, right] => {
+                let mode = parse_mode(mode);
+                let left = parse_keys(left);
+                let right = parse_keys(right);
+                let (new_state, output) = initialize(mode, left, right, clock);
+                state = Some(new_state);
+                output
             }
             ["update", operation, key] => {
                 let state = state.as_mut().unwrap();
