@@ -1,0 +1,67 @@
+import unittest
+
+from readiness import (
+    parse_record,
+    validate_check,
+    validate_ready,
+    validate_sync,
+    validate_update,
+)
+
+
+class ReadinessTests(unittest.TestCase):
+    def test_parse_rejects_duplicate_and_negative_fields(self):
+        with self.assertRaises(ValueError):
+            parse_record("sync x=1 x=2")
+        with self.assertRaises(ValueError):
+            parse_record("sync x=-1")
+
+    def test_ready_contract(self):
+        direct = (
+            "ready source_build_ns=1 sketch_build_ns=0 clk_tck=100 "
+            "source_len=3 source_a_cap=3 source_b_cap=3 sketch_payload_bytes=0 "
+            "vmrss_bytes=4096 vmhwm_bytes=8192"
+        )
+        self.assertEqual(validate_ready(direct, "direct")["source_len"], 3)
+
+    def test_update_phase_closure(self):
+        line = (
+            "update ok=1 exact_ns=7 sketch_ns=3 native_total_ns=10 cpu_ticks=0 "
+            "source_len=4 source_cap=8"
+        )
+        self.assertEqual(validate_update(line, "d11", True)["native_total_ns"], 10)
+        with self.assertRaises(ValueError):
+            validate_update(line.replace("native_total_ns=10", "native_total_ns=9"), "d11", True)
+
+    def test_direct_sync_contract(self):
+        line = (
+            "sync exact=1 fallback=0 final_k=0 serialize_ns=5 apply_exact_ns=7 "
+            "prefix_ns=0 decode_ns=0 apply_sketch_ns=0 verification_prepare_ns=0 "
+            "fallback_serialize_ns=0 fallback_apply_exact_ns=0 fallback_apply_sketch_ns=0 "
+            "native_total_ns=12 candidate_capacity=0 cpu_ticks=0 clk_tck=100 payload_len=32 "
+            "source_a_len=3 source_a_cap=3 source_b_len=3 source_b_cap=3 "
+            "vmrss_bytes=4096 vmhwm_bytes=8192"
+        )
+        self.assertEqual(validate_sync(line, "direct")["native_total_ns"], 12)
+
+    def test_d11_sync_contract(self):
+        line = (
+            "sync exact=1 fallback=0 final_k=1 serialize_ns=0 apply_exact_ns=2 "
+            "prefix_ns=3 decode_ns=5 apply_sketch_ns=1 verification_prepare_ns=4 "
+            "fallback_serialize_ns=0 fallback_apply_exact_ns=0 fallback_apply_sketch_ns=0 "
+            "native_total_ns=15 candidate_capacity=4 cpu_ticks=0 clk_tck=100 payload_len=0 "
+            "source_a_len=4 source_a_cap=8 source_b_len=4 source_b_cap=8 "
+            "vmrss_bytes=4096 vmhwm_bytes=8192"
+        )
+        self.assertEqual(validate_sync(line, "d11")["final_k"], 1)
+
+    def test_check_requires_all_oracles(self):
+        self.assertEqual(
+            validate_check("check equal=1 a_rebuild=1 b_rebuild=1")["equal"], 1
+        )
+        with self.assertRaises(ValueError):
+            validate_check("check equal=1 a_rebuild=1 b_rebuild=0")
+
+
+if __name__ == "__main__":
+    unittest.main()
