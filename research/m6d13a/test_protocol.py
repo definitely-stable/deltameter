@@ -71,6 +71,13 @@ class ProtocolTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Frame.decode(f.encode(), expected)
 
+    def test_cross_session_replay_is_rejected(self):
+        old = Session(0)
+        new = Session(0)
+        stale = Frame(1, 0, *old.identity, 0, 0, b'').encode()
+        with self.assertRaises(ValueError):
+            new.receive(stale, 1, 0, 0)
+
     def test_model_units(self):
         self.assertEqual(model_ns(1000, 2, 1000, 10, 1), 28_001_000)
         for bandwidth in (0, -1):

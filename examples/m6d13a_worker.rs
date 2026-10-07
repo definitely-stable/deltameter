@@ -81,7 +81,10 @@ fn main() {
                 for &key in old.symmetric_difference(&new) {
                     maintained.toggle(key);
                 }
-                assert_eq!(maintained, PinSketch64Lab::from_sorted_unique(9, &left).unwrap());
+                assert_eq!(
+                    maintained,
+                    PinSketch64Lab::from_sorted_unique(9, &left).unwrap()
+                );
                 a = Some(maintained);
                 b = Some(PinSketch64Lab::from_sorted_unique(9, &right).unwrap());
                 "ready".to_string()
@@ -97,16 +100,26 @@ fn main() {
                 let received = unhex(received);
                 assert_eq!(received.len(), 1 + 8 * (limit + 1));
                 let mut difference = from_payload(&received);
-                difference.merge(&from_payload(&payload(b.as_ref().unwrap(), limit + 1))).unwrap();
+                difference
+                    .merge(&from_payload(&payload(b.as_ref().unwrap(), limit + 1)))
+                    .unwrap();
                 let decoded = trace_square::fresh_locator(&difference, limit).and_then(|locator| {
-                    fixed_reduction::decode_with_locator_fixed_reduction(&difference, limit, &locator)
+                    fixed_reduction::decode_with_locator_fixed_reduction(
+                        &difference,
+                        limit,
+                        &locator,
+                    )
                 });
                 match decoded {
                     Ok(roots) => {
                         let text = if roots.is_empty() {
                             "-".to_string()
                         } else {
-                            roots.iter().map(|r| format!("{r:x}")).collect::<Vec<_>>().join(",")
+                            roots
+                                .iter()
+                                .map(|r| format!("{r:x}"))
+                                .collect::<Vec<_>>()
+                                .join(",")
                         };
                         format!("ok {text}")
                     }

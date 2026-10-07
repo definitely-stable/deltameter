@@ -8,7 +8,7 @@ from pathlib import Path
 import selectors
 import subprocess
 
-from protocol import CONTRACT, require, run_session, encode_list
+from protocol import CONTRACT, require, run_session, encode_list, decode_list, Frame
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -106,10 +106,15 @@ def validate_report(report, expected_cases=None):
             'worker controls')
     expected = {(*c, lane) for c in cases for lane in range(3)}
     seen = set()
+    identities = set()
     for row in report['rows']:
         key = (*row['case'], row['lane'])
         require(key in expected and key not in seen, 'unexpected/duplicate row')
         seen.add(key)
+        identity = tuple(row['session_identity'])
+        require(len(identity) == 3 and all(type(x) is int and 0 < x < 2**64 for x in identity)
+                and identity[0] not in identities, 'replayed session identity')
+        identities.add(identity[0])
         a, b = fixture(*row['case'])
         require(row['target_sha256'] == hashlib.sha256(encode_list(a)).hexdigest(), 'target')
         require(row['result_sha256'] == row['target_sha256'], 'oracle')
@@ -128,6 +133,8 @@ def validate_report(report, expected_cases=None):
         require(row['source_reimports_per_session'] == (2 if row['lane'] == 2 else 0), 'rescan')
         requests = []
         verification = []
+        state = 'candidate'
+        last_request = None
         for index in range(0, len(trace), 2):
             first, second = trace[index:index + 2]
             for seq, f in ((index, first), (index + 1, second)):
@@ -136,20 +143,49 @@ def validate_report(report, expected_cases=None):
                         for c in f['sha256']), 'frame digest')
             require(first['direction'] == 'B>A' and second['direction'] == 'A>B', 'direction')
             if first['kind'] == 1:
-                require(not verification or verification[-1] == 0, 'request after success')
+                require(state in ('candidate', 'repair'), 'request after terminal verification')
+                if state == 'repair':
+                    require(first['parameter'] == 0, 'failed candidate requires exact repair')
+                if last_request == 0:
+                    raise ValueError('request after exact transfer')
+                last_request = first['parameter']
+                state = 'verify' if last_request == 0 else 'candidate'
                 require(second['kind'] == 2 and first['parameter'] == second['parameter'], 'reply')
                 require(first['payload_bytes'] == 0, 'request payload')
                 require(first['phase'] == second['phase'] == 'candidate', 'data phase')
                 requests.append((first['parameter'], second['payload_bytes']))
             else:
+                require(state in ('candidate', 'verify') and last_request is not None,
+                        'verification without new candidate')
                 require(first['kind'] == 3 and second['kind'] == 4 and first['parameter'] == 0,
                         'verification kind')
                 require(second['parameter'] in (0, 1) and second['payload_bytes'] == 0, 'ack')
                 require(first['phase'] == second['phase'] == 'verification', 'verify phase')
+                if second['parameter'] == 0:
+                    require(last_request != 0 and row['lane'] != 0, 'failed exact verification')
+                    state = 'repair'
+                else:
+                    state = 'done'
                 verification.append(second['parameter'])
                 if second['parameter'] == 1:
                     require(first['payload_bytes'] == 8 + 8 * len(a), 'final-list payload')
-        require(trace[-2]['kind'] == 3 and verification in ([1], [0, 1]), 'terminal verification')
+            for f in (first, second):
+                if f['kind'] in (1, 4):
+                    payload = b''
+                elif f['kind'] == 2 and f['parameter'] == 0:
+                    payload = encode_list(a)
+                elif f['kind'] == 3 and second['parameter'] == 1:
+                    payload = encode_list(a)
+                else:
+                    payload = bytes.fromhex(f['payload_hex'])
+                    if f['kind'] == 3:
+                        require(decode_list(payload) != a, 'failed verification payload')
+                require(len(payload) == f['payload_bytes'], 'retained payload shape')
+                raw = Frame(f['kind'], row['lane'], *identity, f['sequence'],
+                            f['parameter'], payload).encode()
+                require(hashlib.sha256(raw).hexdigest() == f['sha256'], 'frame provenance')
+        require(state == 'done' and trace[-2]['kind'] == 3 and verification in ([1], [0, 1]),
+                'terminal verification')
         require(row['false_candidates'] == verification.count(0), 'false candidates')
         direct = [x for x in requests if x[0] == 0]
         require(all(size == 8 + 8 * len(a) for _, size in direct), 'direct bytes')

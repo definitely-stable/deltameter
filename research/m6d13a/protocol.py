@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import hashlib
 import json
+import itertools
 from pathlib import Path
 import struct
 
@@ -9,6 +10,7 @@ CONTRACT = json.loads(Path(__file__).with_name('protocol.json').read_text())
 HEADER = struct.Struct('<4sBBBBQQQIIQ')
 MAX_KEYS = CONTRACT['max_keys']
 MAX_PAYLOAD = 8 * MAX_KEYS + 8
+SESSION_IDS = itertools.count(1)
 
 
 def require(condition, message):
@@ -71,20 +73,34 @@ def parse_keys(text):
 
 
 class Session:
-    def __init__(self, lane):
+    def __init__(self, lane, identity=None):
         self.lane = lane
+        session = next(SESSION_IDS)
+        self.identity = identity if identity is not None else (session, 2 * session, 2 * session + 1)
+        require(len(self.identity) == 3 and all(0 < x < 2**64 for x in self.identity), 'identity')
         self.sequence = 0
+        self.receive_sequence = 0
         self.rounds = 0
         self.trace = []
 
+    def receive(self, raw, kind, parameter, payload_length):
+        require(0 <= payload_length <= MAX_PAYLOAD, 'receive budget')
+        expected = Frame(kind, self.lane, *self.identity, self.receive_sequence,
+                         parameter, bytes(payload_length))
+        received = Frame.decode(raw, expected)
+        self.receive_sequence += 1
+        return received
+
     def transfer(self, kind, parameter, payload, direction, phase):
-        frame = Frame(kind, self.lane, 1, 11, 13, self.sequence, parameter, payload)
+        frame = Frame(kind, self.lane, *self.identity, self.sequence, parameter, payload)
         raw = frame.encode()
-        received = Frame.decode(raw, frame)
+        received = self.receive(raw, kind, parameter, len(payload))
         self.trace.append(dict(sequence=self.sequence, kind=kind, parameter=parameter,
                                direction=direction, phase=phase, bytes=len(raw),
                                payload_bytes=len(received),
                                sha256=hashlib.sha256(raw).hexdigest()))
+        if kind == 2 and parameter != 0:
+            self.trace[-1]['payload_hex'] = payload.hex()
         self.sequence += 1
         return received
 
@@ -98,6 +114,8 @@ class Session:
         # Charged protocol verification, NOT the external experimental oracle.
         received = self.transfer(3, 0, encode_list(candidate), 'B>A', 'verification')
         equal = decode_list(received) == target
+        if not equal:
+            self.trace[-1]['payload_hex'] = received.hex()
         self.transfer(4, int(equal), b'', 'A>B', 'verification')
         self.rounds += 1
         return equal
@@ -164,7 +182,7 @@ def run_session(a, b, lane, worker, riblt_cap=None):
     require(candidate == a, 'oracle mismatch')
     total = sum(f['bytes'] for f in s.trace)
     verification = sum(f['bytes'] for f in s.trace if f['phase'] == 'verification')
-    return dict(lane=lane, final=candidate, bytes=total, candidate_bytes=total-verification,
+    return dict(lane=lane, session_identity=list(s.identity), final=candidate, bytes=total, candidate_bytes=total-verification,
                 verification_bytes=verification, rounds=s.rounds, messages=len(s.trace),
                 fallbacks=fallbacks, false_candidates=false_candidates, trace=s.trace,
                 cpu_ns=None, allocated_peak_bytes=None, performance_decision='NOT_MEASURED',

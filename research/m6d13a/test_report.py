@@ -58,6 +58,30 @@ class ReportTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     validate_report(damaged, cases)
 
+    def test_failure_after_fallback_cannot_be_reverified_without_repair(self):
+        report, cases = self.report()
+        row = report['rows'][1]
+        injected = copy.deepcopy(row['trace'][-2:])
+        injected[1]['parameter'] = 0
+        row['trace'][-2:-2] = injected
+        for i, frame in enumerate(row['trace']):
+            frame['sequence'] = i
+        row['rounds'] += 1
+        row['messages'] += 2
+        extra = sum(f['bytes'] for f in injected)
+        row['bytes'] += extra
+        row['verification_bytes'] += extra
+        row['false_candidates'] = 1
+        with self.assertRaises(ValueError):
+            validate_report(report, cases)
+
+    def test_frame_hashes_are_evidence_not_decoration(self):
+        report, cases = self.report()
+        for frame in report['rows'][0]['trace']:
+            frame['sha256'] = '0' * 64
+        with self.assertRaises(ValueError):
+            validate_report(report, cases)
+
     def test_full_matrix_unique_and_exact_cardinality(self):
         from run import matrix
         cases = matrix()
