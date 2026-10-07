@@ -6,7 +6,8 @@ mod pinsketch64;
 mod trace_square;
 
 use incremental_bm::{
-    decode_with_locator, fresh_connection_from_sequence, fresh_full_sequence, prefix,
+    IncrementalBmDecoder, decode_with_locator, fresh_connection_from_sequence, fresh_full_sequence,
+    prefix,
 };
 use pinsketch64::PinSketch64Lab;
 use trace_square::{
@@ -172,10 +173,19 @@ fn specialized_root_path_matches_frozen_decoder_and_oracle() {
         let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
 
         let mut completed = None;
+        let mut decoder = IncrementalBmDecoder::new();
         for (limit, capacity) in STAGES {
             let sketch = difference_prefix(&left_full, &right_full, capacity);
+            decoder.extend_to(&sketch, limit).unwrap();
             let sequence = fresh_full_sequence(&sketch, limit).unwrap();
-            let locator = fresh_connection_from_sequence(&sequence).unwrap();
+            assert_eq!(decoder.sequence(), sequence);
+            let locator = decoder.connection_polynomial();
+            assert_eq!(
+                locator,
+                fresh_connection_from_sequence(&sequence).unwrap(),
+                "locator d={difference} limit={limit}"
+            );
+            assert_eq!(decoder.linear_complexity() + 1, locator.len());
 
             let frozen = decode_with_locator(&sketch, limit, &locator);
             let specialized = decode_with_locator_specialized(&sketch, limit, &locator);
@@ -220,10 +230,14 @@ fn specialized_root_path_preserves_over_bound_rejects() {
         let left_full = PinSketch64Lab::from_sorted_unique(9, &left).unwrap();
         let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
 
+        let mut decoder = IncrementalBmDecoder::new();
         for (limit, capacity) in STAGES {
             let sketch = difference_prefix(&left_full, &right_full, capacity);
+            decoder.extend_to(&sketch, limit).unwrap();
             let sequence = fresh_full_sequence(&sketch, limit).unwrap();
-            let locator = fresh_connection_from_sequence(&sequence).unwrap();
+            assert_eq!(decoder.sequence(), sequence);
+            let locator = decoder.connection_polynomial();
+            assert_eq!(locator, fresh_connection_from_sequence(&sequence).unwrap());
 
             assert!(decode_with_locator(&sketch, limit, &locator).is_err());
             assert!(decode_with_locator_specialized(&sketch, limit, &locator).is_err());
@@ -240,10 +254,14 @@ fn specialized_root_path_preserves_zero_and_full_width_values() {
     let left_full = PinSketch64Lab::from_sorted_unique(9, &left).unwrap();
     let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
 
+    let mut decoder = IncrementalBmDecoder::new();
     for (limit, capacity) in STAGES {
         let sketch = difference_prefix(&left_full, &right_full, capacity);
+        decoder.extend_to(&sketch, limit).unwrap();
         let sequence = fresh_full_sequence(&sketch, limit).unwrap();
-        let locator = fresh_connection_from_sequence(&sequence).unwrap();
+        assert_eq!(decoder.sequence(), sequence);
+        let locator = decoder.connection_polynomial();
+        assert_eq!(locator, fresh_connection_from_sequence(&sequence).unwrap());
 
         if let Ok(candidate) = decode_with_locator_specialized(&sketch, limit, &locator) {
             assert_eq!(candidate, expected);
