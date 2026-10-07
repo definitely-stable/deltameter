@@ -4,6 +4,10 @@ from readiness import (
     parse_record,
     validate_check,
     validate_ready,
+    validate_riblt_check,
+    validate_riblt_ready,
+    validate_riblt_sync,
+    validate_riblt_update,
     validate_sync,
     validate_update,
 )
@@ -54,6 +58,31 @@ class ReadinessTests(unittest.TestCase):
             "vmrss_bytes=4096 vmhwm_bytes=8192"
         )
         self.assertEqual(validate_sync(line, "d11")["final_k"], 1)
+
+
+    def test_riblt_contract(self):
+        ready = (
+            "ready source_build_ns=1 clk_tck=100 source_len=3 source_a_cap=3 "
+            "source_b_cap=3 runtime_alloc_bytes=1024 runtime_heap_sys_bytes=4096 "
+            "vmrss_bytes=8192 vmhwm_bytes=8192"
+        )
+        self.assertEqual(validate_riblt_ready(ready)["source_len"], 3)
+        update = (
+            "update ok=1 exact_ns=5 native_total_ns=5 cpu_ticks=0 "
+            "source_len=4 source_cap=8"
+        )
+        self.assertEqual(validate_riblt_update(update, True)["ok"], 1)
+        sync = (
+            "sync lane=1 exact=1 fallback=0 cells=3 batches=1 "
+            "encoder_import_ns=2 decoder_import_ns=2 produce_ns=3 decode_ns=4 "
+            "apply_ns=1 verification_prepare_ns=1 fallback_ns=0 native_total_ns=13 "
+            "cpu_ticks=0 clk_tck=100 source_a_len=4 source_a_cap=8 "
+            "source_b_len=4 source_b_cap=8 remote_cap=4 local_cap=4 "
+            "runtime_alloc_bytes=1024 runtime_heap_sys_bytes=4096 "
+            "vmrss_bytes=8192 vmhwm_bytes=8192"
+        )
+        self.assertEqual(validate_riblt_sync(sync, "stream")["cells"], 3)
+        self.assertEqual(validate_riblt_check("check equal=1")["equal"], 1)
 
     def test_check_requires_all_oracles(self):
         self.assertEqual(
