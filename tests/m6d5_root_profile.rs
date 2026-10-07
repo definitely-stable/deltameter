@@ -1,9 +1,9 @@
 #[path = "../examples/support/m6d_pinsketch64.rs"]
 mod pinsketch64;
-#[path = "../examples/support/m6d4_trace_square.rs"]
-mod trace_square;
 #[path = "../examples/support/m6d5_root_profile.rs"]
 mod root_profile;
+#[path = "../examples/support/m6d4_trace_square.rs"]
+mod trace_square;
 
 use pinsketch64::PinSketch64Lab;
 use root_profile::decode_with_locator_profiled;
