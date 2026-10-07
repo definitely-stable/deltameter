@@ -71,10 +71,83 @@ pub fn poly_square_mod_monic(polynomial: &[u64], modulus: &[u64]) -> Result<Vec<
     Ok(remainder)
 }
 
+pub fn fresh_locator(
+    sketch: &PinSketch64Lab,
+    max_elements: usize,
+) -> Result<Vec<u64>, D4Error> {
+    if max_elements > sketch.capacity() {
+        return Err(LabError::InvalidDecodeLimit.into());
+    }
+
+    let zero_count = usize::from(sketch.zero_present());
+    if zero_count > max_elements {
+        return Err(LabError::CandidateExceedsCapacity.into());
+    }
+    let nonzero_limit = max_elements - zero_count;
+
+    let mut sequence = vec![0_u64; nonzero_limit * 2];
+    for exponent in 1..=nonzero_limit * 2 {
+        sequence[exponent - 1] = if exponent % 2 == 1 {
+            sketch.odd_syndromes()[(exponent - 1) / 2]
+        } else {
+            gf64_square(sequence[exponent / 2 - 1])
+        };
+    }
+
+    berlekamp_massey(&sequence)
+}
+
+pub fn decode_with_locator_generic(
+    sketch: &PinSketch64Lab,
+    max_elements: usize,
+    locator: &[u64],
+) -> Result<Vec<u64>, D4Error> {
+    let roots = factor_locator_generic(locator)?;
+    finish_candidate(sketch, max_elements, locator, roots)
+}
+
 pub fn decode_with_locator_specialized(
     sketch: &PinSketch64Lab,
     max_elements: usize,
     locator: &[u64],
+) -> Result<Vec<u64>, D4Error> {
+    let roots = factor_locator_specialized(locator)?;
+    finish_candidate(sketch, max_elements, locator, roots)
+}
+
+fn factor_locator_generic(locator: &[u64]) -> Result<Vec<u64>, D4Error> {
+    if locator.is_empty() {
+        return Err(LabError::DecodeFailure.into());
+    }
+    if locator.len() == 1 {
+        return Ok(Vec::new());
+    }
+
+    let mut root_polynomial: Vec<u64> = locator.iter().copied().rev().collect();
+    trim(&mut root_polynomial);
+    make_monic(&mut root_polynomial)?;
+    factor_linear_roots_generic(&root_polynomial)
+}
+
+fn factor_locator_specialized(locator: &[u64]) -> Result<Vec<u64>, D4Error> {
+    if locator.is_empty() {
+        return Err(LabError::DecodeFailure.into());
+    }
+    if locator.len() == 1 {
+        return Ok(Vec::new());
+    }
+
+    let mut root_polynomial: Vec<u64> = locator.iter().copied().rev().collect();
+    trim(&mut root_polynomial);
+    make_monic(&mut root_polynomial)?;
+    factor_linear_roots_specialized(&root_polynomial)
+}
+
+fn finish_candidate(
+    sketch: &PinSketch64Lab,
+    max_elements: usize,
+    locator: &[u64],
+    mut roots: Vec<u64>,
 ) -> Result<Vec<u64>, D4Error> {
     if max_elements > sketch.capacity() {
         return Err(LabError::InvalidDecodeLimit.into());
@@ -89,20 +162,10 @@ pub fn decode_with_locator_specialized(
     if locator.is_empty() {
         return Err(LabError::DecodeFailure.into());
     }
-
     let degree = locator.len() - 1;
     if degree > nonzero_limit {
         return Err(LabError::DecodeFailure.into());
     }
-
-    let mut roots = if degree == 0 {
-        Vec::new()
-    } else {
-        let mut root_polynomial: Vec<u64> = locator.iter().copied().rev().collect();
-        trim(&mut root_polynomial);
-        make_monic(&mut root_polynomial)?;
-        factor_linear_roots_specialized(&root_polynomial)?
-    };
 
     roots.sort_unstable();
     if roots.windows(2).any(|pair| pair[0] == pair[1])
@@ -128,6 +191,111 @@ pub fn decode_with_locator_specialized(
     }
 
     Ok(roots)
+}
+
+fn berlekamp_massey(sequence: &[u64]) -> Result<Vec<u64>, D4Error> {
+    let mut connection = vec![1_u64];
+    let mut previous = vec![1_u64];
+    let mut length = 0_usize;
+    let mut shift = 1_usize;
+    let mut previous_discrepancy = 1_u64;
+
+    for n in 0..sequence.len() {
+        let mut discrepancy = sequence[n];
+        for i in 1..=length {
+            discrepancy ^= gf64_mul(connection[i], sequence[n - i]);
+        }
+
+        if discrepancy == 0 {
+            shift += 1;
+            continue;
+        }
+
+        let inverse =
+            gf64_inv(previous_discrepancy).ok_or(LabError::DecodeFailure)?;
+        let scale = gf64_mul(discrepancy, inverse);
+        let old_connection = connection.clone();
+
+        let required = previous
+            .len()
+            .checked_add(shift)
+            .ok_or(LabError::DecodeFailure)?;
+        if connection.len() < required {
+            connection.resize(required, 0);
+        }
+        for (index, &coefficient) in previous.iter().enumerate() {
+            connection[index + shift] ^= gf64_mul(scale, coefficient);
+        }
+
+        if 2 * length <= n {
+            length = n + 1 - length;
+            previous = old_connection;
+            previous_discrepancy = discrepancy;
+            shift = 1;
+        } else {
+            shift += 1;
+        }
+    }
+
+    connection.truncate(length + 1);
+    trim(&mut connection);
+    if connection.is_empty() {
+        return Err(LabError::DecodeFailure.into());
+    }
+    Ok(connection)
+}
+
+fn factor_linear_roots_generic(polynomial: &[u64]) -> Result<Vec<u64>, D4Error> {
+    let mut polynomial = polynomial.to_vec();
+    trim(&mut polynomial);
+    make_monic(&mut polynomial)?;
+
+    let degree = polynomial.len().saturating_sub(1);
+    if degree == 0 {
+        return Ok(Vec::new());
+    }
+    if degree == 1 {
+        return Ok(vec![polynomial[0]]);
+    }
+
+    for bit in 0..64 {
+        let coefficient = 1_u64 << bit;
+        let trace = trace_polynomial_mod_generic(coefficient, &polynomial)?;
+        let factor = poly_gcd(&polynomial, &trace)?;
+        let factor_degree = factor.len().saturating_sub(1);
+
+        if factor_degree == 0 || factor_degree == degree {
+            continue;
+        }
+
+        let (quotient, remainder) = poly_div_rem(&polynomial, &factor)?;
+        if !remainder.is_empty() {
+            return Err(LabError::DecodeFailure.into());
+        }
+
+        let mut left = factor_linear_roots_generic(&factor)?;
+        let mut right = factor_linear_roots_generic(&quotient)?;
+        left.append(&mut right);
+        return Ok(left);
+    }
+
+    Err(LabError::DecodeFailure.into())
+}
+
+fn trace_polynomial_mod_generic(
+    coefficient: u64,
+    modulus: &[u64],
+) -> Result<Vec<u64>, D4Error> {
+    let mut trace = Vec::new();
+    let mut term = vec![0, coefficient];
+
+    for _ in 0..64 {
+        poly_xor_assign(&mut trace, &term);
+        term = poly_mul_mod(&term, &term, modulus)?;
+    }
+
+    trim(&mut trace);
+    Ok(trace)
 }
 
 fn factor_linear_roots_specialized(polynomial: &[u64]) -> Result<Vec<u64>, D4Error> {
