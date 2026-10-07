@@ -71,6 +71,20 @@ verification inherited from D13-A. A full exact fallback is terminal. When fallb
 or direct exact transfers A, B updates its maintained D11 sketch from the exact
 merge-difference rather than rebuilding the sketch.
 
+B0 discovered a deterministic **early-stage over-capacity false candidate** while
+the eventual session difference is still within D11's maximum k=8 envelope. For the
+frozen N=1024, d=8 witness, keys 1..4 are replaced by
+`0x80000000007a3910..0x80000000007a3913`. At k=1, both the maintained sketches
+and fresh rebuilds produce the same provisional but incorrect candidate. This is
+not persistence corruption and not an in-capacity k=8 decoder failure; it is direct
+evidence that the one-extra-syndrome guard is empirical rather than a theorem.
+
+The readiness gate therefore distinguishes causes instead of merely checking
+`d <= 8`: an exact fallback before the eventual sufficient stage is allowed only
+when independent verification rejects a candidate, fresh rebuild reproduces the
+same early-stage result, and all failed work/fallback cost is retained. Any other
+fallback for d<=8 remains INVALID. The witness is a permanent hosted regression.
+
 ## Native phase inventory
 
 Direct exact:
