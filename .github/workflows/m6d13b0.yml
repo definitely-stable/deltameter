@@ -1,0 +1,43 @@
+name: M6-D13-B0 readiness
+on:
+  pull_request:
+    paths:
+      - 'examples/m6d13b0_worker.rs'
+      - 'research/m6d13b0/**'
+      - 'docs/M6-D13B0-MEASUREMENT-READINESS.md'
+      - 'docs/superpowers/plans/2026-10-07-m6d13b0-measurement-readiness.md'
+      - '.github/workflows/m6d13b0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - name: Verify readiness contract
+        run: python3 -m unittest discover -s research/m6d13b0 -p 'test_*.py'
+      - name: Build persistent Rust worker
+        run: cargo build --release --example m6d13b0_worker
+      - name: Run persistent direct/D11 readiness controls
+        run: |
+          mkdir -p d13b0-out
+          git rev-parse HEAD > d13b0-out/head.txt
+          rustc -Vv > d13b0-out/rust.txt
+          uname -a > d13b0-out/platform.txt
+          python3 research/m6d13b0/check_worker.py \
+            target/release/examples/m6d13b0_worker \
+            d13b0-out/rust-partial.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6d13b0-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          path: d13b0-out/
+          if-no-files-found: warn
