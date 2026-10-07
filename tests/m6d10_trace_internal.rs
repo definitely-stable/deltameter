@@ -13,9 +13,8 @@ use pinsketch64::PinSketch64Lab;
 use quadratic::decode_with_locator_quadratic;
 use square_candidate::decode_with_locator_square_candidate;
 use trace_internal::{
-    decode_with_locator_collect, full_square_mod_replay, full_trace_replay,
-    prepare_modulus_replay, reduce_unreduced_replay, square_unreduced_replay,
-    trace_accumulate_replay,
+    decode_with_locator_collect, full_square_mod_replay, full_trace_replay, prepare_modulus_replay,
+    reduce_unreduced_replay, square_unreduced_replay, trace_accumulate_replay,
 };
 use trace_square::{
     D4Error, decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
