@@ -229,6 +229,7 @@ pub(crate) fn push_i64(bytes: &mut Vec<u8>, value: i64) {
     bytes.extend_from_slice(&value.to_le_bytes());
 }
 
+// Compile-time Sarwate table; snapshot-v1 CRC32C parameters stay unchanged.
 const CRC32C_TABLE: [u32; 256] = make_crc32c_table();
 
 const fn make_crc32c_table() -> [u32; 256] {
