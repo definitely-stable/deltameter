@@ -2,7 +2,7 @@
 
 Issue: #59
 
-Status: Phase A foundation. No public/API change and no Proven promotion.
+Status: **FOUNDATION_GO**. Continue to conservative lookup/numerical implementation and declared-range closure. No public/API change and no Proven promotion.
 
 ## Product question
 
