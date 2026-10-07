@@ -999,3 +999,53 @@ Decision:
   hardware specialization or decoded-state candidate.
 
 Canonical evidence: docs/M6-B3-DIRECT-DECODE-EVIDENCE.md.
+
+
+### D42 — D13-A protocol v2 is the system-comparison foundation
+
+D13-A corrects the system contract before performance measurement.
+
+Decision:
+
+- a validated full target-list transfer is terminal for direct exact and exact
+  fallback; it is not sent back a second time merely to imitate sketch verification;
+- provisional D11 candidates require the independent reverse-list verification
+  boundary;
+- pinned RIBLT `pull_pow2` is retained as a concrete transport comparator but
+  cannot by itself reject the rateless architecture;
+- D13-B performance remains blocked on native CPU/memory accounting, persistent
+  multi-session state, a streaming rateless comparator and larger scaling evidence;
+- no public/production ExactSmallDelta decision follows.
+
+Canonical protocol: docs/M6-D13A-SYSTEM-PROTOCOL.md.
+
+
+### D43 — D13-B0 is measurement-ready; staged guard false positives are charged
+
+D13-B0 establishes a native measurement substrate for the system comparison.
+
+Hosted readiness at measurement-source head
+`de0c57531c0a186e160f8c4617a1c7878181dc56` passes frozen-source validation,
+1,776 persistent-chain rows and a 14-row sparse one-million-key scaling inventory.
+No performance winner is measured in B0.
+
+B0 also finds a deterministic staged D11 witness with true `d=8`: at `k=1`,
+maintained and fresh sketches produce the same provisional but incorrect candidate.
+The independent verifier rejects it and protocol-v2 exact fallback completes
+correctly.
+
+Decision:
+
+- classify the witness as an early-stage over-capacity guard false candidate, not
+  maintained-state corruption or a sufficient-capacity k=8 decoder failure;
+- preserve the existing statement that the one-extra-syndrome guard is empirical,
+  not a theorem;
+- record and charge `false_candidate` separately in D13-B;
+- allow d<=8 fallback only when fresh rebuild reproduces the same earlier-stage
+  provisional candidate and independent verification rejects it;
+- any other unexplained d<=8 fallback remains INVALID;
+- freeze the measurement sources before D13-B;
+- authorize only the predeclared hosted system comparison after final exact-head CI;
+- production/public ExactSmallDelta remains NO-GO.
+
+Canonical evidence: docs/M6-D13B0-MEASUREMENT-READINESS-EVIDENCE.md.

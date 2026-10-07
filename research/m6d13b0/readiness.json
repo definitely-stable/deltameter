@@ -1,0 +1,72 @@
+{
+  "format": "deltameter.m6d13b0.readiness.v1",
+  "base_main": "7b5bbdbc7b278c58b85d1e3732d68ac70ee371df",
+  "d13a_protocol": "deltameter.m6d13a.v2",
+  "riblt_pin": "4afa6bc06cb2237d9ea273a51d97a7e05b3f573b",
+  "updates_per_session": [
+    0,
+    1,
+    8,
+    64
+  ],
+  "sessions_per_build": [
+    1,
+    10,
+    100
+  ],
+  "scaling": [
+    {
+      "n": 1048576,
+      "d": [
+        128,
+        512,
+        1024
+      ],
+      "shape": "balanced",
+      "natural_exhaustion_d": 2048
+    }
+  ],
+  "rateless_lanes": [
+    "pull_pow2",
+    "stream_lb"
+  ],
+  "stream_lb": {
+    "start_control_bytes": 48,
+    "cell_bytes": 24,
+    "stop_control_bytes": 48,
+    "startup_rtt": 1,
+    "inflight_stop_overrun": "not_modeled_lower_bound"
+  },
+  "required_metrics": [
+    "native_elapsed_ns",
+    "process_cpu_ticks",
+    "clk_tck",
+    "source_len",
+    "source_capacity",
+    "candidate_capacity",
+    "vmrss_bytes",
+    "vmhwm_bytes"
+  ],
+  "performance_decision": "NOT_MEASURED",
+  "chain_n": 1024,
+  "d11_verified_false_candidate": {
+    "semantics": "charged_exact_fallback_only_when_fresh_rebuild_reproduces_same_early_stage_overcapacity_candidate",
+    "witness": {
+      "n": 1024,
+      "d": 8,
+      "stage_k": 1,
+      "removed": [
+        "0x1",
+        "0x2",
+        "0x3",
+        "0x4"
+      ],
+      "inserted": [
+        "0x80000000007a3910",
+        "0x80000000007a3911",
+        "0x80000000007a3912",
+        "0x80000000007a3913"
+      ]
+    }
+  }
+}
