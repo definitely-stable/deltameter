@@ -246,7 +246,8 @@ fn full_width_values_keep_exact_identity_semantics() {
     for (limit, stored_capacity) in STAGES {
         let sketch = difference_prefix(&left_full, &right_full, stored_capacity);
         decoder.extend_to(&sketch, limit).unwrap();
-        if let Ok(candidate) = decode_with_locator(&sketch, limit, &decoder.connection_polynomial()) {
+        if let Ok(candidate) = decode_with_locator(&sketch, limit, &decoder.connection_polynomial())
+        {
             assert_eq!(candidate, expected);
             return;
         }
