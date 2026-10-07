@@ -40,7 +40,7 @@ class ReadinessTests(unittest.TestCase):
 
     def test_direct_sync_contract(self):
         line = (
-            "sync exact=1 fallback=0 final_k=0 serialize_ns=5 apply_exact_ns=7 "
+            "sync exact=1 fallback=0 false_candidate=0 final_k=0 serialize_ns=5 apply_exact_ns=7 "
             "prefix_ns=0 decode_ns=0 apply_sketch_ns=0 verification_prepare_ns=0 "
             "fallback_serialize_ns=0 fallback_apply_exact_ns=0 fallback_apply_sketch_ns=0 "
             "native_total_ns=12 candidate_capacity=0 cpu_ticks=0 clk_tck=100 payload_len=32 "
@@ -51,7 +51,7 @@ class ReadinessTests(unittest.TestCase):
 
     def test_d11_sync_contract(self):
         line = (
-            "sync exact=1 fallback=0 final_k=1 serialize_ns=0 apply_exact_ns=2 "
+            "sync exact=1 fallback=0 false_candidate=0 final_k=1 serialize_ns=0 apply_exact_ns=2 "
             "prefix_ns=3 decode_ns=5 apply_sketch_ns=1 verification_prepare_ns=4 "
             "fallback_serialize_ns=0 fallback_apply_exact_ns=0 fallback_apply_sketch_ns=0 "
             "native_total_ns=15 candidate_capacity=4 cpu_ticks=0 clk_tck=100 payload_len=0 "
