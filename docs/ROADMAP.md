@@ -200,3 +200,19 @@ Only after evidence:
 - Public GitHub-hosted runners may be used normally.
 - CI simplicity matters more than artificial runner-minute minimization.
 - No benchmark number becomes a promise until reproduced on named hardware.
+
+
+## M6-D13-A comparator/system foundation
+
+Issue #52 freezes the next system comparison before measurements: direct exact,
+maintained guarded D11 with exact fallback, and a pinned external Rateless IBLT
+`pull_pow2` comparator. See [protocol](M6-D13A-SYSTEM-PROTOCOL.md) and
+[plan](superpowers/plans/2026-10-07-m6d13a-system-foundation.md).
+Protocol v2 makes a validated complete target-list transfer terminal for direct
+and fallback; only provisional sketch candidates pay independent reverse-list
+verification. The pull comparator alone cannot select/reject the rateless
+architecture. D13-B timing is blocked on native CPU/peak-memory instrumentation,
+persistent multi-session D11 state, a faithful RIBLT streaming lane and a larger
+scaling extension. D13-A correctness/accounting acceptance is distinct from
+performance or product acceptance. D12 STOP_ALGEBRAIC_MICRO_OPT and public
+ExactSmallDelta NO-GO remain in force.
