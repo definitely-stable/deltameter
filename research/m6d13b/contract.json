@@ -1,0 +1,77 @@
+{
+  "format": "deltameter.m6d13b.v1",
+  "base_main": "8b5421709965e88dfbb74cd61eb742321d738efa",
+  "issue": 56,
+  "d13a_protocol": "deltameter.m6d13a.v2",
+  "b0_readiness": "deltameter.m6d13b0.readiness.v1",
+  "riblt_pin": "4afa6bc06cb2237d9ea273a51d97a7e05b3f573b",
+  "arms": [
+    "direct",
+    "d11",
+    "riblt_pull",
+    "riblt_stream_lb"
+  ],
+  "hosted_workers": 5,
+  "processes_per_worker": 3,
+  "warmup_sessions": 2,
+  "measured_sessions": 10,
+  "core": {
+    "n": [
+      8192,
+      65536
+    ],
+    "updates_per_session": [
+      1,
+      8,
+      64
+    ],
+    "sessions_per_build_model": [
+      1,
+      10,
+      100
+    ]
+  },
+  "boundary": {
+    "n": 65536,
+    "d": [
+      8,
+      9
+    ]
+  },
+  "scaling": {
+    "n": 1048576,
+    "d": [
+      128,
+      512,
+      1024
+    ]
+  },
+  "rtt_ms": [
+    0,
+    1,
+    10,
+    50,
+    100
+  ],
+  "bandwidth_mbps": [
+    1,
+    10,
+    100,
+    1000
+  ],
+  "header_bytes": 48,
+  "exact_list_count_bytes": 8,
+  "riblt_cell_bytes": 24,
+  "riblt_limit_cells": 1024,
+  "candidate_threshold_fraction": 0.1,
+  "stream_semantics": "optimistic_receiver_completion_lower_bound",
+  "performance_metric": "native_compute_plus_network_model",
+  "decision_outcomes": [
+    "D11_CONDITIONAL_PRIVATE_ONLY",
+    "RATELESS_RESEARCH_ONLY",
+    "MIXED_CONDITIONAL_PRIVATE_ONLY",
+    "STOP_SYSTEM_PRODUCT",
+    "INVALID"
+  ],
+  "production_exactsmall_delta": "NO_GO"
+}
