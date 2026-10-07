@@ -7,7 +7,10 @@ mod trace_square;
 
 use pinsketch64::PinSketch64Lab;
 use root_profile::decode_with_locator_profiled;
-use trace_square::{decode_with_locator_specialized, fresh_locator};
+use trace_square::{
+    decode_with_locator_generic, decode_with_locator_specialized, fresh_locator, generic_square_mod,
+    poly_square_mod_monic,
+};
 
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
 
@@ -118,9 +121,11 @@ fn profiled_path_matches_accepted_d4_on_frozen_matrix() {
             let sketch = difference_prefix(&left_full, &right_full, capacity);
             let locator = fresh_locator(&sketch, limit).unwrap();
 
+            let generic = decode_with_locator_generic(&sketch, limit, &locator);
             let accepted = decode_with_locator_specialized(&sketch, limit, &locator);
             let profiled = decode_with_locator_profiled(&sketch, limit, &locator);
 
+            assert_eq!(generic, accepted, "generic/specialized mismatch d={difference} limit={limit}");
             assert_eq!(
                 profiled.result, accepted,
                 "outcome mismatch d={difference} limit={limit}"
@@ -161,6 +166,9 @@ fn degree_two_work_is_observable_without_parent_double_counting() {
     let profiled = decode_with_locator_profiled(&sketch, 2, &locator);
     assert!(profiled.result.is_ok());
     profiled.profile.validate_accounting().unwrap();
+    let mut aggregate = root_profile::RootProfile::default();
+    aggregate.merge(&profiled.profile);
+    assert_eq!(aggregate.factor_calls, profiled.profile.factor_calls);
 
     assert!(profiled.profile.factor_calls[2] >= 1);
     assert!(profiled.profile.factor_calls[1] >= 2);
@@ -196,6 +204,17 @@ fn full_width_and_zero_semantics_are_unchanged() {
     }
 
     panic!("full-width case did not decode");
+}
+
+
+#[test]
+fn frozen_generic_square_control_remains_equivalent() {
+    let polynomial = [0x0123_4567_89AB_CDEF, 0xDEAD_BEEF_CAFE_BABE];
+    let modulus = [0xA5A5_5A5A_F0F0_0F0F, 0x1357_9BDF_2468_ACE0, 1];
+    assert_eq!(
+        generic_square_mod(&polynomial, &modulus).unwrap(),
+        poly_square_mod_monic(&polynomial, &modulus).unwrap()
+    );
 }
 
 #[test]
