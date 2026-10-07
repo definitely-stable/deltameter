@@ -1,0 +1,155 @@
+"""Fail-closed helpers for M6-D13-B0 readiness evidence."""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+CONTRACT = json.loads(Path(__file__).with_name("readiness.json").read_text())
+
+SYNC_PHASES = [
+    "serialize_ns",
+    "apply_exact_ns",
+    "prefix_ns",
+    "decode_ns",
+    "apply_sketch_ns",
+    "verification_prepare_ns",
+    "fallback_serialize_ns",
+    "fallback_apply_exact_ns",
+    "fallback_apply_sketch_ns",
+]
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise ValueError(message)
+
+
+def parse_record(line: str) -> tuple[str, dict[str, int]]:
+    parts = line.strip().split()
+    require(parts, "empty record")
+    kind = parts[0]
+    fields: dict[str, int] = {}
+    for token in parts[1:]:
+        require("=" in token, "malformed token")
+        key, value = token.split("=", 1)
+        require(key not in fields, f"duplicate field {key}")
+        fields[key] = int(value)
+        require(fields[key] >= 0, f"negative field {key}")
+    return kind, fields
+
+
+def validate_memory(fields: dict[str, int]) -> None:
+    for key in ("vmrss_bytes", "vmhwm_bytes"):
+        require(key in fields and fields[key] > 0, f"missing {key}")
+    require(fields["vmhwm_bytes"] >= fields["vmrss_bytes"], "VmHWM below VmRSS")
+
+
+def validate_ready(line: str, mode: str) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "ready", "not ready record")
+    for key in (
+        "source_build_ns",
+        "sketch_build_ns",
+        "clk_tck",
+        "source_len",
+        "source_a_cap",
+        "source_b_cap",
+        "sketch_payload_bytes",
+    ):
+        require(key in fields, f"missing {key}")
+    require(fields["clk_tck"] > 0, "invalid CLK_TCK")
+    require(fields["source_a_cap"] >= fields["source_len"], "A capacity")
+    require(fields["source_b_cap"] >= fields["source_len"], "B capacity")
+    require(
+        fields["sketch_payload_bytes"] == (146 if mode == "d11" else 0),
+        "sketch payload",
+    )
+    validate_memory(fields)
+    return fields
+
+
+def validate_update(line: str, mode: str, expected_ok: bool) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "update", "not update record")
+    for key in (
+        "ok",
+        "exact_ns",
+        "sketch_ns",
+        "native_total_ns",
+        "cpu_ticks",
+        "source_len",
+        "source_cap",
+    ):
+        require(key in fields, f"missing {key}")
+    require(fields["ok"] == int(expected_ok), "update outcome")
+    require(
+        fields["native_total_ns"] == fields["exact_ns"] + fields["sketch_ns"],
+        "update phase closure",
+    )
+    if mode == "direct" or not expected_ok:
+        require(fields["sketch_ns"] == 0, "unexpected sketch mutation timing")
+    require(fields["source_cap"] >= fields["source_len"], "source capacity")
+    return fields
+
+
+def validate_sync(line: str, mode: str) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "sync", "not sync record")
+    required = [
+        "exact",
+        "fallback",
+        "final_k",
+        *SYNC_PHASES,
+        "native_total_ns",
+        "candidate_capacity",
+        "cpu_ticks",
+        "clk_tck",
+        "payload_len",
+        "source_a_len",
+        "source_a_cap",
+        "source_b_len",
+        "source_b_cap",
+    ]
+    for key in required:
+        require(key in fields, f"missing {key}")
+    require(fields["exact"] == 1, "non-exact result")
+    require(fields["clk_tck"] > 0, "invalid CLK_TCK")
+    require(fields["source_a_len"] == fields["source_b_len"], "source length mismatch")
+    require(fields["source_a_cap"] >= fields["source_a_len"], "A capacity")
+    require(fields["source_b_cap"] >= fields["source_b_len"], "B capacity")
+    require(
+        fields["native_total_ns"] == sum(fields[key] for key in SYNC_PHASES),
+        "sync phase closure",
+    )
+    validate_memory(fields)
+
+    if mode == "direct":
+        require(fields["fallback"] == 0 and fields["final_k"] == 0, "direct protocol")
+        require(fields["prefix_ns"] == fields["decode_ns"] == 0, "direct decoder work")
+        require(fields["apply_sketch_ns"] == 0, "direct sketch work")
+        require(fields["verification_prepare_ns"] == 0, "direct verification")
+        require(fields["fallback_serialize_ns"] == 0, "direct fallback")
+        require(fields["fallback_apply_exact_ns"] == 0, "direct fallback apply")
+        require(fields["fallback_apply_sketch_ns"] == 0, "direct fallback sketch")
+        require(
+            fields["payload_len"] == 8 + 8 * fields["source_a_len"],
+            "direct payload shape",
+        )
+    else:
+        require(fields["final_k"] in (1, 2, 4, 8), "D11 stage")
+        require(fields["serialize_ns"] == 0 and fields["payload_len"] == 0, "D11 direct leak")
+        if fields["fallback"] == 0:
+            require(fields["fallback_serialize_ns"] == 0, "unexpected fallback serialize")
+            require(fields["fallback_apply_exact_ns"] == 0, "unexpected fallback apply")
+            require(fields["fallback_apply_sketch_ns"] == 0, "unexpected fallback sketch")
+        else:
+            require(fields["fallback_serialize_ns"] > 0, "missing fallback serialize")
+            require(fields["fallback_apply_exact_ns"] > 0, "missing fallback exact apply")
+    return fields
+
+
+def validate_check(line: str) -> dict[str, int]:
+    kind, fields = parse_record(line)
+    require(kind == "check", "not check record")
+    require(fields == {"equal": 1, "a_rebuild": 1, "b_rebuild": 1}, "state mismatch")
+    return fields
