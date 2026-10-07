@@ -1,6 +1,6 @@
 # M6-D2 — Guarded incremental PinSketch64 prefix experiment
 
-Status: implementation in progress. Issue: #26. Parent: #19 / #14.
+Status: implementation and evidence complete in PR #27; **LAB-GO private only, production/public NO-GO**. Issue: #26. Parent: #19 / #14.
 
 ## Goal
 
@@ -134,3 +134,22 @@ LAB-GO requires all of:
 NO-GO if nesting provides no meaningful value after retry CPU/RTT accounting.
 
 Even LAB-GO does not authorize a public ExactSmallDelta protocol.
+
+
+## Completion record
+
+Measured implementation head: `c5e8603be0d396dddfe1c43894d6acb10ac423d6`.
+
+Hosted evidence: `m6d2-prefix #10 / 37564857480`.
+
+Canonical evidence: [M6-D2 incremental prefix evidence](../../M6-D2-INCREMENTAL-PREFIX-EVIDENCE.md).
+
+Verdict:
+
+- nested prefix semantics: ACCEPT;
+- incremental bytes equal ideal fixed-known-k bytes;
+- naive resend: REJECT as wasteful control;
+- repeated reference decode CPU: material retry tax;
+- private maintained-state protocol primitive: LAB-GO;
+- public/production reconciliation API: NO-GO;
+- next optimization target: decoder-state reuse without changing D2 bytes/RTTs.
