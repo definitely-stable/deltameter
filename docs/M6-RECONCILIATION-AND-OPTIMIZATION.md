@@ -494,30 +494,31 @@ experiment. See [B2 evidence](M6-B2-STRUCTURAL-VALIDATION-EVIDENCE.md).
 D12 re-profiles the complete accepted D11 staged decode after the fixed-constant
 trace-reduction optimization.
 
-The profiler measures prefix materialization, locator construction, decoder
-validation, D11 plan construction, trace, GCD, successful division, quadratic solve
-and verification as non-overlapping selectable phases. Factor/decode wall timings are
-accounting controls only.
+Single-run exact-head summaries exposed a boundary-sensitive D6-derived GCD share
+around the frozen 25% common-material threshold. D12 therefore froze a replication
+closure before collecting more data: five independent GitHub-hosted workers, three
+profiler processes per worker and four paired samples per process.
 
-The predeclared validity gate passes: d=8 profiler wall overhead ranges from -0.501%
-to +0.717% across the five deterministic corpora, below the +5% ceiling.
+The original 25% threshold is unchanged. A phase must reach it for every corpus on
+every worker to authorize more algebraic work.
 
-For d=8, no selectable phase reaches the frozen >=25% share in every corpus:
+All five workers pass correctness and the +5% profiler-overhead ceiling. Across the
+25 worker/corpus medians:
 
 ~~~text
-prefix        0.017- 0.080%
-locator       3.435-17.372%
-validation    0.003- 0.016%
-plan build    0.480- 2.741%
-trace        18.860-36.503%
-GCD          23.616-72.762%
-division      1.135- 7.998%
-quadratic     1.392- 9.275%
-verification  0.163- 1.066%
+prefix        0.017- 0.092%
+locator       3.422-17.951%
+validation    0.003- 0.017%
+plan build    0.363- 2.716%
+trace        18.034-36.786%
+GCD          23.574-74.713%
+division      1.120- 8.434%
+quadratic     1.367- 9.453%
+verification  0.161- 1.113%
 ~~~
 
-GCD is dominant in four corpora but falls to 23.616% in the D6-derived corpus.
-That 1.384-point miss is not reclassified after measurement.
+The D6-derived GCD worker medians are 23.657%, 24.750%, 24.575%, 23.574% and
+23.583%. None clears the original threshold.
 
 Verdict: **STOP algebraic decoder micro-optimization.** The next M6-D action is a
 maintained-state system comparison of accepted private D11 PinSketch, direct exact
