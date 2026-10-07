@@ -812,3 +812,35 @@ Decision:
 - production/public ExactSmallDelta remains NO-GO.
 
 Canonical evidence: docs/M6-D10-TRACE-INTERNAL-EVIDENCE.md.
+
+
+### D37 — M6-B keeps B2/B3 separate; direct Energy decode is the next performance experiment
+
+The M6-B deep-research audit reconciles two external reports with the actual
+snapshot-v1 implementation and B1 hosted evidence.
+
+Accepted corrections:
+
+- the current decoder does not allocate arbitrary Energy primary state from a short
+  malformed payload; exact counter bytes are checked before meter construction;
+- B2 is exact-shape/resource hardening, not a newly discovered critical DoS fix;
+- B2 and B3 remain separate so performance attribution is preserved;
+- B3 is widened to direct decoded-state construction: capacity-only counters and
+  one-pass checked row-energy accumulation instead of zero-initialize, overwrite and
+  rescan;
+- the default Energy B3 logical opportunity is removal of 753,664 bytes of
+  destination-counter zero-store/post-read touches for `B=2048,R=23`; this is not
+  a physical memory-bus claim;
+- the external "~10.7% residual CRC" and "33-40% memory traffic" values are not
+  adopted as exact evidence because they depend on assumed standalone rates and
+  cache/allocator behavior;
+- slicing-by-4/8 and encode CRC fusion are deferred until residual hosted
+  attribution selects them;
+- decode CRC fusion remains NO-GO for current v1;
+- no new snapshot-core wire-size cap is introduced.
+
+Correct benchmark fixtures are `B=512,R=9` for Energy-small (37,340 bytes) and
+`rows=17,levels=13` for the 76-byte padded Parity case.
+
+Canonical audit: docs/M6-B-CODEC-DECODER-RESEARCH-AUDIT.md.  
+Execution plan: docs/superpowers/plans/2026-10-07-m6b-post-research.md.
