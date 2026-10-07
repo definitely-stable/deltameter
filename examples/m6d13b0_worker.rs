@@ -38,37 +38,13 @@ struct Endpoint {
 }
 
 impl Endpoint {
-    fn new(keys: Vec<u64>, mode: Mode) -> Self {
+    fn exact(keys: Vec<u64>) -> Self {
         assert!(keys.windows(2).all(|pair| pair[0] < pair[1]));
-        let sketch = (mode == Mode::D11)
-            .then(|| PinSketch64Lab::from_sorted_unique(CAPACITY, &keys).unwrap());
-        Self { keys, sketch }
+        Self { keys, sketch: None }
     }
 
-    fn insert(&mut self, key: u64) -> bool {
-        match self.keys.binary_search(&key) {
-            Ok(_) => false,
-            Err(index) => {
-                self.keys.insert(index, key);
-                if let Some(sketch) = &mut self.sketch {
-                    sketch.toggle(key);
-                }
-                true
-            }
-        }
-    }
-
-    fn delete(&mut self, key: u64) -> bool {
-        match self.keys.binary_search(&key) {
-            Ok(index) => {
-                self.keys.remove(index);
-                if let Some(sketch) = &mut self.sketch {
-                    sketch.toggle(key);
-                }
-                true
-            }
-            Err(_) => false,
-        }
+    fn build_sketch(&mut self) {
+        self.sketch = Some(PinSketch64Lab::from_sorted_unique(CAPACITY, &self.keys).unwrap());
     }
 
     fn rebuild_matches(&self) -> bool {
@@ -129,15 +105,6 @@ fn prefix(sketch: &PinSketch64Lab, capacity: usize) -> PinSketch64Lab {
     bytes[8..10].copy_from_slice(&(capacity as u16).to_le_bytes());
     bytes.truncate(16 + capacity * 8);
     PinSketch64Lab::decode(&bytes).unwrap()
-}
-
-fn decode_stage(a: &PinSketch64Lab, b: &PinSketch64Lab, limit: usize) -> Result<Vec<u64>, ()> {
-    let capacity = limit + 1;
-    let mut difference = prefix(a, capacity);
-    difference.merge(&prefix(b, capacity)).unwrap();
-    let locator = trace_square::fresh_locator(&difference, limit).map_err(|_| ())?;
-    fixed_reduction::decode_with_locator_fixed_reduction(&difference, limit, &locator)
-        .map_err(|_| ())
 }
 
 fn symmetric_difference(left: &[u64], right: &[u64]) -> Vec<u64> {
@@ -228,6 +195,15 @@ fn sync_direct(state: &mut State) -> String {
     let apply_ns = apply_started.elapsed().as_nanos();
 
     assert_eq!(state.a.keys, state.b.keys);
+    let native_total_ns = serialize_ns + apply_ns;
+    let native_total_ns = prefix_ns
+        + decode_ns
+        + apply_exact_ns
+        + apply_sketch_ns
+        + verification_prepare_ns
+        + fallback_serialize_ns
+        + fallback_apply_exact_ns
+        + fallback_apply_sketch_ns;
     let cpu_ticks = process_cpu_ticks() - cpu0;
     let (rss, hwm) = rss_bytes();
     [
@@ -244,6 +220,8 @@ fn sync_direct(state: &mut State) -> String {
         kv("fallback_serialize_ns", 0),
         kv("fallback_apply_exact_ns", 0),
         kv("fallback_apply_sketch_ns", 0),
+        kv("native_total_ns", native_total_ns),
+        kv("candidate_capacity", 0),
         kv("cpu_ticks", cpu_ticks),
         kv("clk_tck", state.clk_tck),
         kv("payload_len", payload.len()),
@@ -301,6 +279,7 @@ fn sync_d11(state: &mut State) -> String {
     let mut fallback_apply_exact_ns = 0_u128;
     let mut fallback_apply_sketch_ns = 0_u128;
     let mut fallback = 0;
+    let candidate_capacity = roots.as_ref().map_or(0, Vec::capacity);
 
     if let Some(candidate_roots) = roots {
         let exact_started = Instant::now();
@@ -360,6 +339,8 @@ fn sync_d11(state: &mut State) -> String {
         kv("fallback_serialize_ns", fallback_serialize_ns),
         kv("fallback_apply_exact_ns", fallback_apply_exact_ns),
         kv("fallback_apply_sketch_ns", fallback_apply_sketch_ns),
+        kv("native_total_ns", native_total_ns),
+        kv("candidate_capacity", candidate_capacity),
         kv("cpu_ticks", cpu_ticks),
         kv("clk_tck", state.clk_tck),
         kv("payload_len", 0),
@@ -389,10 +370,16 @@ fn main() {
                     _ => panic!("invalid mode"),
                 };
                 let keys = parse_keys(keys);
-                let build_started = Instant::now();
-                let a = Endpoint::new(keys.clone(), mode);
-                let b = Endpoint::new(keys, mode);
-                let build_ns = build_started.elapsed().as_nanos();
+                let source_started = Instant::now();
+                let mut a = Endpoint::exact(keys.clone());
+                let mut b = Endpoint::exact(keys);
+                let source_build_ns = source_started.elapsed().as_nanos();
+                let sketch_started = Instant::now();
+                if mode == Mode::D11 {
+                    a.build_sketch();
+                    b.build_sketch();
+                }
+                let sketch_build_ns = sketch_started.elapsed().as_nanos();
                 let (rss, hwm) = rss_bytes();
                 state = Some(State {
                     mode,
@@ -403,7 +390,8 @@ fn main() {
                 let state_ref = state.as_ref().unwrap();
                 [
                     "ready".to_string(),
-                    kv("build_ns", build_ns),
+                    kv("source_build_ns", source_build_ns),
+                    kv("sketch_build_ns", sketch_build_ns),
                     kv("clk_tck", clock),
                     kv("source_len", state_ref.a.keys.len()),
                     kv("source_a_cap", state_ref.a.keys.capacity()),
@@ -420,13 +408,35 @@ fn main() {
                 let before_keys = state.a.keys.clone();
                 let before_sketch = state.a.sketch.clone();
                 let cpu0 = process_cpu_ticks();
-                let started = Instant::now();
+
+                let exact_started = Instant::now();
                 let ok = match *operation {
-                    "insert" => state.a.insert(key),
-                    "delete" => state.a.delete(key),
+                    "insert" => match state.a.keys.binary_search(&key) {
+                        Ok(_) => false,
+                        Err(index) => {
+                            state.a.keys.insert(index, key);
+                            true
+                        }
+                    },
+                    "delete" => match state.a.keys.binary_search(&key) {
+                        Ok(index) => {
+                            state.a.keys.remove(index);
+                            true
+                        }
+                        Err(_) => false,
+                    },
                     _ => panic!("invalid operation"),
                 };
-                let elapsed = started.elapsed().as_nanos();
+                let exact_ns = exact_started.elapsed().as_nanos();
+
+                let sketch_started = Instant::now();
+                if ok {
+                    if let Some(sketch) = &mut state.a.sketch {
+                        sketch.toggle(key);
+                    }
+                }
+                let sketch_ns = sketch_started.elapsed().as_nanos();
+
                 let ticks = process_cpu_ticks() - cpu0;
                 if !ok {
                     assert_eq!(state.a.keys, before_keys);
@@ -435,7 +445,9 @@ fn main() {
                 [
                     "update".to_string(),
                     kv("ok", u8::from(ok)),
-                    kv("elapsed_ns", elapsed),
+                    kv("exact_ns", exact_ns),
+                    kv("sketch_ns", sketch_ns),
+                    kv("native_total_ns", exact_ns + sketch_ns),
                     kv("cpu_ticks", ticks),
                     kv("source_len", state.a.keys.len()),
                     kv("source_cap", state.a.keys.capacity()),
