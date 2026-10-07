@@ -4,7 +4,8 @@ mod incremental_bm;
 mod pinsketch64;
 
 use incremental_bm::{
-    D3Error, IncrementalBmDecoder, fresh_connection, fresh_full_sequence, prefix,
+    D3Error, IncrementalBmDecoder, decode_with_locator, fresh_connection,
+    fresh_connection_from_sequence, fresh_full_sequence, prefix,
 };
 use pinsketch64::PinSketch64Lab;
 
@@ -109,10 +110,17 @@ fn incremental_bm_matches_fresh_state_at_every_stage() {
                 fresh_full_sequence(&sketch, limit).unwrap(),
                 "sequence d={difference} limit={limit}"
             );
+            let fresh_sequence = fresh_full_sequence(&sketch, limit).unwrap();
+            let fresh_locator = fresh_connection(&sketch, limit).unwrap();
             assert_eq!(
                 decoder.connection_polynomial(),
-                fresh_connection(&sketch, limit).unwrap(),
+                fresh_locator,
                 "locator d={difference} limit={limit}"
+            );
+            assert_eq!(
+                fresh_connection_from_sequence(&fresh_sequence).unwrap(),
+                decoder.connection_polynomial(),
+                "fresh BM seam d={difference} limit={limit}"
             );
             assert_eq!(
                 decoder.linear_complexity() + 1,
@@ -147,7 +155,10 @@ fn incremental_candidates_match_d1_and_exact_oracle() {
             decoder.extend_to(&sketch, limit).unwrap();
 
             let d1 = sketch.decode_candidate_with_limit(limit);
+            let locator = decoder.connection_polynomial();
             let d3 = decoder.decode_current(&sketch, limit);
+            let factored = decode_with_locator(&sketch, limit, &locator);
+            assert_eq!(d3, factored, "factor seam d={difference} limit={limit}");
 
             match (d1, d3) {
                 (Ok(reference), Ok(candidate)) => {
