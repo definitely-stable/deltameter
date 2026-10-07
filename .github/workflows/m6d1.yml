@@ -1,0 +1,58 @@
+name: m6d1-lab
+
+on:
+  pull_request:
+    paths:
+      - "examples/m6d1_bench.rs"
+      - "examples/support/m6d_pinsketch64.rs"
+      - "tests/m6d1_pinsketch64.rs"
+      - "research/m6d1_summary.py"
+      - ".github/workflows/m6d1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install stable Rust
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Record environment
+        run: |
+          mkdir -p "${RUNNER_TEMP}/m6d1"
+          rustc +stable -Vv > "${RUNNER_TEMP}/m6d1/rustc.txt"
+          lscpu > "${RUNNER_TEMP}/m6d1/cpu.txt"
+          git rev-parse HEAD > "${RUNNER_TEMP}/m6d1/head.txt"
+          sha256sum examples/m6d1_bench.rs examples/support/m6d_pinsketch64.rs tests/m6d1_pinsketch64.rs research/m6d1_summary.py > "${RUNNER_TEMP}/m6d1/sources-sha256.txt"
+
+      - name: Verify exact-oracle correctness
+        run: cargo +stable test --release --test m6d1_pinsketch64
+
+      - name: Build release lab benchmark
+        run: cargo +stable build --release --example m6d1_bench
+
+      - name: Run repeated lab evidence
+        run: |
+          for run in 1 2 3; do
+            ./target/release/examples/m6d1_bench > "${RUNNER_TEMP}/m6d1/result-${run}.txt"
+          done
+
+      - name: Summarize lab evidence
+        run: |
+          set -o pipefail
+          python3 research/m6d1_summary.py "${RUNNER_TEMP}/m6d1" | tee "${RUNNER_TEMP}/m6d1/summary.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6d1-lab-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/m6d1/
+          if-no-files-found: error
