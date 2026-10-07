@@ -141,7 +141,7 @@ fn main() {
             let metrics = run_decode(&left_full, &right_full, &expected, sample % 2 == 0);
 
             println!(
-                "record,decode,{},{},0,{},{},{},{},{},{},{},{},{}",
+                "record,decode,{},{},0,{},{},{},{},{},{},{},{},{},{}",
                 scenario.name,
                 scenario.d,
                 metrics.outcome.as_str(),
