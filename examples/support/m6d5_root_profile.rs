@@ -52,7 +52,6 @@ impl RootProfile {
         }
         Ok(())
     }
-
 }
 
 #[derive(Debug)]
