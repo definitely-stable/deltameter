@@ -3,11 +3,7 @@
 #[path = "../src/fpcsa.rs"]
 mod fpcsa;
 
-use fpcsa::{
-    PublishedFpcsaF2,
-    PublishedFpcsaF2Config,
-    PublishedFpcsaOracle,
-};
+use fpcsa::{PublishedFpcsaF2, PublishedFpcsaF2Config, PublishedFpcsaOracle};
 use std::hint::black_box;
 use std::path::Path;
 use std::time::Instant;
@@ -99,8 +95,7 @@ fn build_sketch(d: u64) -> PublishedFpcsaF2 {
         0x1319_8A2E_0370_7344,
         0xA409_3822_299F_31D0,
     );
-    let config =
-        PublishedFpcsaF2Config::new(ROWS, LEVELS, oracle).expect("valid lab config");
+    let config = PublishedFpcsaF2Config::new(ROWS, LEVELS, oracle).expect("valid lab config");
     assert_eq!(config.packed_state_bytes(), 32_768);
 
     let mut sketch = PublishedFpcsaF2::new(config);
