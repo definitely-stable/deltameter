@@ -59,20 +59,62 @@ fn main() {
     println!("schedule=1:2;2:3;4:5;8:9");
     println!("first_zero_metadata_bytes=1");
     println!("syndrome_word_bytes=8");
-    println!("result,arm,scenario,d,source_n,outcome,final_k,attempts,rtts,payload_bytes,decode_ns,extension_ns,merge_ns,cold_build_ns,direct_diff_ns,false_success");
+    println!(
+        "result,arm,scenario,d,source_n,outcome,final_k,attempts,rtts,payload_bytes,decode_ns,extension_ns,merge_ns,cold_build_ns,direct_diff_ns,false_success"
+    );
 
     let left = canonical_keys(SOURCE_KEYS, 0xD200_BA5E_0000_0001);
     let scenarios = [
-        Scenario { name: "d0", d: 0, include_zero: false },
-        Scenario { name: "d1-zero", d: 1, include_zero: true },
-        Scenario { name: "d2", d: 2, include_zero: false },
-        Scenario { name: "d3", d: 3, include_zero: false },
-        Scenario { name: "d4", d: 4, include_zero: false },
-        Scenario { name: "d5", d: 5, include_zero: false },
-        Scenario { name: "d8", d: 8, include_zero: false },
-        Scenario { name: "d9", d: 9, include_zero: false },
-        Scenario { name: "d10", d: 10, include_zero: false },
-        Scenario { name: "d16", d: 16, include_zero: false },
+        Scenario {
+            name: "d0",
+            d: 0,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d1-zero",
+            d: 1,
+            include_zero: true,
+        },
+        Scenario {
+            name: "d2",
+            d: 2,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d3",
+            d: 3,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d4",
+            d: 4,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d5",
+            d: 5,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d8",
+            d: 8,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d9",
+            d: 9,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d10",
+            d: 10,
+            include_zero: false,
+        },
+        Scenario {
+            name: "d16",
+            d: 16,
+            include_zero: false,
+        },
     ];
 
     for scenario in scenarios {
@@ -348,9 +390,7 @@ fn derive_source(base: &[u64], difference: usize, salt: u64, include_zero: bool)
     let add = difference - remove;
     let mut values = base[remove..].to_vec();
     for index in 0..add {
-        values.push(splitmix64(
-            salt ^ 0xA5A5_5A5A_0000_0000 ^ index as u64,
-        ));
+        values.push(splitmix64(salt ^ 0xA5A5_5A5A_0000_0000 ^ index as u64));
     }
     values.sort_unstable();
     values.dedup();
