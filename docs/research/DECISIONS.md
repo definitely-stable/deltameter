@@ -608,3 +608,51 @@ Decision:
 - do not bundle field multiplication, SIMD/CLMUL, randomized splitting or protocol changes.
 
 Canonical evidence: docs/M6-D5-ROOT-PROFILE-EVIDENCE.md.
+
+
+### D32 — Deterministic quadratic specialization is accepted, but its gain is factor-tree dependent
+
+M6-D6 replaces only degree-two factorization in the accepted D4 root path.
+
+The solver rewrites a monic quadratic x^2 + a*x + b into the Artin-Schreier equation
+y^2 + y = b/a^2 and solves the fixed GF(2)-linear map deterministically in safe Rust.
+Degree >=3 factorization remains the accepted D4 deterministic trace split.
+
+Correctness agrees with the frozen D1/D4 controls, the exact oracle and the existing
+failure/guard semantics across d=0/1/2/3/4/5/8 and rejected d=9/10/16 workloads.
+
+Multi-corpus hosted evidence is required because the amount of degree-two work
+depends on the deterministic factor tree.
+
+Canonical evidence records:
+
+~~~text
+d=2 aggregate reduction  ~39.6%
+d=4 aggregate reduction  ~37.5%
+d=8 aggregate reduction  ~15.3%
+
+d=8 corpus medians:
+  ~3.7%
+  ~27.1%
+  ~15.3%
+~~~
+
+The matching D5-style corpus realizes ~27.1%, close to D5's ~27.5% measured
+degree-two opportunity, validating the profiling gate while proving that the
+opportunity is not uniform across corpora.
+
+The per-solve GF(2) Gaussian implementation costs roughly 10.2 us and is not the
+next bottleneck for the larger maintained-state workloads.
+
+Decision:
+
+- accept the deterministic quadratic solver for the private research decoder;
+- do not claim a universal fixed speedup;
+- keep degree >=3 D4 trace splitting, D2 bytes/RTTs, field representation and guard
+  semantics frozen;
+- do not optimize Artin-Schreier matrix setup yet;
+- profile the post-D6 residual factor work across multiple corpora before selecting
+  another root specialization;
+- production/public ExactSmallDelta remains NO-GO.
+
+Canonical evidence: docs/M6-D6-QUADRATIC-EVIDENCE.md.

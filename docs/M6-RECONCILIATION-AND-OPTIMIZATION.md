@@ -116,7 +116,7 @@ M6-C measured result: **ACCEPT**. Final paired hosted evidence reports about 68â
 | M6-A | [#16](https://github.com/definitely-stable/deltameter/issues/16) | Two-process estimator-assisted decision experiment; GO/NO-GO before public workflow expansion |
 | M6-B | [#17](https://github.com/definitely-stable/deltameter/issues/17) | CRC/decoder improvements evaluated individually |
 | M6-C | [#18](https://github.com/definitely-stable/deltameter/issues/18) | Bit-equivalent sign optimization with setup and steady-state evidence |
-| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1/D2 LAB-GO; D3 BM NO-GO; D4 trace-square ACCEPT; D5 profiles degree-two root work as material and gates one solver experiment; production/public ExactSmallDelta remains NO-GO |
+| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1/D2 LAB-GO; D3 BM NO-GO; D4 trace-square ACCEPT; D5 profiling gate; D6 quadratic solver ACCEPT with factor-tree-dependent benefit; production/public ExactSmallDelta remains NO-GO |
 
 M6-B/C require M6-0 measurement and may proceed before M6-A completion if their independent evidence justifies it. After M6-0, M6-A and the read-only/source-audit portion of M6-D should proceed in parallel. M6-D production adoption still depends on M6-A product evidence, so research can inform the experiment without prematurely committing to an exact backend. One coherent PR per slice. No automatic merge/release is implied.
 
@@ -224,3 +224,39 @@ This is not pre-acceptance of the solver. The next slice must demonstrate actual
 paired end-to-end benefit and may still conclude NO-GO.
 
 See [M6-D5 evidence](M6-D5-ROOT-PROFILE-EVIDENCE.md).
+
+
+## M6-D6 deterministic quadratic result
+
+D6 changes only degree-two root resolution. A monic quadratic is reduced to the
+Artin-Schreier equation y^2+y=c and solved deterministically by a safe-Rust GF(2)
+linear solve in the existing polynomial basis.
+
+All higher-degree factorization remains the accepted D4 path.
+
+Correctness remains exact against the frozen controls and exact oracle; d=9/10/16
+remain reject and the D2 protocol/guard semantics do not change.
+
+The performance result is real but factor-tree dependent. Across three deterministic
+8192-key corpora:
+
+~~~text
+d=2 aggregate paired reduction  ~39.6%
+d=4 aggregate paired reduction  ~37.5%
+d=8 aggregate paired reduction  ~15.3%
+
+d=8 per-corpus medians:
+  ~3.7%
+  ~27.1%
+  ~15.3%
+~~~
+
+The matching D5 corpus realizes almost the complete ~27.5% opportunity previously
+profiled, while the other corpora contain less degree-two work. Therefore the solver
+is accepted for private research, but no universal percentage is claimed.
+
+The standalone Artin-Schreier solve is ~10.2 us and is not selected for immediate
+precomputation/cache optimization.
+
+Next: profile the post-D6 residual factor path across multiple corpora before any
+degree-3/4/high-degree specialization. See [M6-D6 evidence](M6-D6-QUADRATIC-EVIDENCE.md).
