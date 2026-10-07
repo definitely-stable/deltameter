@@ -8,7 +8,7 @@ mod prefix_lab;
 use std::hint::black_box;
 use std::time::Instant;
 
-use prefix_lab::{PinSketch64Lab, extend_prefix, prefix, prefix_payload_bytes};
+use prefix_lab::{LabError, PinSketch64Lab, extend_prefix, prefix, prefix_payload_bytes};
 
 const SOURCE_KEYS: usize = 8_192;
 const SAMPLES: usize = 3;
@@ -294,7 +294,7 @@ fn run_incremental(
 }
 
 fn classify(
-    decoded: Result<Vec<u64>, pinsketch64::LabError>,
+    decoded: Result<Vec<u64>, LabError>,
     expected: &[u64],
     within_limit: bool,
 ) -> Outcome {
