@@ -205,9 +205,7 @@ fn run_quadratic_micro() {
                 black_box(quadratic_roots_monic(black_box(&polynomial)).unwrap());
             }
             let elapsed = started.elapsed().as_nanos();
-            println!(
-                "record,quadratic,q{case},2,{sample},exact,2,1,0,0,0,{elapsed},0"
-            );
+            println!("record,quadratic,q{case},2,{sample},exact,2,1,0,0,0,{elapsed},0");
         }
     }
 }
