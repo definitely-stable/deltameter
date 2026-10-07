@@ -1,7 +1,7 @@
 #[path = "../examples/support/m6d2_prefix.rs"]
 mod prefix_lab;
 
-use prefix_lab::{PinSketch64Lab, PrefixError, extend_prefix, prefix};
+use prefix_lab::{PinSketch64Lab, PrefixError, extend_prefix, prefix, prefix_payload_bytes};
 
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
 
@@ -73,6 +73,7 @@ fn prefixes_are_exact_and_extensions_append_only_suffix_words() {
     let full = PinSketch64Lab::from_sorted_unique(9, &keys).unwrap();
 
     let mut received = prefix(&full, 2).unwrap();
+    assert_eq!(prefix_payload_bytes(2), 17);
     assert_eq!(received.odd_syndromes(), &full.odd_syndromes()[..2]);
     assert_eq!(received.zero_present(), full.zero_present());
 
@@ -197,12 +198,11 @@ fn over_bound_stages_never_claim_exact_oracle_success() {
                 .merge(&prefix(&right_full, stored_capacity).unwrap())
                 .unwrap();
 
-            match difference_prefix.decode_candidate_with_limit(limit) {
-                Ok(candidate) => assert_ne!(
+            if let Ok(candidate) = difference_prefix.decode_candidate_with_limit(limit) {
+                assert_ne!(
                     candidate, expected,
                     "over-bound result must not equal the exact oracle: d={difference} limit={limit}"
-                ),
-                Err(_) => {}
+                );
             }
         }
     }
