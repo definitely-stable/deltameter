@@ -3,6 +3,7 @@ import unittest
 from readiness import (
     parse_record,
     validate_check,
+    validate_diagnose,
     validate_ready,
     validate_riblt_check,
     validate_riblt_ready,
@@ -83,6 +84,18 @@ class ReadinessTests(unittest.TestCase):
         )
         self.assertEqual(validate_riblt_sync(sync, "stream")["cells"], 3)
         self.assertEqual(validate_riblt_check("check equal=1")["equal"], 1)
+
+    def test_d11_diagnostic_requires_fresh_equivalence(self):
+        line = (
+            "diagnose exact_d=8 a_rebuild=1 b_rebuild=1 maintained_decoded=1 "
+            "maintained_exact=1 maintained_k=8 fresh_decoded=1 fresh_exact=1 "
+            "fresh_k=8 candidate_equal=1"
+        )
+        self.assertEqual(validate_diagnose(line)["exact_d"], 8)
+        with self.assertRaises(ValueError):
+            validate_diagnose(line.replace("b_rebuild=1", "b_rebuild=0"))
+        with self.assertRaises(ValueError):
+            validate_diagnose(line.replace("candidate_equal=1", "candidate_equal=0"))
 
     def test_check_requires_all_oracles(self):
         self.assertEqual(
