@@ -1,6 +1,6 @@
 {
-  "docs/M6-D13A-SYSTEM-PROTOCOL.md": "4ca7154e0e3b84ae53b216f0276c8269ee4ee7df57ba6fc2b30e51189bef9c6c",
-  "research/m6d13a/protocol.json": "cc62baa1806c687023ee768d385e741785a26e7ce10ada03e65fab1f861cad48",
+  "docs/M6-D13A-SYSTEM-PROTOCOL.md": "7fdc3d2e215a3510c048afd35c79609d35a667148d51bc6bde74461a8b3da493",
+  "research/m6d13a/protocol.json": "eb54ec6cb16f7fcf26222b5e0cb8b53bcdcaf92aecd00b49c7b906e33662e208",
   "examples/support/m6d_pinsketch64.rs": "0f9466efc092debcaee97ad9fc5e4434044caa3760a3d68f2e63828ea7ccc1f4",
   "examples/support/m6d4_trace_square.rs": "162a11e7feffb67797786c247e9a1b9a6e4108f5da3e5648ea34b70f94f98b9e",
   "examples/support/m6d6_quadratic.rs": "38dc7cbca423e3670fc1ce0e2b66164f07d9722670074eb810fc4426db95676f",
