@@ -188,8 +188,7 @@ fn candidate_decoder_matches_accepted_d6_across_five_corpora() {
                 let locator = fresh_locator(&sketch, limit).unwrap();
 
                 let control = decode_with_locator_quadratic(&sketch, limit, &locator);
-                let candidate =
-                    decode_with_locator_square_candidate(&sketch, limit, &locator);
+                let candidate = decode_with_locator_square_candidate(&sketch, limit, &locator);
 
                 assert_eq!(
                     candidate, control,
