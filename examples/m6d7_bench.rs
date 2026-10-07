@@ -274,11 +274,7 @@ fn validate_arithmetic_control() {
     );
 }
 
-fn validate_decoder_controls(
-    left: &PinSketch64Lab,
-    right: &PinSketch64Lab,
-    expected: &[u64],
-) {
+fn validate_decoder_controls(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64]) {
     for (limit, capacity) in STAGES {
         let sketch = difference_prefix(left, right, capacity);
         let locator = fresh_locator(&sketch, limit).unwrap();
