@@ -168,7 +168,7 @@ The exact format and compatibility rules are in docs/M5-INTERCHANGE-V1.md.
 
 ## M6 — Evidence-gated workflow and compatible optimization
 
-Status: M6-0 complete; merged in PR #20. Parent issue: #14.
+Status: **complete**. Final system verdict: **STOP_SYSTEM_PRODUCT** in M6-D13-B / PR #57. Parent issue #14 is closed.
 
 [Critical audit and design](M6-RECONCILIATION-AND-OPTIMIZATION.md) records the research constraints, corrections to the initial proposal and acceptance gates.
 
