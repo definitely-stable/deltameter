@@ -116,7 +116,7 @@ M6-C measured result: **ACCEPT**. Final paired hosted evidence reports about 68â
 | M6-A | [#16](https://github.com/definitely-stable/deltameter/issues/16) | Two-process estimator-assisted decision experiment; GO/NO-GO before public workflow expansion |
 | M6-B | [#17](https://github.com/definitely-stable/deltameter/issues/17) | CRC/decoder improvements evaluated individually |
 | M6-C | [#18](https://github.com/definitely-stable/deltameter/issues/18) | Bit-equivalent sign optimization with setup and steady-state evidence |
-| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1/D2 LAB-GO; D3 BM performance NO-GO; D4 trace-square ACCEPT for private research; production/public ExactSmallDelta remains NO-GO |
+| M6-D | [#19](https://github.com/definitely-stable/deltameter/issues/19) | D1/D2 LAB-GO; D3 BM NO-GO; D4 trace-square ACCEPT; D5 profiles degree-two root work as material and gates one solver experiment; production/public ExactSmallDelta remains NO-GO |
 
 M6-B/C require M6-0 measurement and may proceed before M6-A completion if their independent evidence justifies it. After M6-0, M6-A and the read-only/source-audit portion of M6-D should proceed in parallel. M6-D production adoption still depends on M6-A product evidence, so research can inform the experiment without prematurely committing to an exact backend. One coherent PR per slice. No automatic merge/release is implied.
 
@@ -190,3 +190,37 @@ work by degree and verification separately, then evaluate only deterministic
 safe-Rust quadratic specialization if justified. No field-multiply, trace-reuse,
 CLMUL/SIMD or protocol changes are bundled. Stop if the profile does not justify it.
 See [D4 evidence](M6-D4-TRACE-SQUARE-EVIDENCE.md) for provenance and raw observations.
+
+
+## M6-D5 root-factor profile result
+
+D5 is a profiling-only slice over the accepted D4 decoder. It makes no root
+algorithm change.
+
+The instrumented path records non-overlapping local factor work by polynomial
+degree and times candidate rebuild/all-syndrome verification separately. Frozen D1,
+D4 generic and D4 specialized decoders are used as untimed correctness controls;
+the accepted D4 specialized path remains the uninstrumented performance control.
+
+Canonical hosted result at d=8:
+
+~~~text
+D4 control             ~7.137 ms
+factor wall            ~7.125 ms
+degree-two self        ~1.964 ms  (~27.5% of control)
+degree >=3 self        ~5.130 ms
+verification           ~0.0039 ms (~0.055% of control)
+~~~
+
+Degree-two self work is also ~62.8% of d=2, ~51.7% of d=3 and ~40.9% of d=4
+control latency on the frozen corpus. d=5 is dominated by degree-four work.
+
+Verdict: **GO-to-experiment for exactly one deterministic safe-Rust quadratic
+specialization**. Verification is not selected. Degree >=3 splitting, D4 trace
+squaring, field representation, protocol bytes/RTTs and guard semantics remain
+frozen.
+
+This is not pre-acceptance of the solver. The next slice must demonstrate actual
+paired end-to-end benefit and may still conclude NO-GO.
+
+See [M6-D5 evidence](M6-D5-ROOT-PROFILE-EVIDENCE.md).
