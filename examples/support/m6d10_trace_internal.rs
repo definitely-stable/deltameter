@@ -130,10 +130,7 @@ fn trace_polynomial_mod_collect(
     Ok(trace)
 }
 
-pub fn full_square_mod_replay(
-    polynomial: &[u64],
-    modulus: &[u64],
-) -> Result<Vec<u64>, D4Error> {
+pub fn full_square_mod_replay(polynomial: &[u64], modulus: &[u64]) -> Result<Vec<u64>, D4Error> {
     poly_square_mod_monic_candidate(polynomial, modulus)
 }
 
@@ -183,9 +180,7 @@ pub fn reduce_unreduced_replay(
         remainder[shift + modulus_degree] ^= factor;
 
         if factor != 0 {
-            for (index, &coefficient) in
-                prepared_modulus[..modulus_degree].iter().enumerate()
-            {
+            for (index, &coefficient) in prepared_modulus[..modulus_degree].iter().enumerate() {
                 if coefficient != 0 {
                     remainder[shift + index] ^= gf64_mul(factor, coefficient);
                 }
