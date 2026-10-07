@@ -90,7 +90,7 @@ LLVM 23.1.1
 host x86_64-unknown-linux-gnu
 ~~~
 
-Source SHA256:
+Source SHA256 for the original #5 artifact:
 
 ~~~text
 57582884568c61c2ae2adb6bb5415a9ea60835ef4552f460d9af60a71981da12  examples/m6d7_bench.rs
@@ -112,6 +112,51 @@ corpora=5
 logical_gate=PASS
 false_success_total=0
 ~~~
+
+### Automated residual-phase aggregation closure
+
+The strongest D7 decision signal is now emitted directly by the fail-closed
+summarizer rather than reconstructed manually from per-degree rows.
+
+Reproducibility-closure head:
+
+`291c8cf406b3b237bd0bedf95f8c734ff9cf53bc`
+
+Exact-head GitHub-hosted gates:
+
+- M6-D7 residual profile #11 / `37591616506` — SUCCESS
+- Rust #262 / `37591616465` — SUCCESS
+- Research #275 / `37591616440` — SUCCESS
+
+Artifact:
+
+`m6d7-residual-profile-37591616506-1`
+
+Artifact ID:
+
+`11468907221`
+
+Artifact SHA256:
+
+`78462d499c6f5a8ed0d48f93f39ccbd74ba4232e8382dc27d13d819d629efd4f`
+
+For exact d=8 the automated aggregate rows report:
+
+~~~text
+corpus  trace/control  gcd/control  division/control
+D4      67.122%        30.470%      0.479%
+D5      63.386%        33.362%      0.695%
+D6      82.555%         6.684%      2.287%
+D7a     66.930%        30.694%      0.485%
+D7b     65.328%        31.383%      0.718%
+
+cross-corpus trace range:    63.386-82.555%
+cross-corpus GCD range:       6.684-33.362%
+cross-corpus division range:  0.479-2.287%
+~~~
+
+This closes the provenance gap between the raw per-degree timing rows and the
+general trace-path decision used to authorize the next experiment.
 
 ## Profiling method
 
@@ -287,8 +332,10 @@ gf64_square(x) = gf64_mul(x, x)
 
 is currently implemented by the frozen scalar 64-iteration field multiply.
 
-Field squaring is GF(2)-linear, so a safe-Rust basis-square transform can compute the
-same result by XORing precomputed basis images.
+Field squaring is GF(2)-linear, so the follow-up can use a dedicated bit-equivalent
+safe-Rust transform (for example polynomial bit spreading followed by reduction)
+instead of routing through generic multiplication. The exact implementation is not
+frozen by D7; only the field representation and result are frozen.
 
 A follow-up candidate must change only scalar squaring first. It must not bundle:
 
