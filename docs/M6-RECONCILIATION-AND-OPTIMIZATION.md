@@ -459,3 +459,31 @@ trade-off, not a production layout decision.
 Next: re-profile accepted D11 before selecting any further algebraic work.
 
 See [M6-D11 evidence](M6-D11-FIXED-REDUCTION-EVIDENCE.md).
+
+
+## M6-B1/B2 measured result
+
+B1 is complete in PR #40. The synchronized scalar table-driven CRC32C candidate
+preserves snapshot-v1 bytes and delivered a large repeatable hosted improvement
+across all audited encode/decode fixtures. No slicing-by-N, fusion, hardware CRC or
+dependency was required.
+
+B2 then tightens the decoder boundary selected by the research audit:
+
+- Energy custom/proven metadata is validated before row allocation;
+- the complete row block must fit before counter-size arithmetic;
+- the complete checked Energy payload shape must match before rows are allocated;
+- public Proven decode keeps `ProvenanceRequired` precedence;
+- malformed fixtures recompute a valid CRC32C before asserting backend failures;
+- Parity production code is unchanged because its state length was already checked
+  before packed-state allocation.
+
+Hosted B2 evidence shows valid Energy decode remains noise-scale neutral
+(-0.097% to +0.190% across the audited Energy lanes). The dedicated 229,364-byte
+valid-CRC structural rejection lane improves by 3.544%.
+
+Verdict: **ACCEPT B2 for resource hardening and invariant simplification, not as a
+security-vulnerability fix or a valid-input speedup.**
+
+Next M6-B candidate is one isolated B3 direct Energy decoded-state construction
+experiment. See [B2 evidence](M6-B2-STRUCTURAL-VALIDATION-EVIDENCE.md).

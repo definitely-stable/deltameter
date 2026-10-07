@@ -345,13 +345,17 @@ impl EnergyConfig {
 }
 
 fn validate_dimensions(buckets: usize, rows: &[EnergyRowHash]) -> Result<(), EnergyError> {
+    validate_dimension_counts(buckets, rows.len())
+}
+
+fn validate_dimension_counts(buckets: usize, tables: usize) -> Result<(), EnergyError> {
     if buckets == 0 || !buckets.is_power_of_two() {
         return Err(EnergyError::BucketsMustBePowerOfTwo);
     }
-    if rows.is_empty() {
+    if tables == 0 {
         return Err(EnergyError::EmptyTables);
     }
-    if rows.len().is_multiple_of(2) {
+    if tables.is_multiple_of(2) {
         return Err(EnergyError::TablesMustBeOdd);
     }
 
@@ -506,11 +510,49 @@ impl EnergyDeltaMeter {
             return Err(SnapshotError::ProvenanceRequired);
         }
 
+        let proven_profile = match profile_kind {
+            ENERGY_PROFILE_CUSTOM => {
+                if relative_tag != 0 || failure_tag != 0 {
+                    return Err(SnapshotError::InvalidPayload);
+                }
+                validate_dimension_counts(buckets, table_count)
+                    .map_err(|_| SnapshotError::InvalidPayload)?;
+                None
+            }
+            ENERGY_PROFILE_PROVEN => {
+                let profile = EnergyProfile::new(
+                    relative_error_from_snapshot_tag(relative_tag)?,
+                    failure_target_from_snapshot_tag(failure_tag)?,
+                );
+                if buckets != profile.buckets() || table_count != profile.tables() {
+                    return Err(SnapshotError::InvalidPayload);
+                }
+                Some(profile)
+            }
+            _ => return Err(SnapshotError::InvalidPayload),
+        };
+
+        // Preflight the complete backend shape before allocating or parsing hash rows.
         let row_bytes = table_count
-            .checked_mul(6)
-            .and_then(|count| count.checked_mul(core::mem::size_of::<u64>()))
+            .checked_mul(ENERGY_SNAPSHOT_ROW_LEN)
             .ok_or(SnapshotError::LengthOverflow)?;
-        if cursor.remaining() < row_bytes {
+        let row_end = ENERGY_SNAPSHOT_METADATA_LEN
+            .checked_add(row_bytes)
+            .ok_or(SnapshotError::LengthOverflow)?;
+        if payload.len() < row_end {
+            return Err(SnapshotError::InvalidPayload);
+        }
+
+        let counter_len = buckets
+            .checked_mul(table_count)
+            .ok_or(SnapshotError::LengthOverflow)?;
+        let counter_bytes = counter_len
+            .checked_mul(core::mem::size_of::<i64>())
+            .ok_or(SnapshotError::LengthOverflow)?;
+        let expected_payload_len = row_end
+            .checked_add(counter_bytes)
+            .ok_or(SnapshotError::LengthOverflow)?;
+        if payload.len() != expected_payload_len {
             return Err(SnapshotError::InvalidPayload);
         }
 
@@ -527,37 +569,13 @@ impl EnergyDeltaMeter {
             ));
         }
 
-        let config = match profile_kind {
-            ENERGY_PROFILE_CUSTOM => {
-                if relative_tag != 0 || failure_tag != 0 {
-                    return Err(SnapshotError::InvalidPayload);
-                }
-                EnergyConfig::new(buckets, rows).map_err(|_| SnapshotError::InvalidPayload)?
-            }
-            ENERGY_PROFILE_PROVEN => {
-                let profile = EnergyProfile::new(
-                    relative_error_from_snapshot_tag(relative_tag)?,
-                    failure_target_from_snapshot_tag(failure_tag)?,
-                );
-                if buckets != profile.buckets() {
-                    return Err(SnapshotError::InvalidPayload);
-                }
-                EnergyConfig::for_profile_assuming_uniform_rows(profile, rows)
-                    .map_err(|_| SnapshotError::InvalidPayload)?
-            }
-            _ => return Err(SnapshotError::InvalidPayload),
+        let config = match proven_profile {
+            None => EnergyConfig::new(buckets, rows).map_err(|_| SnapshotError::InvalidPayload)?,
+            Some(profile) => EnergyConfig::for_profile_assuming_uniform_rows(profile, rows)
+                .map_err(|_| SnapshotError::InvalidPayload)?,
         };
 
-        let counter_len = config
-            .buckets()
-            .checked_mul(config.tables())
-            .ok_or(SnapshotError::LengthOverflow)?;
-        let counter_bytes = counter_len
-            .checked_mul(core::mem::size_of::<i64>())
-            .ok_or(SnapshotError::LengthOverflow)?;
-        if cursor.remaining() != counter_bytes {
-            return Err(SnapshotError::InvalidPayload);
-        }
+        debug_assert_eq!(cursor.remaining(), counter_bytes);
 
         let mut meter = Self::new(config).map_err(|_| SnapshotError::InvalidPayload)?;
         for counter in &mut meter.counters {
