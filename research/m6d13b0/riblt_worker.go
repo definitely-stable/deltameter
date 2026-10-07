@@ -322,7 +322,6 @@ func syncSession(s *state, lane string, limit int) string {
 	return strings.Join(fields, " ")
 }
 
-
 func initializeState(s *state, left, right []item) string {
 	started := time.Now()
 	s.a = copyKeys(left)
