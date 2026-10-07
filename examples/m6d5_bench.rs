@@ -5,10 +5,10 @@
 
 #[path = "support/m6d_pinsketch64.rs"]
 mod pinsketch64;
-#[path = "support/m6d4_trace_square.rs"]
-mod trace_square;
 #[path = "support/m6d5_root_profile.rs"]
 mod root_profile;
+#[path = "support/m6d4_trace_square.rs"]
+mod trace_square;
 
 use std::hint::black_box;
 use std::time::Instant;
@@ -205,11 +205,7 @@ fn main() {
     }
 }
 
-fn run_control(
-    left: &PinSketch64Lab,
-    right: &PinSketch64Lab,
-    expected: &[u64],
-) -> ControlResult {
+fn run_control(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64]) -> ControlResult {
     let started = Instant::now();
     let mut candidate = None;
     let mut final_k = 8;
@@ -245,11 +241,7 @@ fn run_control(
     }
 }
 
-fn run_profiled(
-    left: &PinSketch64Lab,
-    right: &PinSketch64Lab,
-    expected: &[u64],
-) -> ProfileResult {
+fn run_profiled(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64]) -> ProfileResult {
     let started = Instant::now();
     let mut aggregate = RootProfile::default();
     let mut candidate = None;
