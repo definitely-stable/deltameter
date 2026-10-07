@@ -478,3 +478,40 @@ Therefore:
 - prefer the next experiment to test nested guarded syndrome prefixes rather than Energy-first sizing.
 
 Canonical evidence: docs/M6-D1-PINSKETCH64-EVIDENCE.md.
+
+
+### D28 — Guarded incremental PinSketch64 prefixes are a lab GO, not a production protocol
+
+M6-D2 evaluates the D1 odd-syndrome family as a nested progressive stream with the frozen stage schedule:
+
+~~~text
+decode limit        1   2   4   8
+stored syndromes    2   3   5   9
+~~~
+
+The receiver starts with the smallest guarded prefix and receives only the new suffix words after a failed attempt.
+
+Hosted evidence on the measured implementation records:
+
+- all d <= 8 workloads recover the exact oracle;
+- sampled d > 8 workloads reject;
+- false-success count in the frozen matrix is zero;
+- incremental cumulative syndrome bytes equal the ideal fixed-known-k payload;
+- retry savings versus naive full-prefix resend are about 40–53%;
+- repeated reference decode CPU is the dominant retry tax.
+
+For d=8, the maintained-state experiment uses 73 application bytes but about 89.6 ms cumulative reference decode CPU versus about 38.7 ms for one-shot fixed guarded decode. The direct raw-u64 baseline is ~65.5 KiB and ~8.7 us local merge-scan CPU.
+
+Therefore the primitive is useful only in named maintained-state bandwidth/RTT regimes; it does not justify a generic public reconciliation API.
+
+Rateless IBLT remains the external unknown-d comparator. Its ~1.35d headline is a coded-symbol count, not directly a byte count; the pinned official implementation's coded symbol carries Symbol + u64 Hash + int64 Count.
+
+Decision:
+
+- retain nested guarded prefixes as a private lab primitive;
+- keep the D1 exact-u64 mapping and one-guard research semantics;
+- do not reintroduce Energy-first sizing for this small-d path;
+- do not add snapshot-v1/public API/Coverage::Exact;
+- next optimize cumulative retry CPU by decoder-state reuse without changing the D2 byte/RTT protocol.
+
+Canonical evidence: docs/M6-D2-INCREMENTAL-PREFIX-EVIDENCE.md.
