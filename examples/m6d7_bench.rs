@@ -231,7 +231,7 @@ fn main() {
 
                 for degree in 1..=8 {
                     println!(
-                        "record,degree,{},{},{},{},{},{},{},{},{},{},0,0,0,0,{},{},{},{},{},{},{},{},{},{},{}",
+                        "record,degree,{},{},{},{},{},{},{},{},{},{},0,0,0,0,{},{},{},{},{},{},{},{},{},{}",
                         corpus.name,
                         scenario.name,
                         scenario.d,
@@ -259,11 +259,7 @@ fn main() {
     }
 }
 
-fn run_control(
-    left: &PinSketch64Lab,
-    right: &PinSketch64Lab,
-    expected: &[u64],
-) -> ControlResult {
+fn run_control(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64]) -> ControlResult {
     let started = Instant::now();
     let mut candidate = None;
     let mut final_k = 8;
@@ -273,8 +269,7 @@ fn run_control(
     for (limit, capacity) in STAGES {
         let sketch = difference_prefix(black_box(left), black_box(right), capacity);
         let locator = fresh_locator(black_box(&sketch), limit).unwrap();
-        let result =
-            decode_with_locator_quadratic(black_box(&sketch), limit, black_box(&locator));
+        let result = decode_with_locator_quadratic(black_box(&sketch), limit, black_box(&locator));
 
         attempts += 1;
         final_k = limit;
@@ -301,11 +296,7 @@ fn run_control(
     }
 }
 
-fn run_profiled(
-    left: &PinSketch64Lab,
-    right: &PinSketch64Lab,
-    expected: &[u64],
-) -> ProfileResult {
+fn run_profiled(left: &PinSketch64Lab, right: &PinSketch64Lab, expected: &[u64]) -> ProfileResult {
     let started = Instant::now();
     let mut aggregate = RootProfile::default();
     let mut candidate = None;
