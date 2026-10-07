@@ -243,6 +243,67 @@ fn sync_direct(state: &mut State) -> String {
     .join(" ")
 }
 
+fn decode_pair_unmeasured(
+    a_sketch: &PinSketch64Lab,
+    b_sketch: &PinSketch64Lab,
+) -> (Option<Vec<u64>>, usize) {
+    let mut roots = None;
+    let mut final_k = 8;
+
+    for limit in STAGES {
+        let mut difference = prefix(a_sketch, limit + 1);
+        difference.merge(&prefix(b_sketch, limit + 1)).unwrap();
+        let decoded = trace_square::fresh_locator(&difference, limit)
+            .ok()
+            .and_then(|locator| {
+                fixed_reduction::decode_with_locator_fixed_reduction(&difference, limit, &locator)
+                    .ok()
+            });
+        final_k = limit;
+        if decoded.is_some() {
+            roots = decoded;
+            break;
+        }
+    }
+
+    (roots, final_k)
+}
+
+fn diagnose_d11(state: &State) -> String {
+    assert_eq!(state.mode, Mode::D11);
+    let expected = symmetric_difference(&state.a.keys, &state.b.keys);
+
+    let maintained_a = state.a.sketch.as_ref().unwrap();
+    let maintained_b = state.b.sketch.as_ref().unwrap();
+    let fresh_a = PinSketch64Lab::from_sorted_unique(CAPACITY, &state.a.keys).unwrap();
+    let fresh_b = PinSketch64Lab::from_sorted_unique(CAPACITY, &state.b.keys).unwrap();
+
+    let (maintained_roots, maintained_k) =
+        decode_pair_unmeasured(maintained_a, maintained_b);
+    let (fresh_roots, fresh_k) = decode_pair_unmeasured(&fresh_a, &fresh_b);
+
+    let maintained_exact = maintained_roots.as_ref() == Some(&expected);
+    let fresh_exact = fresh_roots.as_ref() == Some(&expected);
+
+    [
+        "diagnose".to_string(),
+        kv("exact_d", expected.len()),
+        kv("a_rebuild", u8::from(*maintained_a == fresh_a)),
+        kv("b_rebuild", u8::from(*maintained_b == fresh_b)),
+        kv("maintained_decoded", u8::from(maintained_roots.is_some())),
+        kv("maintained_exact", u8::from(maintained_exact)),
+        kv("maintained_k", maintained_k),
+        kv("fresh_decoded", u8::from(fresh_roots.is_some())),
+        kv("fresh_exact", u8::from(fresh_exact)),
+        kv("fresh_k", fresh_k),
+        kv(
+            "candidate_equal",
+            u8::from(maintained_roots == fresh_roots),
+        ),
+    ]
+    .join(" ")
+}
+
 fn sync_d11(state: &mut State) -> String {
     let cpu0 = process_cpu_ticks();
     let a_sketch = state.a.sketch.as_ref().unwrap().clone();
@@ -492,6 +553,10 @@ fn main() {
                     kv("source_cap", state.a.keys.capacity()),
                 ]
                 .join(" ")
+            }
+            ["diagnose"] => {
+                let state = state.as_ref().unwrap();
+                diagnose_d11(state)
             }
             ["sync"] => {
                 let state = state.as_mut().unwrap();
