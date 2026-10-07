@@ -8,8 +8,8 @@ mod trace_square;
 use pinsketch64::PinSketch64Lab;
 use root_profile::decode_with_locator_profiled;
 use trace_square::{
-    decode_with_locator_generic, decode_with_locator_specialized, fresh_locator, generic_square_mod,
-    poly_square_mod_monic,
+    decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
+    generic_square_mod, poly_square_mod_monic,
 };
 
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
@@ -125,7 +125,10 @@ fn profiled_path_matches_accepted_d4_on_frozen_matrix() {
             let accepted = decode_with_locator_specialized(&sketch, limit, &locator);
             let profiled = decode_with_locator_profiled(&sketch, limit, &locator);
 
-            assert_eq!(generic, accepted, "generic/specialized mismatch d={difference} limit={limit}");
+            assert_eq!(
+                generic, accepted,
+                "generic/specialized mismatch d={difference} limit={limit}"
+            );
             assert_eq!(
                 profiled.result, accepted,
                 "outcome mismatch d={difference} limit={limit}"
@@ -205,7 +208,6 @@ fn full_width_and_zero_semantics_are_unchanged() {
 
     panic!("full-width case did not decode");
 }
-
 
 #[test]
 fn frozen_generic_square_control_remains_equivalent() {
