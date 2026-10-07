@@ -891,7 +891,7 @@ Decision:
 Canonical evidence: docs/M6-D11-FIXED-REDUCTION-EVIDENCE.md.
 
 
-### D38 — B2 exact Energy shape preflight is accepted as resource hardening
+### D39 — B2 exact Energy shape preflight is accepted as resource hardening
 
 After B1's table-driven CRC32C was accepted and merged, M6-B2 moved full Energy
 backend-shape validation ahead of row allocation.
@@ -920,3 +920,47 @@ Decision:
 - keep further CRC slicing/fusion and sign-mask fusion deferred.
 
 Canonical evidence: docs/M6-B2-STRUCTURAL-VALIDATION-EVIDENCE.md.
+
+
+### D40 — Post-D11 residuals no longer justify another algebraic specialization
+
+M6-D12 profiles the complete accepted D11 staged decoder rather than assuming that
+the prior trace bottleneck survived a ~50% end-to-end reduction.
+
+A phase was predeclared common/material only if it accounted for at least 25% of
+accepted D11 d=8 latency in every one of five deterministic corpora. Profile-wall
+overhead also had to remain below +5% in every corpus.
+
+Hosted evidence passes the validity gate; profile-wall movement is between -0.501%
+and +0.717% across the five corpora.
+
+Residual d=8 control shares are:
+
+~~~text
+prefix        0.017- 0.080%
+locator       3.435-17.372%
+validation    0.003- 0.016%
+plan build    0.480- 2.741%
+trace        18.860-36.503%
+GCD          23.616-72.762%
+division      1.135- 7.998%
+quadratic     1.392- 9.275%
+verification  0.163- 1.066%
+~~~
+
+GCD is large in four corpora but misses the frozen threshold in the D6-derived
+corpus by 1.384 percentage points. Moving the threshold after seeing that result
+would be post-hoc candidate selection. Trace also fails the common-material gate.
+
+Decision:
+
+- stop algebraic decoder micro-optimization after accepted D11;
+- do not start GCD, trace, cubic/quartic, generic field-multiply, D11 table-layout,
+  SIMD/CLMUL or factor-cache work without new system-level evidence;
+- move M6-D to a maintained-state system comparison of accepted private D11
+  PinSketch, direct exact reconciliation and a rateless-style comparator;
+- include maintained state cost, memory, bytes, retries/RTTs, decode CPU and final
+  verification in that comparison;
+- production/public ExactSmallDelta remains NO-GO.
+
+Canonical evidence: docs/M6-D12-POST-D11-PROFILE-EVIDENCE.md.
