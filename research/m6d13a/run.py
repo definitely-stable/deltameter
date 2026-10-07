@@ -92,7 +92,7 @@ def check_workers(pin, riblt):
     # Deliberately exhausted real RIBLT stream; fallback must complete correctly.
     a, b = fixture(64, 212, 64, 'balanced')
     exhausted = run_session(a, b, 2, riblt, riblt_cap=1)
-    require(exhausted['fallbacks'] == 1 and exhausted['rounds'] == 3, 'forced RIBLT fallback')
+    require(exhausted['fallbacks'] == 1 and exhausted['rounds'] == 2, 'forced RIBLT fallback')
     return {'edge_cases': 15, 'forced_riblt_fallback': True}
 
 
@@ -122,7 +122,7 @@ def validate_report(report, expected_cases=None):
         require(row['performance_decision'] == 'NOT_MEASURED', 'row verdict')
         trace = row['trace']
         require(len(trace) == row['messages'] == 2 * row['rounds'], 'message/round closure')
-        require(len(trace) >= 4 and len(trace) % 2 == 0, 'session trace')
+        require(len(trace) >= 2 and len(trace) % 2 == 0, 'session trace')
         require(row['bytes'] == sum(f['bytes'] for f in trace), 'byte closure')
         require(row['verification_bytes'] == sum(f['bytes'] for f in trace
                 if f['phase'] == 'verification'), 'verify closure')
@@ -143,59 +143,60 @@ def validate_report(report, expected_cases=None):
                         for c in f['sha256']), 'frame digest')
             require(first['direction'] == 'B>A' and second['direction'] == 'A>B', 'direction')
             if first['kind'] == 1:
-                require(state in ('candidate', 'repair'), 'request after terminal verification')
+                require(state in ('candidate', 'repair'), 'request after terminal state')
                 if state == 'repair':
                     require(first['parameter'] == 0, 'failed candidate requires exact repair')
                 if last_request == 0:
                     raise ValueError('request after exact transfer')
                 last_request = first['parameter']
-                state = 'verify' if last_request == 0 else 'candidate'
                 require(second['kind'] == 2 and first['parameter'] == second['parameter'], 'reply')
                 require(first['payload_bytes'] == 0, 'request payload')
                 require(first['phase'] == second['phase'] == 'candidate', 'data phase')
                 requests.append((first['parameter'], second['payload_bytes']))
+                state = 'done_exact' if last_request == 0 else 'candidate'
             else:
-                require(state in ('candidate', 'verify') and last_request is not None,
-                        'verification without new candidate')
+                require(state == 'candidate' and last_request not in (None, 0),
+                        'verification without provisional sketch candidate')
                 require(first['kind'] == 3 and second['kind'] == 4 and first['parameter'] == 0,
                         'verification kind')
                 require(second['parameter'] in (0, 1) and second['payload_bytes'] == 0, 'ack')
                 require(first['phase'] == second['phase'] == 'verification', 'verify phase')
-                if second['parameter'] == 0:
-                    require(last_request != 0 and row['lane'] != 0, 'failed exact verification')
-                    state = 'repair'
-                else:
-                    state = 'done'
+                state = 'repair' if second['parameter'] == 0 else 'done_verified'
                 verification.append(second['parameter'])
                 if second['parameter'] == 1:
                     require(first['payload_bytes'] == 8 + 8 * len(a), 'final-list payload')
-            for f in (first, second):
-                if f['kind'] in (1, 4):
+            for frame in (first, second):
+                if frame['kind'] in (1, 4):
                     payload = b''
-                elif f['kind'] == 2 and f['parameter'] == 0:
+                elif frame['kind'] == 2 and frame['parameter'] == 0:
                     payload = encode_list(a)
-                elif f['kind'] == 3 and second['parameter'] == 1:
+                elif frame['kind'] == 3 and second['parameter'] == 1:
                     payload = encode_list(a)
                 else:
-                    payload = bytes.fromhex(f['payload_hex'])
-                    if f['kind'] == 3:
+                    payload = bytes.fromhex(frame['payload_hex'])
+                    if frame['kind'] == 3:
                         require(decode_list(payload) != a, 'failed verification payload')
-                require(len(payload) == f['payload_bytes'], 'retained payload shape')
-                raw = Frame(f['kind'], row['lane'], *identity, f['sequence'],
-                            f['parameter'], payload).encode()
-                require(hashlib.sha256(raw).hexdigest() == f['sha256'], 'frame provenance')
-        require(state == 'done' and trace[-2]['kind'] == 3 and verification in ([1], [0, 1]),
-                'terminal verification')
+                require(len(payload) == frame['payload_bytes'], 'retained payload shape')
+                raw = Frame(frame['kind'], row['lane'], *identity, frame['sequence'],
+                            frame['parameter'], payload).encode()
+                require(hashlib.sha256(raw).hexdigest() == frame['sha256'], 'frame provenance')
+
+        require(state in ('done_exact', 'done_verified'), 'terminal completion')
+        require(row['terminal_exact_transfer'] == (state == 'done_exact'), 'terminal mode')
         require(row['false_candidates'] == verification.count(0), 'false candidates')
         direct = [x for x in requests if x[0] == 0]
         require(all(size == 8 + 8 * len(a) for _, size in direct), 'direct bytes')
         if row['lane'] == 0:
-            require(requests == [(0, 8 + 8 * len(a))] and verification == [1], 'direct flow')
-            require(row['fallbacks'] == 0, 'direct fallback')
+            require(requests == [(0, 8 + 8 * len(a))] and verification == [], 'direct flow')
+            require(row['fallbacks'] == 0 and row['terminal_exact_transfer'], 'direct completion')
         else:
             require(row['fallbacks'] == len(direct) <= 1, 'fallback count')
             if direct:
-                require(requests[-1][0] == 0, 'fallback ordering')
+                require(requests[-1][0] == 0 and verification in ([], [0]),
+                        'fallback ordering/verification')
+            else:
+                require(verification == [1] and not row['terminal_exact_transfer'],
+                        'sketch success verification')
             staged = [x for x in requests if x[0] != 0]
             if row['lane'] == 1:
                 stages = list(zip([1, 2, 4, 8], [17, 8, 16, 32]))
@@ -204,15 +205,17 @@ def validate_report(report, expected_cases=None):
                     expected_k = next(k for k in (1, 2, 4, 8) if row['case'][2] <= k)
                     require(not direct and verification == [1] and staged[-1][0] == expected_k,
                             'in-capacity decoder failed or skipped a stage')
-                require(not direct or verification == [0, 1] or len(staged) == 4, 'early fallback')
+                if direct and not verification:
+                    require(len(staged) == 4, 'early fallback without false candidate')
             else:
                 previous = 0
                 for i, (target, size) in enumerate(staged):
                     require(target == 2**i and target <= 1024 and size == 24 * (target-previous),
-                            'rateless schedule/batch')
+                            'rateless pull schedule/batch')
                     previous = target
-                require(staged and (not direct or verification == [0, 1] or previous == 1024),
-                        'rateless fallback cap')
+                require(staged, 'rateless pull empty')
+                if direct and not verification:
+                    require(previous == 1024, 'rateless fallback before pull cap')
     require(seen == expected, 'missing rows')
     return 'FOUNDATION_PASS'
 
