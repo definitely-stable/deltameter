@@ -282,6 +282,8 @@ fn run_incremental_bm(
         let bm_started = Instant::now();
         decoder.extend_to(black_box(&sketch), limit).unwrap();
         metrics.incremental_bm_ns += bm_started.elapsed().as_nanos();
+        black_box(decoder.sequence().len());
+        black_box(decoder.linear_complexity());
 
         let locator = decoder.connection_polynomial();
         let factor_started = Instant::now();
