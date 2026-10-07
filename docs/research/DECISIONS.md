@@ -967,3 +967,35 @@ Decision:
 - production/public ExactSmallDelta remains NO-GO.
 
 Canonical evidence: docs/M6-D12-POST-D11-PROFILE-EVIDENCE.md.
+
+
+### D41 — Direct one-pass Energy snapshot decode is NO-GO
+
+M6-B3 evaluates the direct decoded-state construction selected after B2.
+
+The candidate parses counters into capacity-only storage and accumulates row energy
+during parsing, eliminating one explicit counter zero-fill and the later
+`recompute_energies` counter scan from the source-level path.
+
+The predeclared gate required at least 3% improvement in every Energy-default decode
+lane. Hosted paired evidence instead reports:
+
+~~~text
+default: +2.452% .. +2.682% regression
+small:   +2.912% .. +3.237% regression
+~~~
+
+Unchanged Parity decode guardrails remain near neutral, so the consistent Energy-only
+regression is attributed to the candidate rather than a single runner outlier.
+
+Decision:
+
+- B3 is NO-GO and its production code is reverted;
+- do not infer latency from the source-level logical-touch reduction;
+- do not substitute an unplanned two-pass/fusion variant after observing the result;
+- M6-B #17 is complete with B1 ACCEPT / B2 ACCEPT / B3 NO-GO;
+- skip the optional residual CRC selector for this milestone;
+- require a new measured bottleneck before any future slicing-by-N, CRC fusion,
+  hardware specialization or decoded-state candidate.
+
+Canonical evidence: docs/M6-B3-DIRECT-DECODE-EVIDENCE.md.
