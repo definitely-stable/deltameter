@@ -1,0 +1,65 @@
+name: m6d6-quadratic
+
+on:
+  pull_request:
+    paths:
+      - "examples/m6d6_bench.rs"
+      - "examples/support/m6d6_quadratic.rs"
+      - "examples/support/m6d4_trace_square.rs"
+      - "examples/support/m6d_pinsketch64.rs"
+      - "tests/m6d6_quadratic.rs"
+      - "research/m6d6_summary.py"
+      - "research/test_m6d6_summary.py"
+      - "docs/superpowers/plans/2026-10-07-m6d6-quadratic-solver.md"
+      - ".github/workflows/m6d6.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install stable Rust
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Record environment
+        run: |
+          mkdir -p "${RUNNER_TEMP}/m6d6"
+          rustc +stable -Vv > "${RUNNER_TEMP}/m6d6/rustc.txt"
+          lscpu > "${RUNNER_TEMP}/m6d6/cpu.txt"
+          git rev-parse HEAD > "${RUNNER_TEMP}/m6d6/head.txt"
+          sha256sum examples/m6d6_bench.rs examples/support/m6d6_quadratic.rs examples/support/m6d4_trace_square.rs examples/support/m6d_pinsketch64.rs tests/m6d6_quadratic.rs research/m6d6_summary.py research/test_m6d6_summary.py .github/workflows/m6d6.yml > "${RUNNER_TEMP}/m6d6/sources-sha256.txt"
+
+      - name: Verify fail-closed summarizer
+        run: PYTHONPATH=research python3 -m unittest discover -s research -p test_m6d6_summary.py
+
+      - name: Verify quadratic correctness
+        run: cargo +stable test --release --test m6d6_quadratic
+
+      - name: Build release benchmark
+        run: cargo +stable build --release --example m6d6_bench
+
+      - name: Run repeated quadratic evidence
+        run: |
+          for run in 1 2 3; do
+            ./target/release/examples/m6d6_bench > "${RUNNER_TEMP}/m6d6/result-${run}.txt"
+          done
+
+      - name: Summarize quadratic evidence
+        run: |
+          set -o pipefail
+          PYTHONPATH=research python3 research/m6d6_summary.py "${RUNNER_TEMP}/m6d6" | tee "${RUNNER_TEMP}/m6d6/summary.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6d6-quadratic-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/m6d6/
+          if-no-files-found: error
