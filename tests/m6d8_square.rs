@@ -8,8 +8,10 @@ mod square_candidate;
 mod trace_square;
 
 use pinsketch64::PinSketch64Lab;
-use quadratic::{decode_with_locator_quadratic, gf64_square_reference_for_d8};
-use square_candidate::{decode_with_locator_square_candidate, gf64_square_candidate};
+use quadratic::decode_with_locator_quadratic;
+use square_candidate::{
+    decode_with_locator_square_candidate, gf64_square_candidate, gf64_square_scalar_reference,
+};
 use trace_square::{
     D4Error, decode_with_locator_generic, decode_with_locator_specialized, fresh_locator,
     generic_square_mod, poly_square_mod_monic,
@@ -131,7 +133,7 @@ fn candidate_square_matches_frozen_scalar_on_basis() {
         let value = 1_u64 << bit;
         assert_eq!(
             gf64_square_candidate(value),
-            gf64_square_reference_for_d8(value),
+            gf64_square_scalar_reference(value),
             "basis bit {bit}"
         );
     }
@@ -142,7 +144,7 @@ fn candidate_square_matches_edges_and_deterministic_vectors() {
     for value in [0, 1, 2, 3, 1_u64 << 63, u64::MAX, 0x0123_4567_89AB_CDEF] {
         assert_eq!(
             gf64_square_candidate(value),
-            gf64_square_reference_for_d8(value),
+            gf64_square_scalar_reference(value),
             "edge {value:#018x}"
         );
     }
@@ -151,7 +153,7 @@ fn candidate_square_matches_edges_and_deterministic_vectors() {
         let value = splitmix64(0xD800_5A5A_0000_0000 ^ index);
         assert_eq!(
             gf64_square_candidate(value),
-            gf64_square_reference_for_d8(value),
+            gf64_square_scalar_reference(value),
             "vector {index}"
         );
     }
