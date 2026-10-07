@@ -1,7 +1,7 @@
 #[path = "../examples/support/m6d2_prefix.rs"]
 mod prefix_lab;
 
-use prefix_lab::{PrefixError, PinSketch64Lab, extend_prefix, prefix};
+use prefix_lab::{PinSketch64Lab, PrefixError, extend_prefix, prefix};
 
 const STAGES: [(usize, usize); 4] = [(1, 2), (2, 3), (4, 5), (8, 9)];
 
@@ -121,9 +121,9 @@ fn merged_prefix_matches_prefix_of_full_merged_sketch() {
     full_difference.merge(&right_full).unwrap();
 
     for (_, stored_capacity) in STAGES {
-        let mut prefix_difference = left_prefix(&full, stored_capacity).unwrap();
+        let mut prefix_difference = prefix(&left_full, stored_capacity).unwrap();
         prefix_difference
-            .merge(&right_prefix(&full, stored_capacity).unwrap())
+            .merge(&prefix(&right_full, stored_capacity).unwrap())
             .unwrap();
         assert_eq!(
             prefix_difference,
@@ -151,9 +151,9 @@ fn staged_decode_reaches_first_sufficient_guarded_prefix() {
 
         let mut completed = None;
         for (limit, stored_capacity) in STAGES {
-            let mut difference_prefix = left_prefix(&full, stored_capacity).unwrap();
+            let mut difference_prefix = prefix(&left_full, stored_capacity).unwrap();
             difference_prefix
-                .merge(&right_prefix(&full, stored_capacity).unwrap())
+                .merge(&prefix(&right_full, stored_capacity).unwrap())
                 .unwrap();
 
             if let Ok(candidate) = difference_prefix.decode_candidate_with_limit(limit) {
@@ -192,9 +192,9 @@ fn over_bound_stages_never_claim_exact_oracle_success() {
         let right_full = PinSketch64Lab::from_sorted_unique(9, &right).unwrap();
 
         for (limit, stored_capacity) in STAGES {
-            let mut difference_prefix = left_prefix(&full, stored_capacity).unwrap();
+            let mut difference_prefix = prefix(&left_full, stored_capacity).unwrap();
             difference_prefix
-                .merge(&right_prefix(&full, stored_capacity).unwrap())
+                .merge(&prefix(&right_full, stored_capacity).unwrap())
                 .unwrap();
 
             match difference_prefix.decode_candidate_with_limit(limit) {
