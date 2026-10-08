@@ -182,6 +182,30 @@ Snapshot plus an unchanged full-list exchange is an overhead control, not a demo
 
 [First-slice implementation plan](superpowers/plans/2026-10-06-m6-foundation.md). M6-B: [research audit](M6-B-CODEC-DECODER-RESEARCH-AUDIT.md), [corrected post-research plan](superpowers/plans/2026-10-07-m6b-post-research.md), [B2 evidence](M6-B2-STRUCTURAL-VALIDATION-EVIDENCE.md), and [B3 NO-GO evidence](M6-B3-DIRECT-DECODE-EVIDENCE.md). M6-0 measured verdict: [evidence](M6-0-EVIDENCE.md). M6-A measured verdict: [NO-GO evidence](M6-A-EVIDENCE.md). M6-C measured verdict: [ACCEPT evidence](M6-C-EVIDENCE.md). M6-D Phase-1 decision: [exact-lane audit](M6-D-EXACT-LANE-AUDIT.md). D1 measured verdict: [PinSketch64 lab evidence](M6-D1-PINSKETCH64-EVIDENCE.md). D2 measured verdict: [incremental prefix evidence](M6-D2-INCREMENTAL-PREFIX-EVIDENCE.md). D3 measured verdict: [incremental BM NO-GO evidence](M6-D3-INCREMENTAL-BM-EVIDENCE.md). D4 measured verdict: [trace-square ACCEPT evidence](M6-D4-TRACE-SQUARE-EVIDENCE.md). D5 profiling verdict: [root-profile evidence](M6-D5-ROOT-PROFILE-EVIDENCE.md). D6 measured verdict: [quadratic ACCEPT evidence](M6-D6-QUADRATIC-EVIDENCE.md). D7 profiling verdict: [post-quadratic residual evidence](M6-D7-RESIDUAL-ROOT-PROFILE-EVIDENCE.md). D8 measured verdict: [GF(2^64) scalar-square ACCEPT evidence](M6-D8-GF64-SQUARE-EVIDENCE.md). D9 profiling verdict: [post-D8 residual evidence](M6-D9-POST-D8-PROFILE-EVIDENCE.md). D10 measurement verdict: [trace-internal reduction selector evidence](M6-D10-TRACE-INTERNAL-EVIDENCE.md). D11 measured verdict: [fixed-constant reduction ACCEPT evidence](M6-D11-FIXED-REDUCTION-EVIDENCE.md). D12 profiling verdict: [post-D11 stop-gate evidence](M6-D12-POST-D11-PROFILE-EVIDENCE.md). D13-A protocol: [system comparison foundation](M6-D13A-SYSTEM-PROTOCOL.md). D13-B0 readiness: [measurement-readiness evidence](M6-D13B0-MEASUREMENT-READINESS-EVIDENCE.md). D13-B final system verdict: [STOP_SYSTEM_PRODUCT evidence](M6-D13B-SYSTEM-EVIDENCE.md).
 
+## STRICT-COMPACT optimization before public freeze
+
+Issue #70 defines the optimization program that follows the accepted 32 KiB
+STRICT-COMPACT private candidate.
+
+Public guarantee/key/snapshot semantics may continue under #69, but the first
+public memory profile and interchange shape must not be frozen until the cheap
+product-shape work closes:
+
+1. range-aware stored-level frontier;
+2. maintained odd-level counts;
+3. progressive/prefix level transfer.
+
+Only after those slices should the project decide whether to open the generalized
+Certified Parity Ladder, DeltaGuard threshold primitive, or a broader oracle
+portfolio.
+
+Mathlab-facing theorem candidates — finite independence, adaptive tokens,
+heterogeneous ladder optimization, state lower bounds and nested-prefix optimality
+— are tracked as research transfers rather than production assumptions.
+
+Canonical program:
+[STRICT-COMPACT-OPT-001](research/STRICT-COMPACT-OPT-001-PROGRAM.md).
+
 ## Post-v0 candidates
 
 Only after evidence:
