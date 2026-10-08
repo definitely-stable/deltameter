@@ -255,6 +255,17 @@ C3-B must test two actual independently held sketch senders over TCP,
 retained partial-level reuse, full fallback and changing epochs.
 [STRICT-COMPACT-C3A](research/STRICT-COMPACT-OPT-C3A-EVIDENCE.md).
 
+OPT-C C3-B / #80: genuine two-sender retained TCP states plus
+full-state fallback passed functional/canonical correctness on five
+hosted workers, but **C3B_TWO_PARTY_NO_GO** for the strict
+no-p95-RTT-regression gate (0/3 named scenarios qualify at
+application RTT up to 50ms). Retained first-level transfer is
+1,344B versus dual full 53,500B but incurs another RTT.
+Full fallback costs 55,778B (4.26% MORE than dual full).
+No gate reclassification; a preplanned sender-first prefix is an
+independent follow-up C3-C hypothesis.
+[STRICT-COMPACT-C3B](research/STRICT-COMPACT-OPT-C3B-EVIDENCE.md).
+
 Next: #74 OPT-C progressive/prefix
 transfer. Public memory profile/snapshot freeze remains blocked until those slices
 close.
