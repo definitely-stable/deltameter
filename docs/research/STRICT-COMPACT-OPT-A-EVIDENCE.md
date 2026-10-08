@@ -230,6 +230,19 @@ declared range.
 The shared 16 KiB Q32 table remains separate static data and is not multiplied per
 sketch instance.
 
+## Post-Stage-2 refinement / current research baseline
+
+The above canonical frozen Stage-1/Stage-2 result remains historically valid.
+A separately preregistered exact/hosted J51/J52 experiment subsequently
+confirmed **J52_REFINEMENT_PASS**: J=52 / 26 KiB / LEVEL_MAJOR preserves the
+accepted full-u64 continuous width range and passes all five hosted workers.
+This supersedes J=56 as the **preferred current full-range research baseline**,
+not as a public default. J51's failure to reach the full range with the existing
+certificate algorithm is not a mathematical lower bound.
+
+Full evidence, raw artifact IDs, source SHA and boundaries:
+[OPT-A refinement evidence](STRICT-COMPACT-OPT-A-REFINEMENT-EVIDENCE.md).
+
 ## Next work
 
 - #73 OPT-B should evaluate maintained odd counts primarily on J=56, with J=24 as
