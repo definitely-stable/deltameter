@@ -209,6 +209,18 @@ Canonical program:
 Canonical execution plan with child issues #72/#73/#74:
 [STRICT-COMPACT-OPT-NEXT-WORK](research/STRICT-COMPACT-OPT-NEXT-WORK.md).
 
+OPT-A / #72: **RANGE_FRONTIER_PASS** in PR #76. The exact frontier proves J=56
+already preserves the full accepted u64 q95 range while reducing instance state
+from 32 KiB to 28 KiB (-12.5%). Level-major is retained for subsequent research:
+keyed update cost is effectively unchanged, estimate extraction is substantially
+cheaper, and each level is a contiguous 512-byte chunk. J=24/32/40/48 remain valid
+bounded-range frontier points. Canonical evidence:
+[STRICT-COMPACT-OPT-A](research/STRICT-COMPACT-OPT-A-EVIDENCE.md).
+
+Next: #73 OPT-B maintained odd-count cache and #74 OPT-C progressive/prefix
+transfer. Public memory profile/snapshot freeze remains blocked until those slices
+close.
+
 ## Post-v0 candidates
 
 Only after evidence:
