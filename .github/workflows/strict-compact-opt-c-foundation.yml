@@ -1,0 +1,51 @@
+name: strict-compact opt-c frame foundation
+
+on:
+  pull_request:
+    paths:
+      - "docs/research/STRICT-COMPACT-OPT-C-PROOF.md"
+      - "docs/research/STRICT-COMPACT-OPT-C-PROTOCOL.md"
+      - "examples/strict_compact_opt_c_lab.rs"
+      - ".github/workflows/strict-compact-opt-c-foundation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - name: Build certified table
+        run: |
+          mkdir -p opt-c-foundation
+          python research/strict_compact_lookup_q32.py --table-out opt-c-foundation/q32.txt
+          test "$(sha256sum opt-c-foundation/q32.txt | cut -d' ' -f1)" = 634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+      - name: Check Rust source and correctness foundation
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --all-targets
+          cargo run --release --example strict_compact_opt_c_lab -- opt-c-foundation/q32.txt | tee opt-c-foundation/results.txt
+          grep -q '^STRICT_COMPACT_OPT_C_FOUNDATION_PASS ' opt-c-foundation/results.txt
+      - name: Freeze provenance
+        run: |
+          git rev-parse HEAD > opt-c-foundation/head.txt
+          rustc -Vv > opt-c-foundation/rust.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opt-c-foundation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: opt-c-foundation/
+          if-no-files-found: error
