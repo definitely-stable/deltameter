@@ -82,7 +82,7 @@ def threshold_for_count(observed: int, target_kl: Decimal) -> int:
     low = x
     high = math.nextafter(0.5, 0.0)
 
-    for _ in range(FLOAT_BISECTION_STEPS):
+    for _ in range(BISECTION_STEPS):
         middle = (low + high) / 2.0
         if _float_kl(x, middle) >= target:
             high = middle
@@ -180,7 +180,7 @@ def build_payload(table: list[int] | None = None) -> dict:
         "table_bytes": len(table) * 8,
         "table_sha256": hashlib.sha256(encoded).hexdigest(),
         "generator_precision_digits": PRECISION,
-        "float_proposal_bisection_steps": FLOAT_BISECTION_STEPS,
+        "proposal_bisection_steps": BISECTION_STEPS,
         "proof_status": (
             "prototype conservative high-precision generator; "
             "independent interval/rational certification still required"
