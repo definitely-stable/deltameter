@@ -43,13 +43,9 @@ mod opt_c {
     }
 
     impl Frozen {
-        fn from_sketch(sketch: &PackedSketch, epoch: [u8; 16], config: [u8; 32]) -> Self {
+        fn from_sketch(sketch: &PackedSketch, epoch: [u8; 16], config: [u8; 32], table_binding: [u8; 32]) -> Self {
             assert_eq!(sketch.levels, J);
             assert_eq!(sketch.layout, Layout::LevelMajor);
-            let mut table_binding = [0_u8; 32];
-            // Fixed *research fixture* binding. This is NOT an authenticated
-            // identifier of actual Q32 contents (workflow separately hashes Q32).
-            table_binding.copy_from_slice(&[0x5a; 32]);
             let session = Session {
                 magic: MAGIC,
                 version: 0,
@@ -187,14 +183,14 @@ mod opt_c {
         }
     }
 
-    fn verify_frame_correctness(table: &[u64]) {
+    fn verify_frame_correctness(table: &[u64], table_binding: [u8; 32]) {
         let mut live = PackedSketch::new(J, Layout::LevelMajor);
         for token in 0_u64..65_536 {
             live.toggle(token);
         }
         let epoch = [0x51; 16];
         let cfg = [0x39; 32];
-        let frozen = Frozen::from_sketch(&live, epoch, cfg);
+        let frozen = Frozen::from_sketch(&live, epoch, cfg, table_binding);
         assert_eq!(frozen.words.len(), J as usize * WORDS_PER_LEVEL);
         let full_estimate = live.estimate(table);
         // Snapshot immutability is independent of later updates.
@@ -235,7 +231,7 @@ mod opt_c {
 
         // Missing level is not the same as a received all-zero level.
         let empty = PackedSketch::new(J, Layout::LevelMajor);
-        let blank = Frozen::from_sketch(&empty, [0x52; 16], cfg);
+        let blank = Frozen::from_sketch(&empty, [0x52; 16], cfg, table_binding);
         let mut zero_rx = Receiver::new(&blank.session, cfg, blank.session.table_binding).unwrap();
         assert_eq!(zero_rx.received(), 0);
         assert!(zero_rx.ingest(&blank.frame(1)).unwrap());
@@ -275,7 +271,9 @@ mod opt_c {
     pub(super) fn run(path: &Path) {
         let table = load_table(path);
         assert_oracle_vectors();
-        verify_frame_correctness(&table);
+        let raw = std::fs::read(path).expect("read Q32 bytes for session binding");
+        let table_binding = *blake3::hash(&raw).as_bytes();
+        verify_frame_correctness(&table, table_binding);
     }
 }
 
