@@ -10,7 +10,6 @@ mod c3 {
         run_c3c(path, worker);
     }
 
-
     pub(super) fn run_c3b_entry(path: &std::path::Path, worker: usize) {
         run_c3b(path, worker);
     }
