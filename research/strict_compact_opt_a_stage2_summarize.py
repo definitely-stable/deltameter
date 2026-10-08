@@ -80,7 +80,13 @@ def build_payload(stage1_path: Path, logs_dir: Path) -> dict:
     if stage1["stage2_protocol_v2_shortlist"] != [64, 24, 40, 56]:
         raise AssertionError("unexpected Stage-2 shortlist")
 
-    profiles = {row["stored_levels"]: row for row in stage1["profiles"]}
+    profiles = {}
+    for raw in stage1["profiles"]:
+        row = dict(raw)
+        row["d_max"] = int(row["d_max"])
+        if row["first_uncertified_d"] is not None:
+            row["first_uncertified_d"] = int(row["first_uncertified_d"])
+        profiles[row["stored_levels"]] = row
     if set(profiles) != {24, 32, 40, 48, 56, 64}:
         raise AssertionError("frozen Stage-1 profile set")
 
