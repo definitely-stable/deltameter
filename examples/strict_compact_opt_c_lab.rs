@@ -43,7 +43,12 @@ mod opt_c {
     }
 
     impl Frozen {
-        fn from_sketch(sketch: &PackedSketch, epoch: [u8; 16], config: [u8; 32], table_binding: [u8; 32]) -> Self {
+        fn from_sketch(
+            sketch: &PackedSketch,
+            epoch: [u8; 16],
+            config: [u8; 32],
+            table_binding: [u8; 32],
+        ) -> Self {
             assert_eq!(sketch.levels, J);
             assert_eq!(sketch.layout, Layout::LevelMajor);
             let session = Session {
@@ -69,7 +74,9 @@ mod opt_c {
             let start = (level_one_based as usize - 1) * WORDS_PER_LEVEL;
             let payload = &mut frame[EPOCH_BYTES + 1..EPOCH_BYTES + 1 + LEVEL_BYTES];
             for (out, word) in payload
-                .as_chunks_mut::<8>().0.iter_mut()
+                .as_chunks_mut::<8>()
+                .0
+                .iter_mut()
                 .zip(&self.words[start..start + WORDS_PER_LEVEL])
             {
                 out.copy_from_slice(&word.to_le_bytes());
@@ -252,8 +259,7 @@ mod opt_c {
         wrong_epoch[0] ^= 1;
         assert_eq!(rx.ingest(&wrong_epoch), Err("wrong-session"));
         // Even a reused raw epoch cannot mix a different config-bound snapshot.
-        let wrong_config =
-            Frozen::from_sketch(&empty, epoch, [0x31; 32], table_binding);
+        let wrong_config = Frozen::from_sketch(&empty, epoch, [0x31; 32], table_binding);
         assert_eq!(rx.ingest(&wrong_config.frame(1)), Err("wrong-session"));
         let mut wrong_index = frozen.frame(1);
         wrong_index[EPOCH_BYTES] = 0;
