@@ -126,12 +126,29 @@ fn energy_config() -> EnergyConfig {
 }
 
 fn check_semantics() {
-    let mut once = KeyedBlake3Sketch::new(&MASTER_KEY);
-    once.toggle(42);
-    assert!(once.words.iter().any(|&word| word != 0));
+    let probe = KeyedBlake3Sketch::new(&MASTER_KEY);
+    let stored_token = (0_u64..4096)
+        .find(|&key| {
+            let sample = probe.sample(key);
+            sample.level != 0 && sample.coefficient_one
+        })
+        .expect("find deterministic stored-token fixture");
 
-    once.toggle(42);
-    assert!(once.words.iter().all(|&word| word == 0));
+    let mut once = KeyedBlake3Sketch::new(&MASTER_KEY);
+    let before = once.words.clone();
+    once.toggle(stored_token);
+    assert_ne!(once.words, before, "stored token must toggle one bit");
+    once.toggle(stored_token);
+    assert_eq!(once.words, before, "repeating the same token must cancel");
+
+    let no_op_token = (0_u64..4096)
+        .find(|&key| {
+            let sample = probe.sample(key);
+            sample.level == 0 || !sample.coefficient_one
+        })
+        .expect("find deterministic no-op fixture");
+    once.toggle(no_op_token);
+    assert_eq!(once.words, before, "zero coefficient/truncation must not mutate state");
 
     let mut left = KeyedBlake3Sketch::new(&MASTER_KEY);
     let mut right = KeyedBlake3Sketch::new(&MASTER_KEY);
