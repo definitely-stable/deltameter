@@ -15,16 +15,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 from strict_compact_lookup_certify import ROWS
 from strict_compact_range_certify import (
     DECLARED_D_MIN,
     DOMAIN,
-    build_cover,
     build_prefix_cover,
     load_table,
-    validate_cover,
 )
 
 J_VALUES = (24, 32, 40, 48, 56, 64)
@@ -74,19 +74,20 @@ def build_payload(table_path: Path) -> dict:
         )
 
     table = load_table(table_path)
-    rows = [summarize(table, levels) for levels in J_VALUES]
+    workers = max(1, min(len(J_VALUES), os.cpu_count() or 1))
+    with ProcessPoolExecutor(max_workers=workers) as executor:
+        rows = list(executor.map(summarize, [table] * len(J_VALUES), J_VALUES))
 
-    # Exact regression anchor: J=64 must reproduce the already accepted complete
-    # certificate, not merely reach the same endpoint.
+    # Regression anchor. The independent legacy range workflow recomputes the full
+    # J=64 certificate on every OPT-A head. Here we additionally require the
+    # already accepted decomposition summary from STRICT-COMPACT-002.
     full = rows[-1]
     if full["stored_levels"] != 64 or not full["covers_full_u64_domain"]:
         raise AssertionError("J=64 no longer reproduces full-domain certificate")
-    accepted = build_cover(table, 64)
-    validate_cover(accepted)
-    if full["interval_count"] != len(accepted):
-        raise AssertionError(
-            "J=64 prefix frontier changed accepted certificate decomposition"
-        )
+    if full["interval_count"] != 876 or full["exact_tail_interval_count"] != 875:
+        raise AssertionError("J=64 accepted interval decomposition changed")
+    if full["levels_used"] != list(range(1, 53)):
+        raise AssertionError("J=64 accepted certifying-level set changed")
 
     previous_d_max = -1
     previous_bytes = -1
