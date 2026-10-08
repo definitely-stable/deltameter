@@ -5,6 +5,7 @@ use std::time::Instant;
 
 const ROWS: usize = 4096;
 const J_VALUES: [u32; 6] = [24, 32, 40, 48, 56, 64];
+const STAGE2_J_VALUES: [u32; 4] = [24, 40, 56, 64];
 const TABLE_ENTRIES: usize = 2048;
 const SENTINEL: u64 = u64::MAX;
 const Q_BITS: u32 = 32;
@@ -363,23 +364,106 @@ fn benchmark_xor(levels: u32, layout: Layout) -> f64 {
     median(samples)
 }
 
-fn main() {
-    let table_path = std::env::args_os()
-        .nth(1)
-        .expect("usage: strict_compact_opt_a_lab <certified-q32-table.txt>");
-    let table = load_table(Path::new(&table_path));
+fn measure_update_once(levels: u32) -> f64 {
+    let mut sketch = PackedSketch::new(levels, Layout::LevelMajor);
+    let start = Instant::now();
+    for token in 0_u64..UPDATE_TOKENS {
+        sketch.toggle(black_box(token));
+    }
+    let elapsed = start.elapsed();
+    black_box(&sketch.words);
+    elapsed.as_nanos() as f64 / UPDATE_TOKENS as f64
+}
 
+fn measure_estimate_once(levels: u32, table: &[u64]) -> f64 {
+    let sketch = populate(levels, Layout::LevelMajor, 0, QUERY_TOKENS);
+    let start = Instant::now();
+    let mut sink = 0_u128;
+    for _ in 0..QUERY_REPETITIONS {
+        sink ^= black_box(black_box(&sketch).estimate(black_box(table)));
+    }
+    let elapsed = start.elapsed();
+    black_box(sink);
+    elapsed.as_nanos() as f64 / QUERY_REPETITIONS as f64
+}
+
+fn measure_xor_once(levels: u32) -> f64 {
+    let source = populate(levels, Layout::LevelMajor, 0, QUERY_TOKENS / 2);
+    let mut target = populate(
+        levels,
+        Layout::LevelMajor,
+        QUERY_TOKENS / 2,
+        QUERY_TOKENS,
+    );
+    let kib = source.state_bytes() as f64 / 1024.0;
+    let start = Instant::now();
+    for _ in 0..XOR_REPETITIONS {
+        target.xor_assign(black_box(&source));
+    }
+    let elapsed = start.elapsed();
+    black_box(&target.words);
+    elapsed.as_nanos() as f64 / (XOR_REPETITIONS as f64 * kib)
+}
+
+fn rotated_stage2_order(worker: usize, round: usize) -> [u32; 4] {
+    let mut order = STAGE2_J_VALUES;
+    let shift = (worker - 1 + round) % order.len();
+    order.rotate_left(shift);
+    order
+}
+
+fn run_stage2(table: &[u64], worker: usize) {
+    assert!((1..=5).contains(&worker));
+    assert_oracle_vectors();
+
+    for levels in STAGE2_J_VALUES {
+        correctness(levels, table);
+    }
+
+    for warmup in 0..WARMUPS {
+        for levels in rotated_stage2_order(worker, warmup) {
+            black_box(measure_update_once(levels));
+            black_box(measure_estimate_once(levels, table));
+            black_box(measure_xor_once(levels));
+        }
+    }
+
+    for round in 0..SAMPLES {
+        for levels in rotated_stage2_order(worker, WARMUPS + round) {
+            let update_ns = measure_update_once(levels);
+            let estimate_ns = measure_estimate_once(levels, table);
+            let xor_ns_per_kib = measure_xor_once(levels);
+            println!(
+                "STRICT_COMPACT_OPT_A_STAGE2_SAMPLE worker={} round={} J={} layout=level state_bytes={} update_ns_per_token={:.6} estimate_ns={:.3} xor_ns_per_kib={:.6}",
+                worker,
+                round,
+                levels,
+                ROWS * usize::try_from(levels).unwrap() / 8,
+                update_ns,
+                estimate_ns,
+                xor_ns_per_kib,
+            );
+        }
+    }
+
+    println!(
+        "STRICT_COMPACT_OPT_A_STAGE2_WORKER_PASS worker={}",
+        worker
+    );
+}
+
+fn run_stage1(table: &[u64]) {
     assert_oracle_vectors();
 
     for levels in J_VALUES {
-        correctness(levels, &table);
+        correctness(levels, table);
     }
 
     for levels in J_VALUES {
         for layout in [Layout::RowMajor, Layout::LevelMajor] {
             let state_bytes = ROWS * usize::try_from(levels).unwrap() / 8;
             let update_ns = benchmark_update(levels, layout);
-            let estimate_ns = benchmark_estimate(levels, layout, &table);
+            let estimate_ns = benchmark_estimate(levels, layout, table);
             let xor_ns_per_kib = benchmark_xor(levels, layout);
 
             println!(
@@ -395,4 +479,26 @@ fn main() {
     }
 
     println!("STRICT_COMPACT_OPT_A_LAB_PASS");
+}
+
+fn main() {
+    let mut args = std::env::args().skip(1);
+    let table_path = args
+        .next()
+        .expect("usage: strict_compact_opt_a_lab <q32-table> [stage2 <worker>]");
+    let table = load_table(Path::new(&table_path));
+
+    match args.next().as_deref() {
+        None => run_stage1(&table),
+        Some("stage2") => {
+            let worker: usize = args
+                .next()
+                .expect("stage2 worker id")
+                .parse()
+                .expect("worker id must be integer");
+            assert!(args.next().is_none(), "unexpected extra stage2 argument");
+            run_stage2(&table, worker);
+        }
+        Some(other) => panic!("unknown mode {other}"),
+    }
 }
