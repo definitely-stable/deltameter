@@ -173,7 +173,7 @@ mod opt_c {
         }
     }
 
-    fn correctness(table: &[u64]) {
+    fn verify_frame_correctness(table: &[u64]) {
         let mut live = PackedSketch::new(J, Layout::LevelMajor);
         for token in 0_u64..65_536 {
             live.toggle(token);
@@ -261,7 +261,7 @@ mod opt_c {
     pub(super) fn run(path: &Path) {
         let table = load_table(path);
         assert_oracle_vectors();
-        correctness(&table);
+        verify_frame_correctness(&table);
     }
 }
 
