@@ -1,0 +1,85 @@
+name: strict-compact opt-b maintained counts
+
+on:
+  pull_request:
+    paths:
+      - "docs/research/STRICT-COMPACT-OPT-B-PROTOCOL.md"
+      - "research/strict_compact_opt_b_summarize.py"
+      - "examples/strict_compact_opt_b_lab.rs"
+      - ".github/workflows/strict-compact-opt-b.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - name: Freeze Q32 table
+        run: |
+          mkdir -p opt-b-raw
+          python research/strict_compact_lookup_q32.py --table-out opt-b-raw/q32.txt
+          test "$(sha256sum opt-b-raw/q32.txt | cut -d' ' -f1)" = 634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+      - name: Format and compile check
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+          python -m py_compile research/strict_compact_opt_b_summarize.py
+      - name: Run OPT-B paired worker
+        run: |
+          cargo run --release --example strict_compact_opt_b_lab -- opt-b-raw/q32.txt ${{ matrix.worker }} | tee opt-b-raw/worker-${{ matrix.worker }}.txt
+          grep -q '^STRICT_COMPACT_OPT_B_CORRECTNESS_PASS$' opt-b-raw/worker-${{ matrix.worker }}.txt
+          grep -q "^STRICT_COMPACT_OPT_B_WORKER_PASS worker=${{ matrix.worker }}$" opt-b-raw/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > opt-b-raw/head-${{ matrix.worker }}.txt
+          rustc -Vv > opt-b-raw/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opt-b-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: opt-b-raw/
+          if-no-files-found: error
+
+  aggregate:
+    needs: worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: opt-b-worker-*
+          path: opt-b-in
+          merge-multiple: true
+      - name: Validate raw timing and make decision
+        run: |
+          mkdir -p opt-b-out
+          python research/strict_compact_opt_b_summarize.py --logs-dir opt-b-in --head "$(git rev-parse HEAD)" --out opt-b-out/summary.json | tee opt-b-out/summary.txt
+          grep -q '^STRICT_COMPACT_OPT_B_EVIDENCE_PASS decision=' opt-b-out/summary.txt
+          git rev-parse HEAD > opt-b-out/head.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opt-b-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: opt-b-out/
+          if-no-files-found: error
