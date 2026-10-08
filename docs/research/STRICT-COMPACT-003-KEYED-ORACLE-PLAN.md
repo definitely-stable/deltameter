@@ -89,13 +89,20 @@ This slice does not solve key management.
 
 ## Evidence amendment before canonical run
 
-The first hosted attempt, workflow run `37721691447`, demonstrated that all five
-workers passed the in-process correctness and performance assertions. However the
-artifact timing files were empty because terminal output was piped through `tee`
-rather than written by the measurement program itself.
+The first hosted attempt, workflow run `37721691447`, is **INVALID**.
+Terminal output was piped through `tee`, which both left the artifact timing files
+empty and masked a possible nonzero `cargo run` status because the shell pipeline
+did not use pipefail. It therefore proves neither performance nor correctness and
+contributes no verdict evidence.
 
-That attempt is **validation-only and non-canonical**. Its numeric timing data is not
-used for the final verdict.
+The first durable follow-up exposed a separate fixture bug before timing: a fixed
+token was assumed to mutate state, but a valid F-PCSA sample may have coefficient
+zero (or be truncated) and is then correctly a no-op. The semantic regression now
+searches deterministic fixtures from the keyed oracle itself: one guaranteed stored
+sample must toggle and cancel, and one guaranteed no-op sample must leave state
+unchanged.
+
+Neither invalid attempt contributes numeric timing evidence.
 
 Before the canonical run:
 - the Rust lab now writes its own durable result record;
