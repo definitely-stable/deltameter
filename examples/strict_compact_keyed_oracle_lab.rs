@@ -9,13 +9,10 @@ use std::time::Instant;
 
 const ROWS: u32 = 4096;
 const LEVELS: u8 = 64;
-const ORACLE_CONTEXT: &str =
-    "deltameter 2026-10-08 strict-compact keyed oracle v1";
+const ORACLE_CONTEXT: &str = "deltameter 2026-10-08 strict-compact keyed oracle v1";
 const MASTER_KEY: [u8; 32] = [
-    0x44, 0x65, 0x6c, 0x74, 0x61, 0x4d, 0x65, 0x74,
-    0x65, 0x72, 0x2d, 0x53, 0x54, 0x52, 0x49, 0x43,
-    0x54, 0x2d, 0x43, 0x4f, 0x4d, 0x50, 0x41, 0x43,
-    0x54, 0x2d, 0x30, 0x30, 0x33, 0x21, 0x21, 0x21,
+    0x44, 0x65, 0x6c, 0x74, 0x61, 0x4d, 0x65, 0x74, 0x65, 0x72, 0x2d, 0x53, 0x54, 0x52, 0x49, 0x43,
+    0x54, 0x2d, 0x43, 0x4f, 0x4d, 0x50, 0x41, 0x43, 0x54, 0x2d, 0x30, 0x30, 0x33, 0x21, 0x21, 0x21,
 ];
 
 const KEYED_ABSOLUTE_GATE_NS: f64 = 500.0;
@@ -148,7 +145,10 @@ fn check_semantics() {
         })
         .expect("find deterministic no-op fixture");
     once.toggle(no_op_token);
-    assert_eq!(once.words, before, "zero coefficient/truncation must not mutate state");
+    assert_eq!(
+        once.words, before,
+        "zero coefficient/truncation must not mutate state"
+    );
 
     let mut left = KeyedBlake3Sketch::new(&MASTER_KEY);
     let mut right = KeyedBlake3Sketch::new(&MASTER_KEY);
@@ -301,13 +301,7 @@ fn main() {
 
     let result = format!(
         "STRICT_COMPACT_KEYED_RESULT tokens={} rounds={} parity_ns={:.3} keyed_ns={:.3} energy_ns={:.3} keyed_over_parity={:.3} energy_over_keyed={:.3}\n",
-        tokens,
-        rounds,
-        parity_ns,
-        keyed_ns,
-        energy_ns,
-        ratio,
-        energy_ratio,
+        tokens, rounds, parity_ns, keyed_ns, energy_ns, ratio, energy_ratio,
     );
     print!("{result}");
     if let Some(path) = result_path {
