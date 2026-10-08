@@ -94,13 +94,13 @@ mod opt_b {
     // Strong SCAN control: fixed stack counts, no per-query allocation.
     fn scan_estimate(core: &PackedSketch, table: &[u64]) -> u128 {
         let mut counts = [0_u16; 64];
-        for j in 0..core.levels as usize {
+        for (j, count) in counts.iter_mut().enumerate().take(core.levels as usize) {
             let start = j * ROWS / 64;
             let sum: u32 = core.words[start..start + ROWS / 64]
                 .iter()
                 .map(|w| w.count_ones())
                 .sum();
-            counts[j] = u16::try_from(sum).unwrap();
+            *count = u16::try_from(sum).unwrap();
         }
         strict_upper_bound(&counts[..core.levels as usize], table)
     }
@@ -248,7 +248,7 @@ mod opt_b {
             lanes.rotate_left((worker - 1 + round) % llen);
             for j in profiles {
                 for lane in lanes {
-                    let modes = if (worker + round) % 2 == 0 {
+                    let modes = if (worker + round).is_multiple_of(2) {
                         ["scan", "cache"]
                     } else {
                         ["cache", "scan"]
