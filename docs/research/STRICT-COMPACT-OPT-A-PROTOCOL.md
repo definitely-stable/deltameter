@@ -232,3 +232,28 @@ post-hoc gate change.
 - no generalized ladder;
 - no new hash/oracle;
 - no production dependency change.
+
+
+## Stage-2 evidence serialization amendment
+
+The first Stage-2 attempt, workflow run `37756677369`, is **INVALID for the final
+OPT-A verdict**.
+
+All five raw benchmark workers completed, but the hand-authored frozen Stage-1 JSON
+encoded d-domain integers as JSON numbers through a JavaScript tooling path.
+Values above 2^53 were therefore rounded; in particular `2^64-1` became
+`18446744073709552000`. The aggregator consequently could not identify J=56 as a
+full-domain profile.
+
+This is an evidence/provenance serialization defect, not a sketch, certificate or
+performance failure.
+
+Correction before replacement evidence:
+
+- every d-domain value in the frozen Stage-1 bridge is encoded as a decimal string;
+- the Python aggregator parses those strings into arbitrary-precision integers;
+- the Stage-1 source artifact, shortlist, benchmark implementation and every
+  Stage-2 gate remain unchanged.
+
+No observation from run `37756677369` is eligible for the canonical Stage-2
+decision. The next exact-head run after this amendment is the replacement evidence.
