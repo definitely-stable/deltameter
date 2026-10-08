@@ -1,8 +1,5 @@
 // Included by the research-only OPT-C example inside mod opt_c.
 // Frozen preregistered C2 transfer/cost model; not a public wire format.
-use std::hint::black_box;
-use std::time::Instant;
-
 const TRANSFER_SEEDS: usize = 32;
 const COMMON_BYTES: usize = 96 + 8 + 18;
 const FULL_BYTES: usize = COMMON_BYTES + ROWS * J as usize / 8 + 4;
@@ -243,6 +240,8 @@ fn physical_levels(snapshot: &Frozen, table: &[u64], order: &[u8], t: u64,
 fn c2_sample(worker: usize, scenario: usize, seed: usize, order: &str,
              mode: &str, batch: usize, d: u64, t: u64, frozen: &Frozen,
              table: &[u64], copy_ns: u128, result: TransferResult, full_bound: u128) {
+    assert_eq!(frozen.words.len(), J as usize * WORDS_PER_LEVEL);
+    assert_eq!(table.len(), TABLE_ENTRIES);
     assert_eq!(result.useful, result.bound <= u128::from(t));
     assert!(result.bound >= full_bound, "partial bound tighter than full minimum");
     assert!(result.bytes >= COMMON_BYTES);
