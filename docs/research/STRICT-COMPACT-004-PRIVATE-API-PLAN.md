@@ -54,6 +54,7 @@ upper_bound: u128
 ideal_statistical_failure_upper_bound: 1e-6
 coverage_model: KeyedPrfConditional
 useful_range_min: 4096
+useful_range_max: 2^64-1
 domain_cardinality: 2^64
 q95_width_ratio_upper_bound: 1.5
 ~~~
@@ -75,7 +76,9 @@ The caller supplies 32 secret bytes. The prototype:
 - documents that this fingerprint is not an authenticator;
 - rejects XOR merge if the actual derived oracle keys differ.
 
-Key rotation means rebuild.
+Key rotation means rebuild. Memory zeroization is not claimed in this slice; a
+public secret-bearing API must make an explicit decision about key-memory lifetime
+and zeroization rather than imply guarantees Rust does not provide automatically.
 
 No snapshot API is implemented. Snapshot v1 remains untouched and never carries
 the secret.
