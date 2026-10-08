@@ -1184,3 +1184,21 @@ no public default, snapshot, alpha or oracle changes. #69 remains blocked on
 #73/#74 product-shape evidence.
 
 Canonical addendum: docs/research/STRICT-COMPACT-OPT-A-REFINEMENT-EVIDENCE.md.
+
+
+### D47 — OPT-B keeps the derived odd-count cache under five-worker gate
+
+On preregistered source 2f8dc09199e376d3c6019ebb0d529d3879b15eeb,
+GitHub-hosted five-worker run 37807795968 (1680 complete raw observations)
+measures J52 / LEVEL_MAJOR maintained u16 counts against an **allocation-free**
+bitmap scan control. All workers pass frozen update <=+10%, estimate >=5x
+speedup, and >=10% end-to-end gain on one shared realistic mixed lane:
+observed worst update +2.670%, minimum estimate 13.563x, minimum mixed-100
+gain +15.22% (also mixed-1/mixed-10 pass).
+
+Decision: **KEEP_CACHE** as derived internal research state (2*J bytes,
+J52=104 B), always rebuild after XOR canonical merge, never serialize cache;
+continue #74 progressive transfer. The public profile/snapshot gate #69 stays
+blocked until #74 closes. Source-specific hosted timings are not API promises.
+
+Evidence: docs/research/STRICT-COMPACT-OPT-B-EVIDENCE.md.
