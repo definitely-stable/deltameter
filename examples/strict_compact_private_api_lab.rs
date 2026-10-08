@@ -45,6 +45,7 @@ struct StrictCompactEstimate {
     ideal_statistical_failure_upper_bound: f64,
     coverage_model: KeyedPrfCoverage,
     useful_range_min: u128,
+    useful_range_max: u128,
     domain_cardinality: u128,
     q95_width_ratio_upper_bound: f64,
 }
@@ -144,6 +145,7 @@ impl PrivateStrictCompact {
                 input_model: InputModel::NonAdaptiveIndependentOfSecretKey,
             },
             useful_range_min: USEFUL_RANGE_MIN,
+            useful_range_max: u128::from(u64::MAX),
             domain_cardinality: DOMAIN_CARDINALITY,
             q95_width_ratio_upper_bound: Q95_WIDTH,
         }
@@ -262,9 +264,25 @@ fn check_domain_ceiling(table: &[u64]) {
     assert_eq!(DOMAIN_CARDINALITY, u128::from(u64::MAX) + 1);
 }
 
-fn print_reference_vectors() {
+fn check_reference_vectors() {
     let sketch = PrivateStrictCompact::new(SecretKey(MASTER_KEY));
-    for token in [0_u64, 1, 2, 42, u64::MAX] {
+    assert_eq!(
+        sketch.config.key_id,
+        [
+            0x10, 0x9c, 0x85, 0x91, 0xb5, 0xe0, 0x02, 0x24,
+            0x12, 0x53, 0x49, 0x12, 0x9e, 0xd0, 0xe5, 0xeb,
+        ]
+    );
+
+    let expected = [
+        (0_u64, 3383_u64, 5_u64, 1_u64),
+        (1, 2445, 1, 0),
+        (2, 248, 1, 1),
+        (42, 328, 1, 0),
+        (u64::MAX, 1146, 2, 1),
+    ];
+
+    for (token, expected_row, expected_level, expected_coefficient) in expected {
         let hash = blake3::keyed_hash(&sketch.config.oracle_key, &token.to_le_bytes());
         let bytes = hash.as_bytes();
         let row = u64::from_le_bytes(bytes[0..8].try_into().unwrap()) & ((ROWS as u64) - 1);
@@ -275,6 +293,12 @@ fn print_reference_vectors() {
             u64::from(level_word.trailing_zeros() + 1)
         };
         let coefficient = u64::from_le_bytes(bytes[16..24].try_into().unwrap()) & 1;
+
+        assert_eq!((row, level, coefficient), (
+            expected_row,
+            expected_level,
+            expected_coefficient,
+        ));
         println!(
             "STRICT_COMPACT_PRIVATE_VECTOR token={token} row={row} level={level} coefficient={coefficient}"
         );
@@ -295,6 +319,8 @@ fn main() {
     let empty = PrivateStrictCompact::new(SecretKey(MASTER_KEY));
     let empty_estimate = empty.estimate(&table);
     assert!(empty_estimate.upper_bound <= DOMAIN_CARDINALITY);
+    assert_eq!(empty_estimate.useful_range_min, USEFUL_RANGE_MIN);
+    assert_eq!(empty_estimate.useful_range_max, u128::from(u64::MAX));
     assert_eq!(empty_estimate.domain_cardinality, DOMAIN_CARDINALITY);
     assert_eq!(
         empty_estimate.coverage_model.input_model,
@@ -318,7 +344,7 @@ fn main() {
         );
     }
 
-    print_reference_vectors();
+    check_reference_vectors();
     println!(
         "STRICT_COMPACT_PRIVATE_API_PASS state_bytes={} table_bytes={} domain_cardinality={} useful_min={} q95_width={}",
         ROWS * 8,
