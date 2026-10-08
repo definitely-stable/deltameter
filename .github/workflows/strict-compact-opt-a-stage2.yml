@@ -84,7 +84,7 @@ jobs:
         run: |
           python -m py_compile research/strict_compact_opt_a_stage2_summarize.py
           mkdir -p strict-opt-a-stage2-summary
-          python research/strict_compact_opt_a_stage2_summarize.py             --stage1 research/strict_compact_opt_a_stage1_frozen.json             --logs-dir strict-opt-a-stage2-raw             --out strict-opt-a-stage2-summary/summary.json             | tee strict-opt-a-stage2-summary/summary.txt
+          python research/strict_compact_opt_a_stage2_summarize.py             --stage1 research/strict_compact_opt_a_stage1_frozen.json             --logs-dir strict-opt-a-stage2-raw             --head "$(git rev-parse HEAD)"             --out strict-opt-a-stage2-summary/summary.json             | tee strict-opt-a-stage2-summary/summary.txt
           grep -q '^STRICT_COMPACT_OPT_A_STAGE2_PASS '             strict-opt-a-stage2-summary/summary.txt
           git rev-parse HEAD > strict-opt-a-stage2-summary/head.txt
 
