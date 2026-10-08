@@ -1163,3 +1163,24 @@ Decision:
 - no alpha reallocation, generalized ladder or new oracle is authorized by OPT-A.
 
 Canonical evidence: docs/research/STRICT-COMPACT-OPT-A-EVIDENCE.md.
+
+
+### D46 — OPT-A refinement confirms J=52 / 26 KiB full-range research profile
+
+The separately preregistered post-Stage-2 J51/J52 refinement preserves D45's
+historical J matrix and five-worker J56 result. Exact hosted certification
+(run 37801885016, source a0ba405aaa045db4490cde28b248a0739eb09f9c)
+reproduces [4096,2^64-1] for J52 using the unchanged certified Q32 table,
+alpha=delta/64 and keyed-BLAKE3 computational input assumptions. The packed
+J52 LEVEL_MAJOR bitmap is 26,624 bytes, saving 18.75% relative to J64 and
+7.14% relative to J56, and passes all five paired performance workers.
+
+J51's current certificate stops at d=11,316,578,792,889,469,415, which does
+NOT prove any impossibility/lower bound for alternate certificate designs.
+
+Decision: **J52_REFINEMENT_PASS**; prefer J=52 as the full-u64 OPT-B/OPT-C
+research baseline, retain J64 control and the J56 historical candidate;
+no public default, snapshot, alpha or oracle changes. #69 remains blocked on
+#73/#74 product-shape evidence.
+
+Canonical addendum: docs/research/STRICT-COMPACT-OPT-A-REFINEMENT-EVIDENCE.md.
