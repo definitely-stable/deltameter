@@ -65,7 +65,7 @@ research/strict_compact_lookup_q32.py:
 
 - Python standard library only;
 - binary64 bisection is used only to propose a nearby Q32 integer;
-- 60-digit Decimal arithmetic independently checks the emitted inequality;
+- 80-digit Decimal arithmetic independently checks the emitted inequality;
 - integer repair moves upward until the candidate is conservative, then downward
   to the minimal Q32 value that still passes the high-precision check;
 - fail if finite thresholds are not monotone;
