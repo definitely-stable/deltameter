@@ -247,6 +247,7 @@ fn main() {
         .nth(2)
         .map(|value| value.parse().expect("round count"))
         .unwrap_or(3);
+    let result_path = std::env::args_os().nth(3);
 
     assert!(tokens >= 10_000);
     assert!(rounds >= 3 && rounds % 2 == 1);
@@ -281,8 +282,8 @@ fn main() {
     let ratio = keyed_ns / parity_ns;
     let energy_ratio = energy_ns / keyed_ns;
 
-    println!(
-        "STRICT_COMPACT_KEYED_RESULT tokens={} rounds={} parity_ns={:.3} keyed_ns={:.3} energy_ns={:.3} keyed_over_parity={:.3} energy_over_keyed={:.3}",
+    let result = format!(
+        "STRICT_COMPACT_KEYED_RESULT tokens={} rounds={} parity_ns={:.3} keyed_ns={:.3} energy_ns={:.3} keyed_over_parity={:.3} energy_over_keyed={:.3}\n",
         tokens,
         rounds,
         parity_ns,
@@ -291,6 +292,10 @@ fn main() {
         ratio,
         energy_ratio,
     );
+    print!("{result}");
+    if let Some(path) = result_path {
+        std::fs::write(path, result.as_bytes()).expect("write durable result");
+    }
 
     assert!(
         keyed_ns <= KEYED_ABSOLUTE_GATE_NS,
