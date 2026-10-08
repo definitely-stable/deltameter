@@ -3,7 +3,7 @@
 Issue: #72. Parent: #70. Baseline main:
 `862579643fb44bfd3df3b65a863bfdc90b998611`.
 
-Status: **FROZEN BEFORE OPT-A PERFORMANCE EVIDENCE**.
+Status: **FROZEN v2 BEFORE STAGE-2 PERFORMANCE EVIDENCE**.
 
 ## Question
 
@@ -157,14 +157,27 @@ certified_d_max
 
 ## Stage 1 shortlist rule
 
-Retain at most four distinct J values using this deterministic order:
+Retain at most five distinct J values using this deterministic order:
 
 1. J=64 full-domain control;
 2. the smallest J with any nontrivial certified prefix;
 3. the smallest J whose certified d_max reaches at least 2^32-1;
-4. the smallest J whose certified d_max reaches at least 2^48-1.
+4. the smallest J whose certified d_max reaches at least 2^48-1;
+5. the smallest J whose certified d_max reaches 2^64-1.
 
 Skip duplicates or an unmet tier; do not replace them post-hoc with another profile.
+
+### v2 amendment provenance
+
+Stage 1 completed before any Stage-2 timing and revealed that J=56 preserves the
+full u64 declared range while J=64 was the only full-range tier in the original
+shortlist rule. Omitting the smallest full-range profile would make Stage 2 unable
+to answer the stated product question.
+
+Therefore v2 adds item 5 above before Stage-2 measurement. No Stage-2 observation
+exists at amendment time. Frozen Stage-2 J values from the canonical Stage-1
+artifact are `64,24,40,56`; all use LEVEL_MAJOR under the already-frozen layout
+selection rule.
 
 For each retained J prefer LEVEL_MAJOR. Select ROW_MAJOR instead only if its median
 update ns/token is at least 10% lower **and** LEVEL_MAJOR is not at least 20% better
