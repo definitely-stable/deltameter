@@ -22,6 +22,20 @@ mod opt_c {
         table_binding: [u8; 32],
     }
 
+    impl Session {
+        // Nonsecret mix-up detection; NOT a MAC or peer authentication.
+        fn binding_tag(&self) -> [u8; 16] {
+            let mut hash = blake3::Hasher::new();
+            hash.update(&self.magic);
+            hash.update(&[self.version, self.levels]);
+            hash.update(&self.rows.to_le_bytes());
+            hash.update(&self.epoch);
+            hash.update(&self.config_binding);
+            hash.update(&self.table_binding);
+            hash.finalize().as_bytes()[..16].try_into().unwrap()
+        }
+    }
+
     #[derive(Clone)]
     struct Frozen {
         session: Session,
@@ -54,7 +68,7 @@ mod opt_c {
         fn frame(&self, level_one_based: u8) -> [u8; FRAME_BYTES] {
             assert!((1..=J as u8).contains(&level_one_based));
             let mut frame = [0_u8; FRAME_BYTES];
-            frame[..EPOCH_BYTES].copy_from_slice(&self.session.epoch);
+            frame[..EPOCH_BYTES].copy_from_slice(&self.session.binding_tag());
             frame[EPOCH_BYTES] = level_one_based;
             let start = (level_one_based as usize - 1) * WORDS_PER_LEVEL;
             let payload = &mut frame[EPOCH_BYTES + 1..EPOCH_BYTES + 1 + LEVEL_BYTES];
@@ -113,8 +127,8 @@ mod opt_c {
             if bytes.len() != FRAME_BYTES {
                 return Err("bad-frame-length");
             }
-            if bytes[..EPOCH_BYTES] != self.session.epoch {
-                return Err("wrong-epoch");
+            if bytes[..EPOCH_BYTES] != self.session.binding_tag() {
+                return Err("wrong-session");
             }
             let level = bytes[EPOCH_BYTES];
             if !(1..=J as u8).contains(&level) {
@@ -166,7 +180,7 @@ mod opt_c {
             for part in &self.parts {
                 let data = part.as_ref().ok_or("missing-levels")?;
                 for chunk in data.as_chunks::<8>().0 {
-                    words.push(u64::from_le_bytes(chunk.try_into().unwrap()));
+                    words.push(u64::from_le_bytes(*chunk));
                 }
             }
             Ok(words.into_boxed_slice())
@@ -240,7 +254,7 @@ mod opt_c {
         );
         let mut wrong_epoch = frozen.frame(1);
         wrong_epoch[0] ^= 1;
-        assert_eq!(rx.ingest(&wrong_epoch), Err("wrong-epoch"));
+        assert_eq!(rx.ingest(&wrong_epoch), Err("wrong-session"));
         let mut wrong_index = frozen.frame(1);
         wrong_index[EPOCH_BYTES] = 0;
         assert_eq!(rx.ingest(&wrong_index), Err("bad-level-index"));
