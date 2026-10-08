@@ -1,0 +1,82 @@
+name: strict-compact opt-a stage1
+
+on:
+  pull_request:
+    paths:
+      - "docs/research/STRICT-COMPACT-OPT-A-PROTOCOL.md"
+      - "research/strict_compact_range_certify.py"
+      - "research/strict_compact_j_frontier.py"
+      - "research/strict_compact_opt_a_summarize.py"
+      - "examples/strict_compact_opt_a_lab.rs"
+      - "research/strict_compact_lookup_q32.py"
+      - "research/strict_compact_lookup_certify.py"
+      - ".github/workflows/strict-compact-opt-a.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+
+      - name: Compile research sources
+        run: |
+          python -m py_compile             research/strict_compact_range_certify.py             research/strict_compact_j_frontier.py             research/strict_compact_opt_a_summarize.py
+
+      - name: Generate and independently certify frozen Q32 table
+        run: |
+          mkdir -p strict-opt-a-out
+          python research/strict_compact_lookup_q32.py             --table-out strict-opt-a-out/q32.txt             --summary-out strict-opt-a-out/table-summary.json
+          test "$(sha256sum strict-opt-a-out/q32.txt | cut -d' ' -f1)" =             634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+          python research/strict_compact_lookup_certify.py             --table strict-opt-a-out/q32.txt             --out strict-opt-a-out/table-certificate.json
+
+      - name: Certify exact J frontier
+        run: |
+          python research/strict_compact_j_frontier.py             --table strict-opt-a-out/q32.txt             --out strict-opt-a-out/j-frontier.json             | tee strict-opt-a-out/j-frontier.txt
+          grep -q '^STRICT_COMPACT_OPT_A_J_FRONTIER_PASS$'             strict-opt-a-out/j-frontier.txt
+
+      - name: Run packed-layout correctness and stage1 screen
+        run: |
+          cargo run --release --example strict_compact_opt_a_lab --             strict-opt-a-out/q32.txt             | tee strict-opt-a-out/layout-lab.txt
+          grep -q '^STRICT_COMPACT_OPT_A_LAB_PASS$'             strict-opt-a-out/layout-lab.txt
+
+      - name: Build fail-closed stage1 shortlist
+        run: |
+          python research/strict_compact_opt_a_summarize.py             --frontier strict-opt-a-out/j-frontier.json             --lab strict-opt-a-out/layout-lab.txt             --out strict-opt-a-out/stage1-summary.json             | tee strict-opt-a-out/stage1-summary.txt
+          grep -q '^STRICT_COMPACT_OPT_A_STAGE1_PASS '             strict-opt-a-out/stage1-summary.txt
+
+      - name: Standard Rust checks
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --all-targets
+          cargo check --all-targets
+
+      - name: Freeze provenance
+        run: |
+          git rev-parse HEAD > strict-opt-a-out/head.txt
+          rustc -Vv > strict-opt-a-out/rust.txt
+          python --version > strict-opt-a-out/python.txt
+          cargo metadata --format-version 1 > strict-opt-a-out/cargo-metadata.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: strict-compact-opt-a-stage1-${{ github.run_id }}-${{ github.run_attempt }}
+          path: strict-opt-a-out/
+          if-no-files-found: error
