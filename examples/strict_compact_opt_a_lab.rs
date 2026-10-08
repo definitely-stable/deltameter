@@ -328,7 +328,7 @@ fn benchmark_estimate(levels: u32, layout: Layout, table: &[u64]) -> f64 {
         let start = Instant::now();
         let mut sink = 0_u128;
         for _ in 0..QUERY_REPETITIONS {
-            sink ^= black_box(sketch.estimate(table));
+            sink ^= black_box(black_box(&sketch).estimate(black_box(table)));
         }
         let elapsed = start.elapsed();
         black_box(sink);
