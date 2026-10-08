@@ -1,0 +1,83 @@
+name: strict-compact opt-c transfer research
+
+on:
+  pull_request:
+    paths:
+      - "examples/strict_compact_opt_c_lab.rs"
+      - "research/strict_compact_opt_c_transfer.rs"
+      - "research/strict_compact_opt_c_transfer_summarize.py"
+      - "docs/research/STRICT-COMPACT-OPT-C-C2-MEASUREMENT-PLAN.md"
+      - ".github/workflows/strict-compact-opt-c-transfer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - name: Verify source quality and exact Q32 fixture
+        run: |
+          mkdir -p opt-c-transfer
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+          python -m py_compile research/strict_compact_opt_c_transfer_summarize.py
+          python research/strict_compact_lookup_q32.py --table-out opt-c-transfer/q32.txt
+          test "$(sha256sum opt-c-transfer/q32.txt | cut -d' ' -f1)" = 634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+      - name: Exercise actual immutable frames and collect raw records
+        run: |
+          cargo run --release --example strict_compact_opt_c_lab -- opt-c-transfer/q32.txt transfer ${{ matrix.worker }} | tee opt-c-transfer/worker-${{ matrix.worker }}.txt
+          grep -q "^STRICT_COMPACT_OPT_C_C2_WORKER_PASS worker=${{ matrix.worker }}$" opt-c-transfer/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > opt-c-transfer/head-${{ matrix.worker }}.txt
+          rustc -Vv > opt-c-transfer/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opt-c-transfer-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: opt-c-transfer/
+          if-no-files-found: error
+
+  aggregate:
+    needs: worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: opt-c-transfer-worker-*
+          path: opt-c-transfer-input
+          merge-multiple: true
+      - name: Fail-closed C2 and explicitly modeled C3
+        run: |
+          mkdir -p opt-c-transfer-summary
+          python research/strict_compact_opt_c_transfer_summarize.py --logs-dir opt-c-transfer-input --head "$(git rev-parse HEAD)" --out opt-c-transfer-summary/evidence.json | tee opt-c-transfer-summary/conclusion.txt
+          grep -q '^STRICT_COMPACT_OPT_C_C2_EVIDENCE_PASS samples=10560 ' opt-c-transfer-summary/conclusion.txt
+          git rev-parse HEAD > opt-c-transfer-summary/head.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opt-c-transfer-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: opt-c-transfer-summary/
+          if-no-files-found: error

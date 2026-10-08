@@ -1202,3 +1202,19 @@ continue #74 progressive transfer. The public profile/snapshot gate #69 stays
 blocked until #74 closes. Source-specific hosted timings are not API promises.
 
 Evidence: docs/research/STRICT-COMPACT-OPT-B-EVIDENCE.md.
+
+
+### D48 — OPT-C C2 transfer accounting, not public acceptance
+
+Run 37812390251, source 3994b6e0e74ef51d4a50245a883c2e25939d9d55:
+10,560 validated hosted observations. Full bitmap: 26,750 application
+bytes. Naive push-all: 27,838 bytes. A T-informed one-level bounded
+prefix: 655 bytes in named synthetic workload examples.
+
+Verdict: C2_PHYSICAL_ACCOUNTING_PASS and MODELED_C3_CANDIDATE only.
+Network latency is analytical, not observed; a partial parity state
+does not replace full interchange. A simple scalar result is a
+separate comparator for trusted threshold-only use cases.
+No public API/snapshot change; #69 stays blocked until C3.
+
+Evidence: docs/research/STRICT-COMPACT-OPT-C-C2-EVIDENCE.md.

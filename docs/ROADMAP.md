@@ -235,6 +235,16 @@ an allocation-free scan comparator. Evidence:
 [STRICT-COMPACT-OPT-B](research/STRICT-COMPACT-OPT-B-EVIDENCE.md).
 This is a private research/product decision, NOT a public API or snapshot change.
 
+OPT-C / #74: C0/C1 frame and simultaneous-coverage foundation passed in
+merged PR #78. C2 physical transport research collected **10,560** five-worker
+observations on fixed d/T scenarios: unaided PUSH_ALL increases full transfer
+26,750B to 27,838B; the T-informed one-level bounded prefix costs 655B
+when the requested upper-bound criterion is satisfied. This is explicitly
+**MODELED_C3_CANDIDATE**, not actual-network PROGRESSIVE_PASS and not
+equivalent to transmitting a full reusable sketch. A trusted sender can
+also return U alone much more cheaply. Canonical C2 evidence:
+[STRICT-COMPACT-OPT-C-C2](research/STRICT-COMPACT-OPT-C-C2-EVIDENCE.md).
+
 Next: #74 OPT-C progressive/prefix
 transfer. Public memory profile/snapshot freeze remains blocked until those slices
 close.

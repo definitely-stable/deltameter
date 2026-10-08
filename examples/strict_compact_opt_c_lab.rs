@@ -278,6 +278,12 @@ mod opt_c {
         );
     }
 
+    include!("../research/strict_compact_opt_c_transfer.rs");
+
+    pub(super) fn transfer(path: &Path, worker: usize) {
+        run_transfer(path, worker);
+    }
+
     pub(super) fn run(path: &Path) {
         let table = load_table(path);
         assert_oracle_vectors();
@@ -292,6 +298,17 @@ fn main() {
     let table_path = args
         .next()
         .expect("usage: strict_compact_opt_c_lab q32.txt");
-    assert!(args.next().is_none(), "unexpected argument");
-    opt_c::run(std::path::Path::new(&table_path));
+    match args.next().as_deref() {
+        None => opt_c::run(std::path::Path::new(&table_path)),
+        Some("transfer") => {
+            let worker: usize = args
+                .next()
+                .expect("worker 1..5")
+                .parse()
+                .expect("worker id");
+            assert!(args.next().is_none(), "unexpected argument");
+            opt_c::transfer(std::path::Path::new(&table_path), worker);
+        }
+        _ => panic!("unknown laboratory mode"),
+    }
 }
