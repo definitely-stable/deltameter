@@ -1,0 +1,83 @@
+name: strict-compact opt-c3b two-party TCP
+
+on:
+  pull_request:
+    paths:
+      - "docs/research/STRICT-COMPACT-OPT-C3B-PROTOCOL.md"
+      - "research/strict_compact_opt_c3_two_party.rs"
+      - "research/strict_compact_opt_c3_two_party_summarize.py"
+      - "examples/strict_compact_opt_c3_lab.rs"
+      - ".github/workflows/strict-compact-opt-c3b-two-party.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - name: Validate source and original Q32 oracle
+        run: |
+          mkdir -p c3b-raw
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+          python -m py_compile research/strict_compact_opt_c3_two_party_summarize.py
+          python research/strict_compact_lookup_q32.py --table-out c3b-raw/q32.txt
+          test "$(sha256sum c3b-raw/q32.txt | cut -d' ' -f1)" = 634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+      - name: Collect actual two TCP sender multi-round samples
+        run: |
+          cargo run --release --example strict_compact_opt_c3_lab -- c3b-raw/q32.txt ${{ matrix.worker }} twoparty | tee c3b-raw/worker-${{ matrix.worker }}.txt
+          grep -q "^STRICT_COMPACT_OPT_C3B_WORKER_PASS worker=${{ matrix.worker }}$" c3b-raw/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > c3b-raw/head-${{ matrix.worker }}.txt
+          rustc -Vv > c3b-raw/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c3b-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: c3b-raw/
+          if-no-files-found: error
+
+  aggregate:
+    needs: worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: c3b-worker-*
+          path: c3b-input
+          merge-multiple: true
+      - name: Validate all two-party source-bound observations
+        run: |
+          mkdir -p c3b-summary
+          python research/strict_compact_opt_c3_two_party_summarize.py --logs-dir c3b-input --head "$(git rev-parse HEAD)" --out c3b-summary/evidence.json | tee c3b-summary/summary.txt
+          grep -q '^C3B_EVIDENCE_PASS records=1440 ' c3b-summary/summary.txt
+          git rev-parse HEAD > c3b-summary/head.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c3b-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: c3b-summary/
+          if-no-files-found: error
