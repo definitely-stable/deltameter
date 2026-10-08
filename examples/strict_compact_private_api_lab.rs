@@ -324,12 +324,18 @@ fn main() {
         InputModel::NonAdaptiveIndependentOfSecretKey
     );
 
-    for d in [4096_u64, 65_536, 262_144] {
+    for (d, expected_upper) in [
+        (4096_u64, 5032_u128),
+        (65_536, 84_742),
+        (262_144, 325_259),
+    ] {
         let mut sketch = PrivateStrictCompact::new(SecretKey(MASTER_KEY));
         for token in 0..d {
             sketch.toggle(token);
         }
         let estimate = sketch.estimate(&table);
+        assert_eq!(estimate.upper_bound, expected_upper);
+        assert!(estimate.upper_bound >= u128::from(d));
         assert!(estimate.upper_bound <= DOMAIN_CARDINALITY);
         println!(
             "STRICT_COMPACT_PRIVATE_ESTIMATE d={} upper={} ratio={:.6} ideal_delta={} key_id={:02x?}",
