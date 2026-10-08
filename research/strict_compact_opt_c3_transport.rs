@@ -301,7 +301,7 @@ fn run_c3a(path: &Path, worker: usize) {
             c3_reusable_two_source_oracle(&table,worker,scenario,seed,d,t);
             // Rotate protocol order per seed to reduce systematic CI drift.
             let mut modes = C3_MODES;
-            modes.rotate_left((seed+worker-1)%modes.len());
+            modes.rotate_left((seed + worker - 1) % C3_MODES.len());
             for rtt in C3_RTTS {
                 for mode in modes {
                     let result = c3_tcp_session(&frozen,&table,mode,t,rtt);
