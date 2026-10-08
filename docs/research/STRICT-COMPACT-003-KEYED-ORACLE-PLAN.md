@@ -87,6 +87,26 @@ A future production design would require:
 
 This slice does not solve key management.
 
+## Evidence amendment before canonical run
+
+The first hosted attempt, workflow run `37721691447`, demonstrated that all five
+workers passed the in-process correctness and performance assertions. However the
+artifact timing files were empty because terminal output was piped through `tee`
+rather than written by the measurement program itself.
+
+That attempt is **validation-only and non-canonical**. Its numeric timing data is not
+used for the final verdict.
+
+Before the canonical run:
+- the Rust lab now writes its own durable result record;
+- CI requires the result file to be non-empty;
+- a separate Python aggregator requires exactly five worker files and reapplies the
+  frozen <=500 ns and <=10x gates;
+- the aggregate summary becomes the durable evidence surface.
+
+The measurement algorithm, token stream, warmup, round count and performance gates
+are unchanged.
+
 ## Outcomes
 
 GO_COMPUTATIONAL_STRICT_PRIVATE_API:
