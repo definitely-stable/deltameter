@@ -266,9 +266,22 @@ No gate reclassification; a preplanned sender-first prefix is an
 independent follow-up C3-C hypothesis.
 [STRICT-COMPACT-C3B](research/STRICT-COMPACT-OPT-C3B-EVIDENCE.md).
 
-Next: #74 OPT-C progressive/prefix
-transfer. Public memory profile/snapshot freeze remains blocked until those slices
-close.
+OPT-C C3-C / #80: the separately preregistered sender-first
+one-level probe gives **C3C_CONTROLLED_TWO_PARTY_PASS** on all five
+hosted workers, all three named d/T scenarios at app-paced 10Mbps
+RTT 0/10/50ms, without altering the C3-B request-first NO-GO.
+A first useful XOR bound from TWO independent senders costs 1,310B
+vs dual-full 53,500B; full fallback costs 55,744B (4.19% more).
+This is a **narrow compatible two-party threshold result**, not
+authenticated WAN transport or general interchange compression.
+Trusted sender-only scalar-U workflows remain cheaper (24B).
+[STRICT-COMPACT-C3C](research/STRICT-COMPACT-OPT-C3C-EVIDENCE.md).
+
+Final product-shape decision: **NO GENERAL PUBLIC PROGRESSIVE API
+IN V1**. The separated #69 key/snapshot/profile design may proceed
+using J52 LEVEL_MAJOR and the OPT-B derived nonserialized counters.
+Do not freeze a public wire/key lifecycle until #69's own acceptance;
+keep sender-first as an optional future application-specific lane.
 
 ## Post-v0 candidates
 
