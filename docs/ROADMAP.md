@@ -217,6 +217,16 @@ cheaper, and each level is a contiguous 512-byte chunk. J=24/32/40/48 remain val
 bounded-range frontier points. Canonical evidence:
 [STRICT-COMPACT-OPT-A](research/STRICT-COMPACT-OPT-A-EVIDENCE.md).
 
+OPT-A follow-up on PR #76: **J52_REFINEMENT_PASS** independently reproduces
+full-u64 continuous certification at **J=52 / 26 KiB / LEVEL_MAJOR**. The
+five-worker hosted refinement passed the frozen viability thresholds; J=51's
+current certificate prefix ends at 11,316,578,792,889,469,415 (not a
+mathematical impossibility for other constructions). Thus **J=52 supersedes
+J=56 as the preferred full-u64 *research* baseline**, saving 18.75% versus
+J=64. Original OPT-A Stage-1/2 evidence remains a valid historical frozen
+matrix. Canonical addendum:
+[STRICT-COMPACT-OPT-A-REFINEMENT](research/STRICT-COMPACT-OPT-A-REFINEMENT-EVIDENCE.md).
+
 Next: #73 OPT-B maintained odd-count cache and #74 OPT-C progressive/prefix
 transfer. Public memory profile/snapshot freeze remains blocked until those slices
 close.
