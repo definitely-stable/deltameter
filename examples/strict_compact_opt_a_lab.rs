@@ -19,8 +19,8 @@ const UPDATE_TOKENS: u64 = 131_072;
 const QUERY_TOKENS: u64 = 65_536;
 const WARMUPS: usize = 2;
 const SAMPLES: usize = 8;
-const QUERY_REPETITIONS: usize = 256;
-const XOR_REPETITIONS: usize = 512;
+const QUERY_REPETITIONS: usize = 64;
+const XOR_REPETITIONS: usize = 256;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Layout {
