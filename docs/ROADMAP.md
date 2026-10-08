@@ -227,7 +227,15 @@ J=64. Original OPT-A Stage-1/2 evidence remains a valid historical frozen
 matrix. Canonical addendum:
 [STRICT-COMPACT-OPT-A-REFINEMENT](research/STRICT-COMPACT-OPT-A-REFINEMENT-EVIDENCE.md).
 
-Next: #73 OPT-B maintained odd-count cache and #74 OPT-C progressive/prefix
+OPT-B / #73: five-worker research evidence gives **KEEP_CACHE** for the J52
+LEVEL_MAJOR maintained per-level odd-count cache: +104 B derived non-serialized
+payload, worst hosted update regression +2.670%, query speedup >=13.563x
+on every worker and >=15.22% total mixed-100 gain on every worker versus
+an allocation-free scan comparator. Evidence:
+[STRICT-COMPACT-OPT-B](research/STRICT-COMPACT-OPT-B-EVIDENCE.md).
+This is a private research/product decision, NOT a public API or snapshot change.
+
+Next: #74 OPT-C progressive/prefix
 transfer. Public memory profile/snapshot freeze remains blocked until those slices
 close.
 
