@@ -237,19 +237,29 @@ fn physical_levels(snapshot: &Frozen, table: &[u64], order: &[u8], t: u64,
     }
 }
 
-fn c2_sample(worker: usize, scenario: usize, seed: usize, order: &str,
-             mode: &str, batch: usize, d: u64, t: u64, frozen: &Frozen,
-             table: &[u64], copy_ns: u128, result: TransferResult, full_bound: u128) {
-    assert_eq!(frozen.words.len(), J as usize * WORDS_PER_LEVEL);
-    assert_eq!(table.len(), TABLE_ENTRIES);
-    assert_eq!(result.useful, result.bound <= u128::from(t));
-    assert!(result.bound >= full_bound, "partial bound tighter than full minimum");
+struct SampleMeta<'a> {
+    worker: usize,
+    scenario: usize,
+    seed: usize,
+    d: u64,
+    t: u64,
+    frozen: &'a Frozen,
+    table: &'a [u64],
+    copy_ns: u128,
+    full_bound: u128,
+}
+
+fn c2_sample(meta: &SampleMeta<'_>, order: &str, mode: &str, batch: usize, result: TransferResult) {
+    assert_eq!(meta.frozen.words.len(), J as usize * WORDS_PER_LEVEL);
+    assert_eq!(meta.table.len(), TABLE_ENTRIES);
+    assert_eq!(result.useful, result.bound <= u128::from(meta.t));
+    assert!(result.bound >= meta.full_bound, "partial bound tighter than full minimum");
     assert!(result.bytes >= COMMON_BYTES);
     if mode == "complete" { assert_eq!(result.bytes, FULL_BYTES); }
     println!(
       "C2_SAMPLE worker={} scenario={} seed={} order={} mode={} batch={} d={} T={} bytes={} frames={} requests={} selected={} useful={} bound={} copy_ns={} prep_ns={} process_ns={}",
-      worker,scenario,seed,order,mode,batch,d,t,result.bytes,result.frames,result.requests,
-      result.selected,u8::from(result.useful),result.bound,copy_ns,result.prep_ns,result.process_ns
+      meta.worker,meta.scenario,meta.seed,order,mode,batch,meta.d,meta.t,result.bytes,result.frames,result.requests,
+      result.selected,u8::from(result.useful),result.bound,meta.copy_ns,result.prep_ns,result.process_ns
     );
 }
 
@@ -271,7 +281,8 @@ fn run_transfer(path: &Path, worker: usize) {
             let full = physical_complete(&frozen,&table,t);
             assert_eq!(full.bound,live.estimate(&table));
             let full_bound=full.bound;
-            c2_sample(worker,scenario,seed,"none","complete",0,d,t,&frozen,&table,copy_ns,full,full_bound);
+            let meta = SampleMeta {worker,scenario,seed,d,t,frozen:&frozen,table:&table,copy_ns,full_bound};
+            c2_sample(&meta,"none","complete",0,full);
             for order_name in ["asc","desc","center"] {
                 let order = levels_for_order(order_name,t);
                 assert_eq!(order.len(),J as usize);
@@ -280,8 +291,7 @@ fn run_transfer(path: &Path, worker: usize) {
                                      ("interactive",4),("interactive",8)] {
                     let measured = physical_levels(&frozen,&table,&order,t,mode,batch);
                     if mode=="pushall" { assert_eq!(measured.bytes, COMMON_BYTES+J as usize*FRAME_BYTES); }
-                    c2_sample(worker,scenario,seed,order_name,mode,batch,d,t,
-                              &frozen,&table,copy_ns,measured,full_bound);
+                    c2_sample(&meta,order_name,mode,batch,measured);
                 }
             }
             black_box(frozen);
