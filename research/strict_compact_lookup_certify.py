@@ -74,8 +74,17 @@ def load_table(path: Path) -> list[int]:
     return values
 
 
-def exp_positive_lower(z: Fraction, degree: int = TAYLOR_DEGREE) -> Fraction:
-    """Exact lower bound S_n(z) <= exp(z), z>=0."""
+def exp_positive_bounds(
+    z: Fraction, degree: int = TAYLOR_DEGREE
+) -> tuple[Fraction, Fraction]:
+    """Exact lower/upper bounds for exp(z), z>=0.
+
+    Lower: finite Taylor sum S_n(z).
+
+    Upper: after the first omitted term, every later ratio is at most
+    z/(n+2). When this is <1, the omitted tail is bounded by a geometric
+    series.
+    """
     if z < 0:
         raise ValueError("z")
     if degree < 0:
@@ -87,17 +96,23 @@ def exp_positive_lower(z: Fraction, degree: int = TAYLOR_DEGREE) -> Fraction:
         term *= z
         term /= k
         total += term
-    return total
+
+    next_term = term * z / (degree + 1)
+    ratio = z / (degree + 2)
+    if ratio >= 1:
+        raise ValueError("Taylor degree too small for exact upper bound")
+
+    upper = total + next_term / (1 - ratio)
+    return total, upper
 
 
-def p_lower_q64(q32: int) -> int:
-    """Certified Q64 lower bound on p=(1-exp(-q32/(2^32*m)))/2."""
-    if not (0 < q32 < SENTINEL):
-        raise ValueError("finite positive q32 required")
+def exp_positive_lower(z: Fraction, degree: int = TAYLOR_DEGREE) -> Fraction:
+    return exp_positive_bounds(z, degree)[0]
 
-    z = Fraction(q32, Q32 * ROWS)
-    exp_lower = exp_positive_lower(z)
-    # exp(z) >= exp_lower -> exp(-z) <= 1/exp_lower.
+
+def p_lower_q64_from_z(z: Fraction) -> int:
+    """Certified Q64 lower bound on p=(1-exp(-z))/2."""
+    exp_lower, _exp_upper = exp_positive_bounds(z)
     p_lower = (Fraction(1) - Fraction(1, 1) / exp_lower) / 2
     if p_lower <= 0:
         raise AssertionError("non-positive p lower bound")
@@ -108,17 +123,38 @@ def p_lower_q64(q32: int) -> int:
     return quantized
 
 
-def likelihood_crosses(observed: int, p_num: int) -> bool:
-    """Exact test exp(m D(s/m || p_num/2^64)) >= 2/alpha."""
+def p_upper_q64_from_z(z: Fraction) -> int:
+    """Certified Q64 upper bound on p=(1-exp(-z))/2."""
+    _exp_lower, exp_upper = exp_positive_bounds(z)
+    p_upper = (Fraction(1) - Fraction(1, 1) / exp_upper) / 2
+    if not (0 < p_upper < Fraction(1, 2)):
+        raise AssertionError("invalid p upper bound")
+
+    numerator = p_upper.numerator * P_Q
+    quantized = (numerator + p_upper.denominator - 1) // p_upper.denominator
+    if not (0 < quantized <= P_Q // 2):
+        raise AssertionError("invalid Q64 p upper bound")
+    return quantized
+
+
+def p_lower_q64(q32: int) -> int:
+    """Certified Q64 lower bound on p=(1-exp(-q32/(2^32*m)))/2."""
+    if not (0 < q32 < SENTINEL):
+        raise ValueError("finite positive q32 required")
+    return p_lower_q64_from_z(Fraction(q32, Q32 * ROWS))
+
+
+def likelihood_crosses_target(
+    observed: int, p_num: int, target: int
+) -> bool:
+    """Exact test exp(m D(s/m || p_num/2^64)) >= target."""
     if not (0 <= observed < ROWS // 2):
         raise ValueError("observed")
     if not (0 < p_num < P_Q):
         raise ValueError("p")
 
-    # The monotone argument requires p>x.
-    if p_num * ROWS <= observed * P_Q:
-        return False
-
+    # exp(mD) is valid on either side of x=p. Tail-specific callers are
+    # responsible for enforcing p>x (lower tail) or p<x (upper tail).
     # exp(mD) =
     # s^s (m-s)^(m-s) Q^m / [m^m P^s (Q-P)^(m-s)].
     #
@@ -128,12 +164,21 @@ def likelihood_crosses(observed: int, p_num: int) -> bool:
     )
     left = left_core << ((P_Q_BITS - 12) * ROWS)
 
+    if target <= 0:
+        raise ValueError("target")
     right = (
-        LIKELIHOOD_TARGET
+        target
         * pow(p_num, observed)
         * pow(P_Q - p_num, ROWS - observed)
     )
     return left >= right
+
+
+def likelihood_crosses(observed: int, p_num: int) -> bool:
+    """Lower-tail table test exp(mD)>=2/alpha with p>x."""
+    if p_num * ROWS <= observed * P_Q:
+        return False
+    return likelihood_crosses_target(observed, p_num, LIKELIHOOD_TARGET)
 
 
 def sentinel_is_valid(observed: int) -> bool:
