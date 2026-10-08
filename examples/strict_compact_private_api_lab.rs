@@ -18,7 +18,7 @@ const MASTER_KEY: [u8; 32] = [
     0x54, 0x2d, 0x43, 0x4f, 0x4d, 0x50, 0x41, 0x43, 0x54, 0x2d, 0x30, 0x30, 0x34, 0x21, 0x21, 0x21,
 ];
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 struct SecretKey([u8; 32]);
 
 impl fmt::Debug for SecretKey {
@@ -55,7 +55,7 @@ enum PrivateError {
     IncompatibleOracleKey,
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 struct PrivateConfig {
     oracle_key: [u8; 32],
     key_id: [u8; 16],
@@ -80,7 +80,6 @@ impl PrivateConfig {
     }
 }
 
-#[derive(Clone)]
 struct PrivateStrictCompact {
     config: PrivateConfig,
     words: Box<[u64]>,
@@ -222,10 +221,9 @@ fn check_debug_redaction() {
 }
 
 fn check_merge_contract() {
-    let secret = SecretKey(MASTER_KEY);
-    let mut left = PrivateStrictCompact::new(secret);
-    let mut right = PrivateStrictCompact::new(secret);
-    let mut combined = PrivateStrictCompact::new(secret);
+    let mut left = PrivateStrictCompact::new(SecretKey(MASTER_KEY));
+    let mut right = PrivateStrictCompact::new(SecretKey(MASTER_KEY));
+    let mut combined = PrivateStrictCompact::new(SecretKey(MASTER_KEY));
 
     for key in [1_u64, 2, 3, 5, 8, 13, 21] {
         left.toggle(key);
