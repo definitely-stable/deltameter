@@ -10,7 +10,13 @@ mod opt_b {
     const QUERY_REPEAT: usize = 128;
     const MERGE_REPEAT: usize = 128;
     const LANES: [&str; 7] = [
-        "update", "query", "merge", "mixed_1", "mixed_10", "mixed_100", "mixed_1000",
+        "update",
+        "query",
+        "merge",
+        "mixed_1",
+        "mixed_10",
+        "mixed_100",
+        "mixed_1000",
     ];
 
     struct CachedSketch {
@@ -22,7 +28,10 @@ mod opt_b {
         fn new(j: u32) -> Self {
             let canonical = PackedSketch::new(j, Layout::LevelMajor);
             let odd_counts = vec![0_u16; j as usize].into_boxed_slice();
-            Self { canonical, odd_counts }
+            Self {
+                canonical,
+                odd_counts,
+            }
         }
 
         #[inline]
@@ -59,7 +68,9 @@ mod opt_b {
             for (j, count) in self.odd_counts.iter_mut().enumerate() {
                 let start = j * ROWS / 64;
                 let sum: u32 = self.canonical.words[start..start + ROWS / 64]
-                    .iter().map(|w| w.count_ones()).sum();
+                    .iter()
+                    .map(|w| w.count_ones())
+                    .sum();
                 *count = u16::try_from(sum).unwrap();
             }
         }
@@ -86,7 +97,9 @@ mod opt_b {
         for j in 0..core.levels as usize {
             let start = j * ROWS / 64;
             let sum: u32 = core.words[start..start + ROWS / 64]
-                .iter().map(|w| w.count_ones()).sum();
+                .iter()
+                .map(|w| w.count_ones())
+                .sum();
             counts[j] = u16::try_from(sum).unwrap();
         }
         strict_upper_bound(&counts[..core.levels as usize], table)
@@ -245,7 +258,11 @@ mod opt_b {
                         if round >= WARMUPS {
                             println!(
                                 "STRICT_COMPACT_OPT_B_SAMPLE worker={} round={} J={} mode={} lane={} state_bytes={} cache_bytes={} ns={:.6}",
-                                worker, round - WARMUPS, j, mode, lane,
+                                worker,
+                                round - WARMUPS,
+                                j,
+                                mode,
+                                lane,
                                 ROWS * j as usize / 8,
                                 if mode == "cache" { 2 * j as usize } else { 0 },
                                 value,
@@ -262,7 +279,11 @@ mod opt_b {
 fn main() {
     let mut args = std::env::args().skip(1);
     let table = args.next().expect("q32-table path");
-    let worker: usize = args.next().expect("worker").parse().expect("worker integer");
+    let worker: usize = args
+        .next()
+        .expect("worker")
+        .parse()
+        .expect("worker integer");
     assert!(args.next().is_none(), "unexpected arguments");
     opt_b::run(std::path::Path::new(&table), worker);
 }
