@@ -153,10 +153,8 @@ def likelihood_crosses_target(
     if not (0 < p_num < P_Q):
         raise ValueError("p")
 
-    # The monotone argument requires p>x.
-    if p_num * ROWS <= observed * P_Q:
-        return False
-
+    # exp(mD) is valid on either side of x=p. Tail-specific callers are
+    # responsible for enforcing p>x (lower tail) or p<x (upper tail).
     # exp(mD) =
     # s^s (m-s)^(m-s) Q^m / [m^m P^s (Q-P)^(m-s)].
     #
@@ -177,7 +175,9 @@ def likelihood_crosses_target(
 
 
 def likelihood_crosses(observed: int, p_num: int) -> bool:
-    """Exact test exp(m D(s/m || p_num/2^64)) >= 2/alpha."""
+    """Lower-tail table test exp(mD)>=2/alpha with p>x."""
+    if p_num * ROWS <= observed * P_Q:
+        return False
     return likelihood_crosses_target(observed, p_num, LIKELIHOOD_TARGET)
 
 
