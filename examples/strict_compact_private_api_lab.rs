@@ -267,8 +267,8 @@ fn check_reference_vectors() {
     assert_eq!(
         sketch.config.key_id,
         [
-            0x10, 0x9c, 0x85, 0x91, 0xb5, 0xe0, 0x02, 0x24,
-            0x12, 0x53, 0x49, 0x12, 0x9e, 0xd0, 0xe5, 0xeb,
+            0x10, 0x9c, 0x85, 0x91, 0xb5, 0xe0, 0x02, 0x24, 0x12, 0x53, 0x49, 0x12, 0x9e, 0xd0,
+            0xe5, 0xeb,
         ]
     );
 
@@ -292,11 +292,10 @@ fn check_reference_vectors() {
         };
         let coefficient = u64::from_le_bytes(bytes[16..24].try_into().unwrap()) & 1;
 
-        assert_eq!((row, level, coefficient), (
-            expected_row,
-            expected_level,
-            expected_coefficient,
-        ));
+        assert_eq!(
+            (row, level, coefficient),
+            (expected_row, expected_level, expected_coefficient)
+        );
         println!(
             "STRICT_COMPACT_PRIVATE_VECTOR token={token} row={row} level={level} coefficient={coefficient}"
         );
