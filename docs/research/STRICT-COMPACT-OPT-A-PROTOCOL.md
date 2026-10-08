@@ -157,14 +157,18 @@ certified_d_max
 
 ## Stage 1 shortlist rule
 
-Always retain:
+Retain at most four distinct J values using this deterministic order:
 
-- J=64 control;
-- the smallest-state profile with a nontrivial certified range;
-- up to two additional nondominated state/range profiles.
+1. J=64 full-domain control;
+2. the smallest J with any nontrivial certified prefix;
+3. the smallest J whose certified d_max reaches at least 2^32-1;
+4. the smallest J whose certified d_max reaches at least 2^48-1.
 
-For each retained J choose LEVEL_MAJOR unless ROW_MAJOR is at least 10% faster in
-update **and** LEVEL_MAJOR has no compensating estimate/merge advantage.
+Skip duplicates or an unmet tier; do not replace them post-hoc with another profile.
+
+For each retained J prefer LEVEL_MAJOR. Select ROW_MAJOR instead only if its median
+update ns/token is at least 10% lower **and** LEVEL_MAJOR is not at least 20% better
+on either estimate latency or XOR ns/KiB.
 
 This is only a shortlist rule, not a public-layout decision.
 
