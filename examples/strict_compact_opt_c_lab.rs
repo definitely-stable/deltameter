@@ -301,7 +301,11 @@ fn main() {
     match args.next().as_deref() {
         None => opt_c::run(std::path::Path::new(&table_path)),
         Some("transfer") => {
-            let worker: usize = args.next().expect("worker 1..5").parse().expect("worker id");
+            let worker: usize = args
+                .next()
+                .expect("worker 1..5")
+                .parse()
+                .expect("worker id");
             assert!(args.next().is_none(), "unexpected argument");
             opt_c::transfer(std::path::Path::new(&table_path), worker);
         }
