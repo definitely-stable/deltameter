@@ -4,7 +4,7 @@ mod c3 {
     include!("../research/strict_compact_opt_c1_core.rs");
     include!("../research/strict_compact_opt_c3_transport.rs");
 
-    pub(super) fn run(path: &std::path::Path, worker: usize) {
+    pub(super) fn run_c3_entry(path: &std::path::Path, worker: usize) {
         run_c3a(path, worker);
     }
 }
@@ -18,5 +18,5 @@ fn main() {
         .parse()
         .expect("worker ID");
     assert!(args.next().is_none(), "unexpected argument");
-    c3::run(std::path::Path::new(&q32_path), worker);
+    c3::run_c3_entry(std::path::Path::new(&q32_path), worker);
 }
