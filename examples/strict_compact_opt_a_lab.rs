@@ -4,7 +4,6 @@ use std::path::Path;
 use std::time::Instant;
 
 const ROWS: usize = 4096;
-const MAX_LEVELS: u32 = 64;
 const J_VALUES: [u32; 6] = [24, 32, 40, 48, 56, 64];
 const TABLE_ENTRIES: usize = 2048;
 const SENTINEL: u64 = u64::MAX;
@@ -294,7 +293,7 @@ fn correctness(levels: u32, table: &[u64]) {
 fn median(mut values: Vec<f64>) -> f64 {
     values.sort_by(f64::total_cmp);
     let middle = values.len() / 2;
-    if values.len() % 2 == 0 {
+    if values.len().is_multiple_of(2) {
         (values[middle - 1] + values[middle]) / 2.0
     } else {
         values[middle]
