@@ -73,7 +73,10 @@ def regression(candidate: float, control: float) -> float:
     return candidate / control - 1.0
 
 
-def build_payload(stage1_path: Path, logs_dir: Path) -> dict:
+def build_payload(stage1_path: Path, logs_dir: Path, expected_head: str) -> dict:
+    import re
+    if re.fullmatch(r"[0-9a-f]{40}", expected_head) is None:
+        raise AssertionError("invalid expected source SHA")
     stage1 = json.loads(stage1_path.read_text(encoding="utf-8"))
     if stage1["source_head"] != "0ab6824b6e5cd7e7967eb4bb66d2a09495b6121f":
         raise AssertionError("unexpected frozen Stage-1 source head")
@@ -83,6 +86,13 @@ def build_payload(stage1_path: Path, logs_dir: Path) -> dict:
     profiles = {}
     for raw in stage1["profiles"]:
         row = dict(raw)
+        # The frozen wire bridge requires strings; floats/JSON numbers can round u64.
+        if not isinstance(row["d_max"], str) or not row["d_max"].isdigit():
+            raise AssertionError("d_max must be an exact decimal string")
+        if (row["first_uncertified_d"] is not None and
+                (not isinstance(row["first_uncertified_d"], str) or
+                 not row["first_uncertified_d"].isdigit())):
+            raise AssertionError("first_uncertified_d must be a decimal string")
         row["d_max"] = int(row["d_max"])
         if row["first_uncertified_d"] is not None:
             row["first_uncertified_d"] = int(row["first_uncertified_d"])
@@ -95,6 +105,14 @@ def build_payload(stage1_path: Path, logs_dir: Path) -> dict:
         raise AssertionError(
             f"expected {len(WORKERS)} worker logs, found {len(log_paths)}"
         )
+
+    head_paths = sorted(logs_dir.glob("head-*.txt"))
+    if len(head_paths) != len(WORKERS):
+        raise AssertionError("incomplete per-worker source HEAD provenance")
+    for worker in WORKERS:
+        source = logs_dir / f"head-{worker}.txt"
+        if not source.is_file() or source.read_text(encoding="utf-8").strip() != expected_head:
+            raise AssertionError(f"worker={worker}: source HEAD mismatch")
 
     samples = []
     pass_workers: set[int] = set()
@@ -242,6 +260,7 @@ def build_payload(stage1_path: Path, logs_dir: Path) -> dict:
 
     return {
         "format": "deltameter.strict-compact-opt-a-stage2.v1",
+        "validated_source_head": expected_head,
         "raw_sample_count": len(samples),
         "workers": list(WORKERS),
         "rounds_per_worker_profile": len(ROUNDS),
@@ -264,9 +283,10 @@ def main() -> int:
     parser.add_argument("--stage1", type=Path, required=True)
     parser.add_argument("--logs-dir", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--head", required=True, help="exact checked-out source SHA")
     args = parser.parse_args()
 
-    payload = build_payload(args.stage1, args.logs_dir)
+    payload = build_payload(args.stage1, args.logs_dir, args.head)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
