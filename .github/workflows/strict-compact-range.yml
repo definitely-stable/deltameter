@@ -1,0 +1,71 @@
+name: strict-compact range certificate
+
+on:
+  pull_request:
+    paths:
+      - "docs/research/STRICT-COMPACT-002-PLAN.md"
+      - "research/strict_compact_lookup_q32.py"
+      - "research/strict_compact_lookup_certify.py"
+      - "research/strict_compact_range_certify.py"
+      - "research/strict_compact_chernoff.py"
+      - "research/strict_compact_poisson_width.py"
+      - ".github/workflows/strict-compact-range.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  range-cert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Compile certificate sources
+        run: |
+          python -m py_compile \
+            research/strict_compact_lookup_q32.py \
+            research/strict_compact_lookup_certify.py \
+            research/strict_compact_range_certify.py
+
+      - name: Generate runtime table
+        run: |
+          mkdir -p strict-range-out
+          python research/strict_compact_lookup_q32.py \
+            --table-out strict-range-out/q32.txt \
+            --summary-out strict-range-out/table-summary.json
+
+      - name: Re-certify table independently
+        run: |
+          python research/strict_compact_lookup_certify.py \
+            --table strict-range-out/q32.txt \
+            --out strict-range-out/table-certificate.json
+
+      - name: Certify continuous declared d range
+        run: |
+          python research/strict_compact_range_certify.py \
+            --table strict-range-out/q32.txt \
+            --out strict-range-out/range-certificate.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("strict-range-out/range-certificate.json").read_text())
+          print(
+              f"decision={p['decision']} intervals={p['interval_count']} "
+              f"tail={p['exact_tail_interval_count']} levels={p['levels_used']}"
+          )
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: strict-compact-range-${{ github.run_id }}-${{ github.run_attempt }}
+          path: strict-range-out/
+          if-no-files-found: error
