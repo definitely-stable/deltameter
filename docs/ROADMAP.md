@@ -206,6 +206,9 @@ heterogeneous ladder optimization, state lower bounds and nested-prefix optimali
 Canonical program:
 [STRICT-COMPACT-OPT-001](research/STRICT-COMPACT-OPT-001-PROGRAM.md).
 
+Canonical execution plan with child issues #72/#73/#74:
+[STRICT-COMPACT-OPT-NEXT-WORK](research/STRICT-COMPACT-OPT-NEXT-WORK.md).
+
 ## Post-v0 candidates
 
 Only after evidence:
