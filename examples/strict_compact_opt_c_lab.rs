@@ -251,6 +251,10 @@ mod opt_c {
         let mut wrong_epoch = frozen.frame(1);
         wrong_epoch[0] ^= 1;
         assert_eq!(rx.ingest(&wrong_epoch), Err("wrong-session"));
+        // Even a reused raw epoch cannot mix a different config-bound snapshot.
+        let wrong_config =
+            Frozen::from_sketch(&empty, epoch, [0x31; 32], table_binding);
+        assert_eq!(rx.ingest(&wrong_config.frame(1)), Err("wrong-session"));
         let mut wrong_index = frozen.frame(1);
         wrong_index[EPOCH_BYTES] = 0;
         assert_eq!(rx.ingest(&wrong_index), Err("bad-level-index"));
