@@ -2,9 +2,9 @@
 
 Issue: #59. PR: #62.
 
-Status: **LOOKUP_PROTOTYPE_PASS**. This is implementation/performance evidence only;
-it is not yet the independent numerical certificate required for a public Proven
-backend.
+Status: **LOOKUP_AND_THRESHOLD_CERT_PASS**. This still does not authorize a public
+Proven backend: the remaining proof blocker is declared-range width closure plus the
+ideal-oracle versus pseudo-oracle product contract.
 
 ## Frozen profile
 
@@ -77,6 +77,55 @@ Nevertheless it establishes that runtime inference itself is tiny relative to th
 existing update path: the lookup/min step is ~0.1 microsecond and total extraction
 plus inference is only a few microseconds on these fixtures.
 
+## Independent exact-rational threshold certificate
+
+The hosted lab now runs `research/strict_compact_lookup_certify.py` after table
+generation.
+
+This verifier is deliberately independent of the generator's transcendental
+numerics:
+
+- no Decimal;
+- no binary64;
+- no exp/log implementation;
+- no KL evaluator reuse.
+
+For a finite Q32 threshold it lower-bounds the corresponding Bernoulli parameter
+using the exact rational inequality
+
+~~~text
+e^z >= sum_(k=0)^64 z^k/k!
+~~~
+
+and therefore
+
+~~~text
+e^-z <= 1 / S_64(z).
+~~~
+
+The resulting p lower bound is rounded downward to Q64. The KL crossing is then
+rewritten as an exact integer likelihood-ratio comparison against
+
+~~~text
+2/alpha = 128,000,000.
+~~~
+
+Because D(x||p) is increasing in p for p>x, success at the smaller certified
+rational p proves that the committed Q32 threshold is conservative.
+
+Infinity sentinels are checked independently at the limiting p=1/2.
+
+Hosted run `37720031572`:
+
+~~~text
+STRICT_COMPACT_Q32_CERT_PASS
+  finite=1853
+  sentinels=195
+  table_sha256=634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+~~~
+
+Thus all 2,048 table entries now have an independent exact-rational proof boundary.
+
 ## Interpretation
 
 The implementation shape is viable:
@@ -92,11 +141,10 @@ The remaining blocker is **not runtime cost**.
 
 It is proof closure:
 
-1. independently certify every committed Q32 threshold;
-2. prove the conservative integer rescaling contract end to end;
-3. close a declared useful d-range rather than sampled anchors;
-4. define saturation/unavailable semantics;
-5. separate ideal-oracle probability theorem from deterministic pseudo-oracle
+1. close a declared useful d-range rather than sampled anchors;
+2. prove the conservative integer rescaling/range contract end to end;
+3. define saturation/unavailable semantics;
+4. separate ideal-oracle probability theorem from deterministic pseudo-oracle
    engineering assumptions.
 
 Until those items close, `ParityDeltaMeter::estimate()`,
