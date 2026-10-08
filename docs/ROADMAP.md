@@ -245,6 +245,16 @@ equivalent to transmitting a full reusable sketch. A trusted sender can
 also return U alone much more cheaply. Canonical C2 evidence:
 [STRICT-COMPACT-OPT-C-C2](research/STRICT-COMPACT-OPT-C-C2-EVIDENCE.md).
 
+OPT-C C3-A / #80: five-worker localhost TCP foundation with real
+request/response framing and deliberately application-emulated 10Mbps
+RTT=0/10/50ms produced **C3_A_TRANSPORT_FOUNDATION_PASS** (1,440
+socket trials plus 360 local two-party parity-XOR extension oracles).
+A T-bounded one-level prefix gives 655B under the frozen scenarios,
+but a trusted sender's scalar result costs just 24B.
+C3-B must test two actual independently held sketch senders over TCP,
+retained partial-level reuse, full fallback and changing epochs.
+[STRICT-COMPACT-C3A](research/STRICT-COMPACT-OPT-C3A-EVIDENCE.md).
+
 Next: #74 OPT-C progressive/prefix
 transfer. Public memory profile/snapshot freeze remains blocked until those slices
 close.
