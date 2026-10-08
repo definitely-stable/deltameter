@@ -478,7 +478,7 @@ fn run_refinement(table: &[u64], worker: usize) {
     }
     for warmup in 0..WARMUPS {
         let mut order = REFINE_J_VALUES;
-        order.rotate_left((worker - 1 + warmup) % order.len());
+        order.rotate_left((worker - 1 + warmup) % REFINE_J_VALUES.len());
         for levels in order {
             black_box(measure_update_once(levels));
             black_box(measure_estimate_once(levels, table));
@@ -487,7 +487,7 @@ fn run_refinement(table: &[u64], worker: usize) {
     }
     for round in 0..SAMPLES {
         let mut order = REFINE_J_VALUES;
-        order.rotate_left((worker - 1 + WARMUPS + round) % order.len());
+        order.rotate_left((worker - 1 + WARMUPS + round) % REFINE_J_VALUES.len());
         for levels in order {
             let update_ns = measure_update_once(levels);
             let estimate_ns = measure_estimate_once(levels, table);
