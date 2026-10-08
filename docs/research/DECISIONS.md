@@ -1241,3 +1241,22 @@ approval**. C3-B must measure a full real two-party retained-state
 lifecycle with rounds, cumulative application bytes, timing and
 generation changes before #80/#74 can close. #69 remains blocked.
 Evidence: docs/research/STRICT-COMPACT-OPT-C3A-EVIDENCE.md.
+
+### D50 — request-first dual-TCP partial reuse fails frozen RTT gate
+
+PR #82, source d0480354e372d1d81d0e03263cd375467b680031,
+GitHub-hosted run 37816319786: five workers / 1,440 genuine
+two-source TCP checkpoints PASS all correctness, provenance,
+application byte and full-XOR reconstruction checks. One level
+from each sender costs 1,344B, versus concurrent dual-full 53,500B,
+but requires an extra feedback RTT. At 10Mbps, application RTT
+0/10/50ms, the original no-p95-latency-regression gate qualifies
+**0/3** scenarios on all workers. Full fallback 55,778B also costs
+4.26% more bytes than dual-full. The strict product verdict is
+**C3B_TWO_PARTY_NO_GO** for the request-first interactive transport.
+
+Keep the data and gates unchanged. A new pre-registered sender-first
+fixed T-centered level probe is a separate C3-C protocol hypothesis
+that can avoid the initial feedback RTT. No public API, key or
+snapshot-v1 freeze. Evidence:
+docs/research/STRICT-COMPACT-OPT-C3B-EVIDENCE.md.
