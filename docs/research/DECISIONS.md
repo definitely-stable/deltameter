@@ -1112,3 +1112,54 @@ Decision:
 - production/public ExactSmallDelta remains NO-GO.
 
 Canonical evidence: docs/M6-D13B-SYSTEM-EVIDENCE.md.
+
+
+### D45 — STRICT-COMPACT OPT-A selects a 28 KiB full-range research baseline
+
+OPT-A varies only the stored level count J and physical packing while preserving
+the accepted m=4096, delta=1e-6, delta/64 Q32 thresholds and keyed-BLAKE3 oracle
+contract.
+
+The exact continuous range frontier shows:
+
+~~~text
+J=24  12 KiB  d_max=84,315,082,377
+J=32  16 KiB  d_max=21,584,661,088,732
+J=40  20 KiB  d_max=5,525,673,238,715,561
+J=48  24 KiB  d_max=1,414,572,349,111,183,676
+J=56  28 KiB  d_max=2^64-1
+J=64  32 KiB  d_max=2^64-1
+~~~
+
+J=64's accepted certificate uses no certifying level above 52, so levels 57..64
+are unnecessary for the current full-domain q95 width contract.
+
+Physical-layout screening finds keyed-BLAKE3 update cost essentially unchanged
+between row-major and level-major layouts, while level-major level-count extraction
+is much faster and makes each level one contiguous 512-byte chunk.
+
+Canonical Stage-2 run `37756954797` at source
+`cfa7e48a4784146573073c6992ed9536f24b1d24` contributes five independent hosted
+workers and 160 raw measurements. Every candidate passes the predeclared viability
+limits.
+
+For J=56 versus J=64, worst-worker regressions are only:
+
+~~~text
+update     +0.105%
+estimate   +3.670%
+XOR/KiB    +2.648%
+~~~
+
+Decision:
+
+- record **RANGE_FRONTIER_PASS**;
+- use J=56 / 28 KiB / LEVEL_MAJOR as the preferred full-u64 research baseline for
+  OPT-B/OPT-C;
+- retain J=64 only as a regression/control profile;
+- retain the exact J frontier as range-specific profile evidence;
+- do not select a public default yet;
+- keep #69 public profile/snapshot freeze blocked on OPT-B/OPT-C;
+- no alpha reallocation, generalized ladder or new oracle is authorized by OPT-A.
+
+Canonical evidence: docs/research/STRICT-COMPACT-OPT-A-EVIDENCE.md.
