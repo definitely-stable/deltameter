@@ -1,7 +1,7 @@
 // Research-only C3-A comparison; the C0/C1/C2 oracle and frames stay frozen.
 #[allow(dead_code)]
 mod c3 {
-    include!("strict_compact_opt_c_lab.rs");
+    include!("../research/strict_compact_opt_c1_core.rs");
     include!("../research/strict_compact_opt_c3_transport.rs");
 
     pub(super) fn run(path: &std::path::Path, worker: usize) {
