@@ -1,0 +1,56 @@
+name: strict-compact keyed oracle
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "docs/research/STRICT-COMPACT-003-KEYED-ORACLE-PLAN.md"
+      - "examples/strict_compact_keyed_oracle_lab.rs"
+      - "src/fpcsa.rs"
+      - "src/energy.rs"
+      - ".github/workflows/strict-compact-keyed-oracle.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  keyed-oracle:
+    name: worker-${{ matrix.worker }}
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Freeze tool/source provenance
+        run: |
+          mkdir -p keyed-oracle-out
+          git rev-parse HEAD > keyed-oracle-out/head.txt
+          rustc -Vv > keyed-oracle-out/rust.txt
+          cargo metadata --format-version 1 > keyed-oracle-out/cargo-metadata.json
+
+      - name: Run keyed oracle lab
+        run: |
+          cargo run --release --example strict_compact_keyed_oracle_lab -- 250000 3 \
+            | tee keyed-oracle-out/worker-${{ matrix.worker }}.txt
+
+      - name: Check all targets
+        run: cargo check --all-targets
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: strict-compact-keyed-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: keyed-oracle-out/
+          if-no-files-found: error
