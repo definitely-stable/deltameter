@@ -1218,3 +1218,26 @@ separate comparator for trusted threshold-only use cases.
 No public API/snapshot change; #69 stays blocked until C3.
 
 Evidence: docs/research/STRICT-COMPACT-OPT-C-C2-EVIDENCE.md.
+
+
+### D49 — OPT-C C3-A loopback transport and XOR functional foundation
+
+Issue #80, measured source `0968adec45d14261f950b3f8d6a9690c27407424`,
+five hosted workers, run 37815243109. Complete source-attested results:
+1,440 measured localhost TCP request/response trials, 360 two-party
+level XOR/extension oracle observations. The loopback pace/RTT simulator
+measures actual socket round trips under application sleeps, NOT WAN
+network quality or kernel shaping. All five workers passed the frozen
+foundation checks. The T-informed bounded prefix qualifies in the
+restricted controlled 10Mbps RTT<=50ms matrix; interactive4 does not.
+
+Threshold-only trusted sender U transfer is 24B, beating a 655B
+one-level prefix. Independent two-party level XOR reuse is functionally
+distinct, but has so far been tested as a **local oracle and logical
+byte model**, not a real two-party TCP lifecycle.
+
+Decision: **C3_A_TRANSPORT_FOUNDATION_PASS, no public progressive
+approval**. C3-B must measure a full real two-party retained-state
+lifecycle with rounds, cumulative application bytes, timing and
+generation changes before #80/#74 can close. #69 remains blocked.
+Evidence: docs/research/STRICT-COMPACT-OPT-C3A-EVIDENCE.md.
