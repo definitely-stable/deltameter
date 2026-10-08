@@ -45,7 +45,10 @@ mod opt_c {
                 config_binding: config,
                 table_binding,
             };
-            Self { session, words: sketch.words.clone() }
+            Self {
+                session,
+                words: sketch.words.clone(),
+            }
         }
 
         fn frame(&self, level_one_based: u8) -> [u8; FRAME_BYTES] {
@@ -55,8 +58,10 @@ mod opt_c {
             frame[EPOCH_BYTES] = level_one_based;
             let start = (level_one_based as usize - 1) * WORDS_PER_LEVEL;
             let payload = &mut frame[EPOCH_BYTES + 1..EPOCH_BYTES + 1 + LEVEL_BYTES];
-            for (out, word) in payload.chunks_exact_mut(8)
-                .zip(&self.words[start..start + WORDS_PER_LEVEL]) {
+            for (out, word) in payload
+                .chunks_exact_mut(8)
+                .zip(&self.words[start..start + WORDS_PER_LEVEL])
+            {
                 out.copy_from_slice(&word.to_le_bytes());
             }
             let checksum = crc32(&frame[..FRAME_BYTES - 4]);
@@ -82,17 +87,26 @@ mod opt_c {
     }
 
     impl Receiver {
-        fn new(session: &Session, expected_config: [u8; 32], expected_table: [u8; 32])
-            -> Result<Self, &'static str> {
-            if session.magic != MAGIC || session.version != 0 ||
-                session.rows != ROWS as u16 || session.levels != J as u8 {
+        fn new(
+            session: &Session,
+            expected_config: [u8; 32],
+            expected_table: [u8; 32],
+        ) -> Result<Self, &'static str> {
+            if session.magic != MAGIC
+                || session.version != 0
+                || session.rows != ROWS as u16
+                || session.levels != J as u8
+            {
                 return Err("bad-session-profile");
             }
-            if session.config_binding != expected_config ||
-                session.table_binding != expected_table {
+            if session.config_binding != expected_config || session.table_binding != expected_table
+            {
                 return Err("wrong-key-or-table-config");
             }
-            Ok(Self { session: session.clone(), parts: vec![None; J as usize] })
+            Ok(Self {
+                session: session.clone(),
+                parts: vec![None; J as usize],
+            })
         }
 
         fn ingest(&mut self, bytes: &[u8]) -> Result<bool, &'static str> {
@@ -106,9 +120,7 @@ mod opt_c {
             if !(1..=J as u8).contains(&level) {
                 return Err("bad-level-index");
             }
-            let recorded = u32::from_le_bytes(
-                bytes[FRAME_BYTES - 4..].try_into().unwrap()
-            );
+            let recorded = u32::from_le_bytes(bytes[FRAME_BYTES - 4..].try_into().unwrap());
             if recorded != crc32(&bytes[..FRAME_BYTES - 4]) {
                 return Err("corrupt-frame");
             }
@@ -135,7 +147,9 @@ mod opt_c {
             for (j, part) in self.parts.iter().enumerate() {
                 let Some(data) = part else { continue };
                 let odd = data.iter().map(|v| v.count_ones()).sum::<u32>() as usize;
-                if odd >= TABLE_ENTRIES { continue }
+                if odd >= TABLE_ENTRIES {
+                    continue;
+                }
                 let q = table[odd];
                 if q != SENTINEL {
                     best = best.min(q32_level_upper(q, (j + 1) as u32));
@@ -161,14 +175,18 @@ mod opt_c {
 
     fn correctness(table: &[u64]) {
         let mut live = PackedSketch::new(J, Layout::LevelMajor);
-        for token in 0_u64..65_536 { live.toggle(token); }
+        for token in 0_u64..65_536 {
+            live.toggle(token);
+        }
         let epoch = [0x51; 16];
         let cfg = [0x39; 32];
         let frozen = Frozen::from_sketch(&live, epoch, cfg);
         assert_eq!(frozen.words.len(), J as usize * WORDS_PER_LEVEL);
         let full_estimate = live.estimate(table);
         // Snapshot immutability is independent of later updates.
-        for token in 100_000_u64..105_000 { live.toggle(token); }
+        for token in 100_000_u64..105_000 {
+            live.toggle(token);
+        }
         assert_ne!(frozen.words.as_ref(), live.words.as_ref());
         let mut rx = Receiver::new(&frozen.session, cfg, frozen.session.table_binding).unwrap();
         assert_eq!(rx.bound(table), DOMAIN_CARDINALITY);
@@ -190,12 +208,16 @@ mod opt_c {
         assert_eq!(rx.received(), J as usize);
         assert_eq!(rx.complete_words().unwrap(), frozen.words);
         assert_eq!(rx.bound(table), full_estimate);
-        let mut rx_forward = Receiver::new(&frozen.session, cfg, frozen.session.table_binding).unwrap();
+        let mut rx_forward =
+            Receiver::new(&frozen.session, cfg, frozen.session.table_binding).unwrap();
         for j in 1..=J as u8 {
             rx_forward.ingest(&frozen.frame(j)).unwrap();
         }
         assert_eq!(rx_forward.bound(table), full_estimate);
-        assert_eq!(rx_forward.complete_words().unwrap(), rx.complete_words().unwrap());
+        assert_eq!(
+            rx_forward.complete_words().unwrap(),
+            rx.complete_words().unwrap()
+        );
 
         // Missing level is not the same as a received all-zero level.
         let empty = PackedSketch::new(J, Layout::LevelMajor);
@@ -207,12 +229,15 @@ mod opt_c {
 
         // Fail closed on wrong-session config, corrupt/short frame, bad index,
         // wrong epoch and a conflicting duplicate even if CRC is recomputed.
-        assert!(Receiver::new(&frozen.session, [0x37;32], frozen.session.table_binding).is_err());
-        assert!(Receiver::new(&frozen.session, cfg, [0x37;32]).is_err());
+        assert!(Receiver::new(&frozen.session, [0x37; 32], frozen.session.table_binding).is_err());
+        assert!(Receiver::new(&frozen.session, cfg, [0x37; 32]).is_err());
         let mut corrupt = frozen.frame(1);
         corrupt[EPOCH_BYTES + 1] ^= 0x80;
         assert_eq!(rx.ingest(&corrupt), Err("corrupt-frame"));
-        assert_eq!(rx.ingest(&corrupt[..FRAME_BYTES - 1]), Err("bad-frame-length"));
+        assert_eq!(
+            rx.ingest(&corrupt[..FRAME_BYTES - 1]),
+            Err("bad-frame-length")
+        );
         let mut wrong_epoch = frozen.frame(1);
         wrong_epoch[0] ^= 1;
         assert_eq!(rx.ingest(&wrong_epoch), Err("wrong-epoch"));
@@ -226,7 +251,10 @@ mod opt_c {
         assert_eq!(rx.ingest(&conflict), Err("conflicting-level-duplicate"));
         println!(
             "STRICT_COMPACT_OPT_C_FOUNDATION_PASS state_bytes={} level_bytes={} frame_bytes={} levels={}",
-            frozen.words.len() * 8, LEVEL_BYTES, FRAME_BYTES, J
+            frozen.words.len() * 8,
+            LEVEL_BYTES,
+            FRAME_BYTES,
+            J
         );
     }
 
@@ -239,7 +267,9 @@ mod opt_c {
 
 fn main() {
     let mut args = std::env::args().skip(1);
-    let table_path = args.next().expect("usage: strict_compact_opt_c_lab q32.txt");
+    let table_path = args
+        .next()
+        .expect("usage: strict_compact_opt_c_lab q32.txt");
     assert!(args.next().is_none(), "unexpected argument");
     opt_c::run(std::path::Path::new(&table_path));
 }
