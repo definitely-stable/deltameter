@@ -59,7 +59,7 @@ mod opt_c {
             let start = (level_one_based as usize - 1) * WORDS_PER_LEVEL;
             let payload = &mut frame[EPOCH_BYTES + 1..EPOCH_BYTES + 1 + LEVEL_BYTES];
             for (out, word) in payload
-                .chunks_exact_mut(8)
+                .as_chunks_mut::<8>().0.iter_mut()
                 .zip(&self.words[start..start + WORDS_PER_LEVEL])
             {
                 out.copy_from_slice(&word.to_le_bytes());
@@ -165,7 +165,7 @@ mod opt_c {
             let mut words = Vec::with_capacity(J as usize * WORDS_PER_LEVEL);
             for part in &self.parts {
                 let data = part.as_ref().ok_or("missing-levels")?;
-                for chunk in data.chunks_exact(8) {
+                for chunk in data.as_chunks::<8>().0 {
                     words.push(u64::from_le_bytes(chunk.try_into().unwrap()));
                 }
             }
