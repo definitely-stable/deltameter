@@ -192,7 +192,7 @@ mod opt_b {
                 let (_, right) = populate_pair(j);
                 for _ in 0..MERGE_REPEAT {
                     if mode == "scan" {
-                        scan.xor_assign(black_box(&right));
+                        scan.xor_assign(black_box(&right.canonical));
                     } else {
                         cached.merge(black_box(&right));
                     }
