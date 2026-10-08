@@ -28,8 +28,14 @@ Research session header binds:
 A level frame has an explicit 1-based index in 1..=J,
 an immutable generation ID, **exactly 512 B** payload,
 and an error-detection checksum. Experimental reference frame:
-`epoch[16] | level[1] | parity[512] | crc32[4]` = **533 B**.
+`session_tag[16] | level[1] | parity[512] | crc32[4]` = **533 B**.
 CRC32 is for accidental corruption only, not adversarial authentication.
+The 16-byte session tag is a **nonsecret BLAKE3 digest truncation** binding the
+immutable epoch, profile version/m/J, out-of-band config/key identifier, and
+content digest of the actual frozen Q32 lookup table. This detects accidental
+same-epoch cross-config mixing, but cannot authenticate an adversary who can
+forge tags and CRCs. The laboratory uses a fixed externally provided research
+config ID; it does **not** validate the caller's secret key provenance.
 The session header (including config/key identity) is additional
 application bytes and must be charged exactly in the cost model.
 No secret key is serialized.
