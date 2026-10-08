@@ -1260,3 +1260,31 @@ fixed T-centered level probe is a separate C3-C protocol hypothesis
 that can avoid the initial feedback RTT. No public API, key or
 snapshot-v1 freeze. Evidence:
 docs/research/STRICT-COMPACT-OPT-C3B-EVIDENCE.md.
+
+
+### D51 — sender-first two-party prefix passes narrow transport gate; no general public progressive API
+
+PR #83 source 9db84aecd04a93ad72cd603453bb6970d1fb42fa,
+GitHub-hosted five-worker run 37817271128 with 1,440 complete
+two-source TCP checkpoints. Unlike D50's request-first protocol
+(which remains NO-GO), each sender eagerly includes its fixed
+T-centered first level after the initial T request, avoiding an extra
+round trip. The unchanged p95 bytes / p95 time gate passes all
+3 named d/T scenarios on all workers at controlled app-paced
+10Mbps RTT=0/10/50ms.
+
+Two senders' one-level bound costs 1,310B vs complete 53,500B.
+Full retained fallback costs 55,744B (4.19% more than complete).
+A trusted one-sender scalar result dominates threshold-only
+workloads; two independent sender states need receiver-side XOR.
+The result is scoped to a *single immutable compatible-source
+threshold-bound application*, **not** WAN, authentication,
+full-state compression, or unconditional statistical guarantees.
+
+Decision: **C3C_CONTROLLED_TWO_PARTY_PASS / GENERAL_PUBLIC_PROGRESSIVE_NO_GO**.
+Leave sender-first as optional future application-specific research;
+move #69 forward with J52 LEVEL_MAJOR + derived cached counters,
+while key provenance/authentication/snapshot lifecycle remain
+explicit public acceptance conditions.
+
+Evidence: docs/research/STRICT-COMPACT-OPT-C3C-EVIDENCE.md.
