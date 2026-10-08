@@ -1,0 +1,83 @@
+name: strict-compact opt-c3 controlled TCP
+
+on:
+  pull_request:
+    paths:
+      - "docs/research/STRICT-COMPACT-OPT-C3A-PROTOCOL.md"
+      - "research/strict_compact_opt_c3_transport.rs"
+      - "research/strict_compact_opt_c3_transport_summarize.py"
+      - "examples/strict_compact_opt_c3_lab.rs"
+      - ".github/workflows/strict-compact-opt-c3-transport.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - name: Validate Rust, Python and frozen Q32 table
+        run: |
+          mkdir -p c3a-raw
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+          python -m py_compile research/strict_compact_opt_c3_transport_summarize.py
+          python research/strict_compact_lookup_q32.py --table-out c3a-raw/q32.txt
+          test "$(sha256sum c3a-raw/q32.txt | cut -d' ' -f1)" = 634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+      - name: Run real localhost TCP and two-source XOR oracle
+        run: |
+          cargo run --release --example strict_compact_opt_c3_lab -- c3a-raw/q32.txt ${{ matrix.worker }} | tee c3a-raw/worker-${{ matrix.worker }}.txt
+          grep -q "^STRICT_COMPACT_OPT_C3A_WORKER_PASS worker=${{ matrix.worker }}$" c3a-raw/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > c3a-raw/head-${{ matrix.worker }}.txt
+          rustc -Vv > c3a-raw/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c3a-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: c3a-raw/
+          if-no-files-found: error
+
+  aggregate:
+    needs: worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: c3a-worker-*
+          path: c3a-input
+          merge-multiple: true
+      - name: Validate exact source and complete paired observations
+        run: |
+          mkdir -p c3a-out
+          python research/strict_compact_opt_c3_transport_summarize.py --logs-dir c3a-input --head "$(git rev-parse HEAD)" --out c3a-out/summary.json | tee c3a-out/summary.txt
+          grep -q '^C3A_EVIDENCE_PASS tcp=1440 xor=360 ' c3a-out/summary.txt
+          git rev-parse HEAD > c3a-out/head.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c3a-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: c3a-out/
+          if-no-files-found: error
