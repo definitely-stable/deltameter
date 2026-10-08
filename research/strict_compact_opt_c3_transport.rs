@@ -14,7 +14,7 @@ const C3_MODES: [&str; 4] = ["scalar", "complete", "bounded", "interactive4"];
 fn c3_send(stream: &mut TcpStream, bytes: &[u8], count: &mut usize) {
     // Sleep BEFORE sending to simulate a 10Mbit/s application-layer link.
     // Not kernel shaping or TCP/IP packet-wire accounting.
-    let micros = (bytes.len() as u64 * 8 + C3_MBIT - 1) / C3_MBIT;
+    let micros = (bytes.len() as u64 * 8).div_ceil(C3_MBIT);
     if micros > 0 {
         thread::sleep(Duration::from_micros(micros));
     }
