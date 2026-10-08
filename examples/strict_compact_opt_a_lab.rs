@@ -494,8 +494,13 @@ fn run_refinement(table: &[u64], worker: usize) {
             let xor_ns_per_kib = measure_xor_once(levels);
             println!(
                 "STRICT_COMPACT_OPT_A_REFINE_SAMPLE worker={} round={} J={} layout=level state_bytes={} update_ns_per_token={:.6} estimate_ns={:.3} xor_ns_per_kib={:.6}",
-                worker, round, levels, ROWS * usize::try_from(levels).unwrap() / 8,
-                update_ns, estimate_ns, xor_ns_per_kib
+                worker,
+                round,
+                levels,
+                ROWS * usize::try_from(levels).unwrap() / 8,
+                update_ns,
+                estimate_ns,
+                xor_ns_per_kib
             );
         }
     }
@@ -546,7 +551,10 @@ fn main() {
                 .expect("refinement worker id")
                 .parse()
                 .expect("worker id must be integer");
-            assert!(args.next().is_none(), "unexpected extra refinement argument");
+            assert!(
+                args.next().is_none(),
+                "unexpected extra refinement argument"
+            );
             run_refinement(&table, worker);
         }
         Some("stage2") => {
