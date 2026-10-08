@@ -324,11 +324,7 @@ fn main() {
         InputModel::NonAdaptiveIndependentOfSecretKey
     );
 
-    for (d, expected_upper) in [
-        (4096_u64, 5032_u128),
-        (65_536, 84_742),
-        (262_144, 325_259),
-    ] {
+    for (d, expected_upper) in [(4096_u64, 5032_u128), (65_536, 84_742), (262_144, 325_259)] {
         let mut sketch = PrivateStrictCompact::new(SecretKey(MASTER_KEY));
         for token in 0..d {
             sketch.toggle(token);
