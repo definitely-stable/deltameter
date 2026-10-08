@@ -6,6 +6,8 @@ use std::time::Instant;
 const ROWS: usize = 4096;
 const J_VALUES: [u32; 6] = [24, 32, 40, 48, 56, 64];
 const STAGE2_J_VALUES: [u32; 4] = [24, 40, 56, 64];
+// Post-OPT-A certified-range refinement. Does not mutate the frozen Stage-2 matrix.
+const REFINE_J_VALUES: [u32; 3] = [52, 56, 64];
 const TABLE_ENTRIES: usize = 2048;
 const SENTINEL: u64 = u64::MAX;
 const Q_BITS: u32 = 32;
@@ -46,7 +48,7 @@ struct PackedSketch {
 
 impl PackedSketch {
     fn new(levels: u32, layout: Layout) -> Self {
-        assert!(J_VALUES.contains(&levels));
+        assert!(J_VALUES.contains(&levels) || levels == 51 || levels == 52);
         let bits = ROWS.checked_mul(usize::try_from(levels).unwrap()).unwrap();
         assert_eq!(bits % 64, 0);
         let words = bits / 64;
@@ -444,6 +446,62 @@ fn run_stage2(table: &[u64], worker: usize) {
     println!("STRICT_COMPACT_OPT_A_STAGE2_WORKER_PASS worker={}", worker);
 }
 
+fn run_refinement(table: &[u64], worker: usize) {
+    assert!((1..=5).contains(&worker));
+    assert_oracle_vectors();
+    for levels in [51, 52, 56, 64] {
+        correctness(levels, table);
+    }
+    // Independent deterministic cancellation/XOR stress, over both bit layouts.
+    for levels in [51, 52] {
+        let mut a = PackedSketch::new(levels, Layout::LevelMajor);
+        let mut b = PackedSketch::new(levels, Layout::RowMajor);
+        let mut state = 0x9e37_79b9_7f4a_7c15_u64;
+        for step in 0..10_000 {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            a.toggle(state);
+            b.toggle(state);
+            if step % 127 == 0 {
+                assert_eq!(a.level_counts(), b.level_counts());
+                assert_eq!(a.estimate(table), b.estimate(table));
+            }
+        }
+        assert_eq!(a.canonical_digest(), b.canonical_digest());
+        let before = a.canonical_digest();
+        for token in [0, 1, 42, u64::MAX] {
+            a.toggle(token);
+            a.toggle(token);
+        }
+        assert_eq!(a.canonical_digest(), before);
+    }
+    for warmup in 0..WARMUPS {
+        let mut order = REFINE_J_VALUES;
+        order.rotate_left((worker - 1 + warmup) % order.len());
+        for levels in order {
+            black_box(measure_update_once(levels));
+            black_box(measure_estimate_once(levels, table));
+            black_box(measure_xor_once(levels));
+        }
+    }
+    for round in 0..SAMPLES {
+        let mut order = REFINE_J_VALUES;
+        order.rotate_left((worker - 1 + WARMUPS + round) % order.len());
+        for levels in order {
+            let update_ns = measure_update_once(levels);
+            let estimate_ns = measure_estimate_once(levels, table);
+            let xor_ns_per_kib = measure_xor_once(levels);
+            println!(
+                "STRICT_COMPACT_OPT_A_REFINE_SAMPLE worker={} round={} J={} layout=level state_bytes={} update_ns_per_token={:.6} estimate_ns={:.3} xor_ns_per_kib={:.6}",
+                worker, round, levels, ROWS * usize::try_from(levels).unwrap() / 8,
+                update_ns, estimate_ns, xor_ns_per_kib
+            );
+        }
+    }
+    println!("STRICT_COMPACT_OPT_A_REFINE_WORKER_PASS worker={}", worker);
+}
+
 fn run_stage1(table: &[u64]) {
     assert_oracle_vectors();
 
@@ -482,6 +540,15 @@ fn main() {
 
     match args.next().as_deref() {
         None => run_stage1(&table),
+        Some("refine") => {
+            let worker: usize = args
+                .next()
+                .expect("refinement worker id")
+                .parse()
+                .expect("worker id must be integer");
+            assert!(args.next().is_none(), "unexpected extra refinement argument");
+            run_refinement(&table, worker);
+        }
         Some("stage2") => {
             let worker: usize = args
                 .next()
