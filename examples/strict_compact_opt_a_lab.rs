@@ -47,9 +47,7 @@ struct PackedSketch {
 impl PackedSketch {
     fn new(levels: u32, layout: Layout) -> Self {
         assert!(J_VALUES.contains(&levels));
-        let bits = ROWS
-            .checked_mul(usize::try_from(levels).unwrap())
-            .unwrap();
+        let bits = ROWS.checked_mul(usize::try_from(levels).unwrap()).unwrap();
         assert_eq!(bits % 64, 0);
         let words = bits / 64;
         Self {
