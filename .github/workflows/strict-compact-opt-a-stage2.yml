@@ -1,0 +1,95 @@
+name: strict-compact opt-a stage2
+
+on:
+  pull_request:
+    paths:
+      - "docs/research/STRICT-COMPACT-OPT-A-PROTOCOL.md"
+      - "research/strict_compact_opt_a_stage1_frozen.json"
+      - "research/strict_compact_opt_a_stage2_summarize.py"
+      - "examples/strict_compact_opt_a_lab.rs"
+      - "research/strict_compact_lookup_q32.py"
+      - ".github/workflows/strict-compact-opt-a-stage2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Generate exact frozen table bytes
+        run: |
+          mkdir -p strict-opt-a-stage2
+          python research/strict_compact_lookup_q32.py             --table-out strict-opt-a-stage2/q32.txt
+          test "$(sha256sum strict-opt-a-stage2/q32.txt | cut -d' ' -f1)" =             634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+
+      - name: Run raw Stage2 worker
+        run: |
+          cargo run --release --example strict_compact_opt_a_lab --             strict-opt-a-stage2/q32.txt stage2 ${{ matrix.worker }}             | tee strict-opt-a-stage2/worker-${{ matrix.worker }}.txt
+          grep -q "^STRICT_COMPACT_OPT_A_STAGE2_WORKER_PASS worker=${{ matrix.worker }}$"             strict-opt-a-stage2/worker-${{ matrix.worker }}.txt
+
+      - name: Freeze worker provenance
+        run: |
+          git rev-parse HEAD > strict-opt-a-stage2/head-${{ matrix.worker }}.txt
+          rustc -Vv > strict-opt-a-stage2/rust-${{ matrix.worker }}.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strict-opt-a-stage2-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            strict-opt-a-stage2/worker-${{ matrix.worker }}.txt
+            strict-opt-a-stage2/head-${{ matrix.worker }}.txt
+            strict-opt-a-stage2/rust-${{ matrix.worker }}.txt
+          if-no-files-found: error
+
+  aggregate:
+    needs: worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: strict-opt-a-stage2-worker-*
+          path: strict-opt-a-stage2-raw
+          merge-multiple: true
+
+      - name: Validate and aggregate
+        run: |
+          python -m py_compile research/strict_compact_opt_a_stage2_summarize.py
+          mkdir -p strict-opt-a-stage2-summary
+          python research/strict_compact_opt_a_stage2_summarize.py             --stage1 research/strict_compact_opt_a_stage1_frozen.json             --logs-dir strict-opt-a-stage2-raw             --head "$(git rev-parse HEAD)"             --out strict-opt-a-stage2-summary/summary.json             | tee strict-opt-a-stage2-summary/summary.txt
+          grep -q '^STRICT_COMPACT_OPT_A_STAGE2_PASS '             strict-opt-a-stage2-summary/summary.txt
+          git rev-parse HEAD > strict-opt-a-stage2-summary/head.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strict-opt-a-stage2-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: strict-opt-a-stage2-summary/
+          if-no-files-found: error

@@ -1,0 +1,110 @@
+name: strict-compact opt-a J52 refinement
+
+on:
+  pull_request:
+    paths:
+      - "research/strict_compact_opt_a_refine_certify.py"
+      - "research/strict_compact_opt_a_refine_summarize.py"
+      - "examples/strict_compact_opt_a_lab.rs"
+      - "docs/research/STRICT-COMPACT-OPT-A-REFINEMENT-PROTOCOL.md"
+      - ".github/workflows/strict-compact-opt-a-refinement.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Generate and independently validate frozen table
+        run: |
+          mkdir -p opt-a-refine-cert
+          python research/strict_compact_lookup_q32.py --table-out opt-a-refine-cert/q32.txt
+          test "$(sha256sum opt-a-refine-cert/q32.txt | cut -d' ' -f1)" = 634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+          python research/strict_compact_lookup_certify.py --table opt-a-refine-cert/q32.txt --out opt-a-refine-cert/table-certificate.json
+      - name: Certify J51 and J52 exact continuous frontiers
+        run: |
+          python -m py_compile research/strict_compact_opt_a_refine_certify.py research/strict_compact_opt_a_refine_summarize.py
+          python research/strict_compact_opt_a_refine_certify.py --table opt-a-refine-cert/q32.txt --out opt-a-refine-cert/certificate.json | tee opt-a-refine-cert/certificate.txt
+          grep -q '^STRICT_COMPACT_OPT_A_REFINE_CERT_PASS$' opt-a-refine-cert/certificate.txt
+          git rev-parse HEAD > opt-a-refine-cert/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opt-a-refine-certificate
+          path: opt-a-refine-cert/
+          if-no-files-found: error
+
+  worker:
+    needs: certificate
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Generate identical Q32 table
+        run: |
+          mkdir -p opt-a-refine-worker
+          python research/strict_compact_lookup_q32.py --table-out opt-a-refine-worker/q32.txt
+          test "$(sha256sum opt-a-refine-worker/q32.txt | cut -d' ' -f1)" = 634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+      - name: Paired worker measurement
+        run: |
+          cargo run --release --example strict_compact_opt_a_lab -- opt-a-refine-worker/q32.txt refine ${{ matrix.worker }} | tee opt-a-refine-worker/worker-${{ matrix.worker }}.txt
+          grep -q "^STRICT_COMPACT_OPT_A_REFINE_WORKER_PASS worker=${{ matrix.worker }}$" opt-a-refine-worker/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > opt-a-refine-worker/head-${{ matrix.worker }}.txt
+          rustc -Vv > opt-a-refine-worker/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opt-a-refine-worker-${{ matrix.worker }}
+          path: opt-a-refine-worker/
+          if-no-files-found: error
+
+  aggregate:
+    needs: [certificate, worker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          name: opt-a-refine-certificate
+          path: opt-a-refine-cert
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: opt-a-refine-worker-*
+          path: opt-a-refine-workers
+          merge-multiple: true
+      - name: Fail-closed aggregate
+        run: |
+          mkdir -p opt-a-refine-summary
+          test "$(cat opt-a-refine-cert/head.txt)" = "$(git rev-parse HEAD)"
+          python research/strict_compact_opt_a_refine_summarize.py --cert opt-a-refine-cert/certificate.json --logs-dir opt-a-refine-workers --head "$(git rev-parse HEAD)" --out opt-a-refine-summary/summary.json | tee opt-a-refine-summary/summary.txt
+          grep -q '^STRICT_COMPACT_OPT_A_REFINE_SUMMARY J52_REFINEMENT_PASS$' opt-a-refine-summary/summary.txt
+          git rev-parse HEAD > opt-a-refine-summary/head.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opt-a-refine-summary
+          path: opt-a-refine-summary/
+          if-no-files-found: error
