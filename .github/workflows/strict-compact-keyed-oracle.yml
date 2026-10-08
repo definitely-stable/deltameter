@@ -6,6 +6,7 @@ on:
       - "Cargo.toml"
       - "docs/research/STRICT-COMPACT-003-KEYED-ORACLE-PLAN.md"
       - "examples/strict_compact_keyed_oracle_lab.rs"
+      - "research/strict_compact_keyed_oracle_summarize.py"
       - "src/fpcsa.rs"
       - "src/energy.rs"
       - ".github/workflows/strict-compact-keyed-oracle.yml"
@@ -42,8 +43,10 @@ jobs:
 
       - name: Run keyed oracle lab
         run: |
-          cargo run --release --example strict_compact_keyed_oracle_lab -- 250000 3 \
-            | tee keyed-oracle-out/worker-${{ matrix.worker }}.txt
+          cargo run --release --example strict_compact_keyed_oracle_lab -- \
+            250000 3 keyed-oracle-out/worker-${{ matrix.worker }}.txt
+          test -s keyed-oracle-out/worker-${{ matrix.worker }}.txt
+          cat keyed-oracle-out/worker-${{ matrix.worker }}.txt
 
       - name: Check all targets
         run: cargo check --all-targets
@@ -53,4 +56,36 @@ jobs:
         with:
           name: strict-compact-keyed-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: keyed-oracle-out/
+          if-no-files-found: error
+
+  aggregate:
+    needs: keyed-oracle
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: strict-compact-keyed-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: keyed-oracle-raw
+
+      - name: Aggregate frozen keyed-oracle gates
+        run: |
+          mkdir -p keyed-oracle-summary
+          python research/strict_compact_keyed_oracle_summarize.py \
+            --input keyed-oracle-raw \
+            --out keyed-oracle-summary/summary.json
+          cat keyed-oracle-summary/summary.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strict-compact-keyed-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: keyed-oracle-summary/
           if-no-files-found: error
