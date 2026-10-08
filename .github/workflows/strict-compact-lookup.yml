@@ -5,6 +5,7 @@ on:
     paths:
       - "docs/research/STRICT-COMPACT-001-LOOKUP-PLAN.md"
       - "research/strict_compact_lookup_q32.py"
+      - "research/strict_compact_lookup_certify.py"
       - "examples/strict_compact_lookup_lab.rs"
       - "src/fpcsa.rs"
       - ".github/workflows/strict-compact-lookup.yml"
@@ -36,6 +37,13 @@ jobs:
           python research/strict_compact_lookup_q32.py             --table-out strict-compact-out/q32-b.txt
           cmp strict-compact-out/q32-a.txt strict-compact-out/q32-b.txt
           cat strict-compact-out/q32-summary.json
+
+      - name: Independently certify every Q32 threshold
+        run: |
+          python research/strict_compact_lookup_certify.py \
+            --table strict-compact-out/q32-a.txt \
+            --out strict-compact-out/q32-certificate.json
+          cat strict-compact-out/q32-certificate.json
 
       - name: Install stable Rust
         run: |
