@@ -1,0 +1,63 @@
+name: strict-compact private api
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "docs/research/STRICT-COMPACT-004-PRIVATE-API-PLAN.md"
+      - "examples/strict_compact_private_api_lab.rs"
+      - "research/strict_compact_lookup_q32.py"
+      - "research/strict_compact_lookup_certify.py"
+      - ".github/workflows/strict-compact-private-api.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+
+      - name: Generate frozen Q32 table
+        run: |
+          mkdir -p strict-compact-private-out
+          python3 research/strict_compact_lookup_q32.py             --table-out strict-compact-private-out/q32-table.txt             --summary-out strict-compact-private-out/q32-summary.json
+          test "$(sha256sum strict-compact-private-out/q32-table.txt | cut -d' ' -f1)" =             634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+
+      - name: Independently certify generated table
+        run: |
+          python3 research/strict_compact_lookup_certify.py             --table strict-compact-private-out/q32-table.txt             --out strict-compact-private-out/q32-certificate.json
+
+      - name: Run private contract lab
+        run: |
+          cargo run --release --example strict_compact_private_api_lab --             strict-compact-private-out/q32-table.txt             | tee strict-compact-private-out/lab.txt
+          grep -q '^STRICT_COMPACT_PRIVATE_API_PASS '             strict-compact-private-out/lab.txt
+
+      - name: Standard Rust checks
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --all-targets
+          cargo check --all-targets
+
+      - name: Freeze provenance
+        run: |
+          git rev-parse HEAD > strict-compact-private-out/head.txt
+          rustc -Vv > strict-compact-private-out/rust.txt
+          cargo metadata --format-version 1 > strict-compact-private-out/cargo-metadata.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strict-compact-private-api-${{ github.run_id }}-${{ github.run_attempt }}
+          path: strict-compact-private-out/
+          if-no-files-found: error
