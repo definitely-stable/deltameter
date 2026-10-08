@@ -132,7 +132,7 @@ def exact_upper_tail_pass(level: int, d: int, threshold: int) -> bool:
 
 
 def certify_interval(
-    table: list[int], a: int, b: int
+    table: list[int], a: int, b: int, levels: int = LEVELS
 ) -> dict | None:
     if not (DECLARED_D_MIN <= a <= b < DOMAIN):
         raise ValueError("interval")
@@ -146,8 +146,11 @@ def certify_interval(
             "kind": "domain_ceiling",
         }
 
+    if not (1 <= levels <= LEVELS):
+        raise ValueError("levels")
+
     proposals = []
-    for level in range(1, LEVELS + 1):
+    for level in range(1, levels + 1):
         threshold = runtime_threshold(table, level, k_a)
         score = float_tail_score(level, b, threshold)
         proposals.append((score, level, threshold))
@@ -173,8 +176,9 @@ def recursive_cover(
     a: int,
     b: int,
     out: list[dict],
+    levels: int = LEVELS,
 ) -> None:
-    witness = certify_interval(table, a, b)
+    witness = certify_interval(table, a, b, levels)
     if witness is not None:
         out.append(witness)
         return
@@ -183,11 +187,76 @@ def recursive_cover(
         raise AssertionError(f"uncovered declared d={a}")
 
     middle = (a + b) // 2
-    recursive_cover(table, a, middle, out)
-    recursive_cover(table, middle + 1, b, out)
+    recursive_cover(table, a, middle, out, levels)
+    recursive_cover(table, middle + 1, b, out, levels)
 
 
-def build_cover(table: list[int]) -> list[dict]:
+def recursive_prefix_cover(
+    table: list[int],
+    a: int,
+    b: int,
+    out: list[dict],
+    levels: int,
+) -> int | None:
+    """Append a certified prefix of [a,b]; return first uncovered d, if any."""
+    witness = certify_interval(table, a, b, levels)
+    if witness is not None:
+        out.append(witness)
+        return None
+
+    if a == b:
+        return a
+
+    middle = (a + b) // 2
+    first_failure = recursive_prefix_cover(
+        table, a, middle, out, levels
+    )
+    if first_failure is not None:
+        return first_failure
+
+    return recursive_prefix_cover(
+        table, middle + 1, b, out, levels
+    )
+
+
+def build_prefix_cover(
+    table: list[int], levels: int
+) -> tuple[list[dict], int, int | None]:
+    """Largest hole-free certified prefix starting at DECLARED_D_MIN."""
+    if not (1 <= levels <= LEVELS):
+        raise ValueError("levels")
+
+    trivial_start = (2 * DOMAIN + 2) // 3
+    proof_end = trivial_start - 1
+    intervals: list[dict] = []
+    start = DECLARED_D_MIN
+
+    while start <= proof_end:
+        end = min(proof_end, 2 * start - 1)
+        first_failure = recursive_prefix_cover(
+            table, start, end, intervals, levels
+        )
+        if first_failure is not None:
+            d_max = first_failure - 1
+            if d_max < DECLARED_D_MIN:
+                intervals.clear()
+            validate_prefix_cover(intervals, d_max)
+            return intervals, d_max, first_failure
+        start = end + 1
+
+    intervals.append(
+        {
+            "a": trivial_start,
+            "b": DOMAIN - 1,
+            "k_a": (WIDTH_NUMERATOR * trivial_start) // WIDTH_DENOMINATOR,
+            "kind": "domain_ceiling",
+        }
+    )
+    validate_cover(intervals)
+    return intervals, DOMAIN - 1, None
+
+
+def build_cover(table: list[int], levels: int = LEVELS) -> list[dict]:
     # Above this point U<=2^64 implies U/d<=1.5 deterministically.
     trivial_start = (2 * DOMAIN + 2) // 3
     proof_end = trivial_start - 1
@@ -198,7 +267,7 @@ def build_cover(table: list[int]) -> list[dict]:
         # Start with an octave-sized interval and split only when exact
         # monotonicity closure is too pessimistic.
         end = min(proof_end, 2 * start - 1)
-        recursive_cover(table, start, end, intervals)
+        recursive_cover(table, start, end, intervals, levels)
         start = end + 1
 
     intervals.append(
@@ -210,6 +279,31 @@ def build_cover(table: list[int]) -> list[dict]:
         }
     )
     return intervals
+
+
+def validate_prefix_cover(
+    intervals: list[dict], d_max: int
+) -> None:
+    if d_max < DECLARED_D_MIN:
+        if intervals:
+            raise AssertionError("unexpected intervals below declared minimum")
+        return
+    if not intervals:
+        raise AssertionError("empty prefix cover")
+
+    expected = DECLARED_D_MIN
+    for row in intervals:
+        if row["a"] != expected:
+            raise AssertionError(
+                f"prefix hole/overlap: expected {expected}, got {row['a']}"
+            )
+        if row["b"] < row["a"]:
+            raise AssertionError("reversed prefix interval")
+        expected = row["b"] + 1
+    if expected != d_max + 1:
+        raise AssertionError(
+            f"prefix does not end at d_max: expected {d_max + 1}, got {expected}"
+        )
 
 
 def validate_cover(intervals: list[dict]) -> None:
