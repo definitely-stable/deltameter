@@ -389,12 +389,7 @@ fn measure_estimate_once(levels: u32, table: &[u64]) -> f64 {
 
 fn measure_xor_once(levels: u32) -> f64 {
     let source = populate(levels, Layout::LevelMajor, 0, QUERY_TOKENS / 2);
-    let mut target = populate(
-        levels,
-        Layout::LevelMajor,
-        QUERY_TOKENS / 2,
-        QUERY_TOKENS,
-    );
+    let mut target = populate(levels, Layout::LevelMajor, QUERY_TOKENS / 2, QUERY_TOKENS);
     let kib = source.state_bytes() as f64 / 1024.0;
     let start = Instant::now();
     for _ in 0..XOR_REPETITIONS {
@@ -446,10 +441,7 @@ fn run_stage2(table: &[u64], worker: usize) {
         }
     }
 
-    println!(
-        "STRICT_COMPACT_OPT_A_STAGE2_WORKER_PASS worker={}",
-        worker
-    );
+    println!("STRICT_COMPACT_OPT_A_STAGE2_WORKER_PASS worker={}", worker);
 }
 
 fn run_stage1(table: &[u64]) {
