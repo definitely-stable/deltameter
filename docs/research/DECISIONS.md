@@ -1700,3 +1700,60 @@ source+receiver cost/fault-rate frontier and explicit
 cold N65536 sparse viability; #86/#69 security/lifecycle
 remain independent public blockers.
 Canonical: docs/research/DELTAGUARD-B1B1B1A-EVIDENCE.md.
+
+### D62 — B1-B1B1-B0 synced two-owner WAL and ACK replay across SIGKILL; product cost undecided
+
+Parent #103/#101/#99/#97/#92; PR #104. Freeze-before-measurement
+`docs/research/DELTAGUARD-B1B1B1B0-PROTOCOL.md` pinned at
+`fbada643ee1ee0d2ea557acd4371775b63a0ecfe`.
+First complete hosted
+[CI #37928262462](https://github.com/definitely-stable/deltameter/actions/runs/37928262462)
+on code `64641d81db97bbead9eedaf8a4e936a173ed6326`:
+**5/5 GitHub-hosted workers, 210/210 unique source-SHA-pinned
+two-owner crash/restart records, unchanged 24-profile exact
+B2A certificate and independent fail-closed aggregation PASS**.
+Four hundred twenty owner processes truly SIGKILL'ed
+in the cutpoint matrix; source snapshot, WAL, commit marker
+and physical-ACK delivery cursor are reopened by new
+owner OS processes from individual private on-disk
+files (NOT regenerated from test fixture). Separately
+restarted receiver opens validated atomically synced
+two-owner exact cache BEFORE reconnect and ACK.
+
+Source WAL and commit marker are File::sync_all'd
+in order, with commit marker atomic rename+parent directory
+fsync; unmarked WAL tail is UNCOMMITTED even if present
+after SIGKILL. Receiver atomically syncs BOTH exact
+owner inventories BEFORE a physical ACK. ACK watermark
+file is synced AFTER ACK. Reconnected generation2
+delta is applied once on a stale generation1 receiver;
+already durable generation2 state detects duplicate
+and is ACKed without second insertion. Five explicit
+disk corruption/rollback probes per worker reject
+invalid committed WAL, snapshot owner identity, receiver epoch/checksum and ACK ahead; a separate key-identity mutation is not a named disk fault in this slice.
+
+Measured physical two-owner TCP bytes:
+- initial cold exact snapshot including handshake
+  and telemetry: N256 **4338B**; N65536 **1,048,818B**;
+- source restart at UNCOMMITTED generation1:
+  N256 **4386B** or N65536 **1,048,866B** (full);
+- source restart with COMMITTED generation2:
+  **308B** delta/identity/ACK/telemetry BOTH N.
+  These are one-event source reconnect bytes, NOT total
+  durable system disk/WAL amortized cost or p95 latency.
+
+**Decision: B1B1B1B0_DURABLE_PREFIX_REPLAY_RESEARCH_ACCEPT**;
+**NO SYSTEM_PRODUCT_GO**, no public API/Snapshot v1 edits.
+SIGKILL is not a power cut or torn-fsync simulation,
+full source authority remains single fixture-originated
+writer, one generation with inserts only; no actual
+journal roll-over/delete/concurrency/multisession
+durability proof. High-frequency fsync/disk amplification
+and CPU/metadata may erase the 308B link advantage
+against an equally durable exact receiver: next
+B1-B1B1-B1 must measure that and inject crash BETWEEN
+owner ACKs, consecutive updates/removals and shared
+source independent state provenance, with #86/#69
+security/public gates still blocked. D60 warm-N256
+guard NO-GO and near-T resolved STOP remain.
+Evidence: docs/research/DELTAGUARD-B1B1B1B0-EVIDENCE.md.

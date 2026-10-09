@@ -323,6 +323,42 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard B1-B1B1-B0 — fsync'd two-owner WAL/ACK and physical process restart
+
+Parent #103, PR #104, D62; frozen premeasurement protocol
+at `docs/research/DELTAGUARD-B1B1B1B0-PROTOCOL.md`.
+Five hosted CI workers, **210/210 source-bound physical
+SIGKILL/restart probes** with two independently
+persisted owner snapshots/WAL/commit/ACK cursors
+and a separately restarted receiver reading
+atomically persisted two-owner exact inventories.
+Uncommitted source WAL tails ignored; accepted
+generation2 events reopen from disk and replay
+exact once, including case where receiver synced
+state before the physical ACK and owner still
+has stale ACK watermark. Real `File::sync_all`,
+atomic rename and directory fsync. All owner
+restart paths read disk, not fixture regeneration.
+
+One-event recovered two-owner TCP cost: **308B
+committed generation2** independent of N,
+versus **4,386B N256** / **1,048,866B N65536**
+for uncommitted generation1 full source sync.
+These link bytes EXCLUDE the cost of initial
+source ingestion, WAL/commit/ACK fsync, metadata,
+CPU and durable exact comparator. This is
+**DURABLE_PREFIX_REPLAY_RESEARCH_ACCEPT**,
+not power-cut endurance or a public product
+GO. D60 warm-N256 guard NO-GO and near-T
+resolved STOP persist. Next bounded B1B1B1-B1:
+multi-generation/removal+rollback, crash
+between two owner ACKs, actual source CPU/RSS
+and disk write amplification, fault-frequency
+cold N65536 niche vs equally durable retained
+exact, and #86/#69 security/API gates.
+Evidence:
+[DELTAGUARD-B1B1B1B0-EVIDENCE.md](research/DELTAGUARD-B1B1B1B0-EVIDENCE.md).
+
 ## DeltaGuard B1-B1B1-A — fail-closed real TCP faults and physical full reset
 
 Issue #101, PR #102, D61: **390/390** exact
