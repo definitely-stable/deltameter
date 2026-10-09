@@ -219,9 +219,10 @@ fn bd_reboot_child(args:&[String]){
     }
     bd_telemetry(&mut sock);
 }
-fn bd_child(role:&str,worker:usize,lane:usize,rep:usize,owner:u8,
+fn bd_child(role:&str,fixture:(usize,usize,usize),owner:u8,
     case:&str,root:&Path,address:&str)->std::process::Child
 {
+    let (worker,lane,rep)=fixture;
     use std::process::{Command,Stdio};
     let mut cmd=Command::new(std::env::current_exe().unwrap());
     match role {
@@ -281,8 +282,8 @@ fn bd_init(worker:usize,lane:usize,rep:usize,root:&Path)->usize{
     std::fs::create_dir_all(root).unwrap();
     let (listener,address)=bd_listen();
     let mut children=[
-        bd_child("--boot",worker,lane,rep,1,"",root,&address),
-        bd_child("--boot",worker,lane,rep,2,"",root,&address),
+        bd_child("--boot",(worker,lane,rep),1,"",root,&address),
+        bd_child("--boot",(worker,lane,rep),2,"",root,&address),
     ];
     let mut socks=bd_accept_pair(&listener);
     let mut frames=Vec::new();
@@ -309,8 +310,8 @@ fn bd_stage(worker:usize,lane:usize,rep:usize,case:&str,root:&Path)->(usize,bool
     use std::io::{Read,Write};
     let (listener,address)=bd_listen();
     let mut children=[
-        bd_child("--stage",worker,lane,rep,1,case,root,&address),
-        bd_child("--stage",worker,lane,rep,2,case,root,&address),
+        bd_child("--stage",(worker,lane,rep),1,case,root,&address),
+        bd_child("--stage",(worker,lane,rep),2,case,root,&address),
     ];
     let mut socks=bd_accept_pair(&listener);
     let mut bytes=2_usize;
@@ -361,8 +362,8 @@ fn bd_receiver_recovery(worker:usize,lane:usize,rep:usize,root:&Path) {
     let (initial,gs)=bd_load_receiver(root).expect("receiver must reopen fsync'd cache");
     let (listener,address)=bd_listen();
     let mut children=[
-        bd_child("--reboot",worker,lane,rep,1,"",root,&address),
-        bd_child("--reboot",worker,lane,rep,2,"",root,&address),
+        bd_child("--reboot",(worker,lane,rep),1,"",root,&address),
+        bd_child("--reboot",(worker,lane,rep),2,"",root,&address),
     ];
     let mut socks=bd_accept_pair(&listener);
     let mut source_g=[0_usize;2];
