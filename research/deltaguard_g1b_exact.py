@@ -118,7 +118,7 @@ def tiny_oracles() -> int:
                 for t in range(9):
                     count, den = all_laws[t]
                     oracle = mask_oracle(m,j,profile,t)
-                    assert count == oracle, (m,j,profile,t,count,oracle)
+                    assert count == oracle[:len(count)] and not any(oracle[len(count):]), (m,j,profile,t,count,oracle)
                     assert sum(oracle) == den, (m,j,profile,t,den,sum(oracle))
                     tested += 1
     # One-sided independent rejection / missing-state / type errors.
