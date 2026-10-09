@@ -1,0 +1,113 @@
+name: DeltaGuard G1B exact fixed-d guard
+
+on:
+  pull_request:
+    paths:
+      - "research/deltaguard_g1b_exact.py"
+      - "research/deltaguard_g1b.rs"
+      - "research/deltaguard_g1b_summarize.py"
+      - "examples/deltaguard_g1b_lab.rs"
+      - "docs/research/DELTAGUARD-G1B-PROTOCOL.md"
+      - "docs/research/DELTAGUARD-G1B-EVIDENCE.md"
+      - ".github/workflows/deltaguard-g1b.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Exact integer-chain proof and independent finite bitmask oracle
+        run: |
+          python -m py_compile research/deltaguard_g1b_exact.py research/deltaguard_g1b_summarize.py
+          mkdir -p g1b-cert
+          python research/deltaguard_g1b_exact.py --out-dir g1b-cert | tee g1b-cert/log.txt
+          grep -q '^G1B_EXACT_CHAIN_CERT_PASS profiles=24 tiny_oracle_cases=162 ' g1b-cert/log.txt
+          (cd g1b-cert && sha256sum cutoffs.tsv > cutoffs.sha256)
+          git rev-parse HEAD > g1b-cert/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g1b-exact-certificate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: g1b-cert/
+          if-no-files-found: error
+
+  worker:
+    needs: exact-certificate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: g1b-exact-certificate-*
+          path: g1b-cert
+          merge-multiple: true
+      - name: Source and certificate binding; Rust review gates
+        run: |
+          test "$(cat g1b-cert/head.txt)" = "$(git rev-parse HEAD)"
+          (cd g1b-cert && sha256sum --check cutoffs.sha256)
+          mkdir -p g1b-worker
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+      - name: Two-owner parity and fail-closed incompatible profile vectors
+        run: |
+          cargo run --release --example deltaguard_g1b_lab -- g1b-cert/cutoffs.tsv ${{ matrix.worker }} | tee g1b-worker/worker-${{ matrix.worker }}.txt
+          grep -q "^DELTAGUARD_G1B_WORKER_PASS worker=${{ matrix.worker }}$" g1b-worker/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > g1b-worker/head-${{ matrix.worker }}.txt
+          rustc -Vv > g1b-worker/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g1b-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: g1b-worker/
+          if-no-files-found: error
+
+  aggregate:
+    needs: [exact-certificate, worker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: g1b-worker-*
+          path: g1b-input
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: g1b-exact-certificate-*
+          path: g1b-cert
+          merge-multiple: true
+      - name: Fail-closed 900-row parity/power aggregator
+        run: |
+          mkdir -p g1b-summary
+          test "$(cat g1b-cert/head.txt)" = "$(git rev-parse HEAD)"
+          (cd g1b-cert && sha256sum --check cutoffs.sha256)
+          python research/deltaguard_g1b_summarize.py --input g1b-input --cutoffs g1b-cert/cutoffs.tsv --head "$(git rev-parse HEAD)" --out g1b-summary/results.json | tee g1b-summary/log.txt
+          grep -q '^G1B_B1_AGGREGATE_PASS rows=1800 ' g1b-summary/log.txt
+          git rev-parse HEAD > g1b-summary/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g1b-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: g1b-summary/
+          if-no-files-found: error

@@ -1345,3 +1345,41 @@ lazy Ehrenfest/odd-occupancy CDF inversion and independent
 finite T+1 safety, with conditional product power gate;
 issue #86 security boundary. Evidence:
 docs/research/DELTAGUARD-G1A-EVIDENCE.md.
+
+### D54 — DeltaGuard G1-B1 exact lazy-Ehrenfest threshold and unit-coefficient pilot
+
+Issue #89; research PR #90; 1,800-row GitHub-hosted
+two-owner XOR matrix and 24 exact fixed-d cutoff certificates.
+The G1-B1 ideal-oracle recurrence for m=4096 and a
+predeclared single level j has integer weights:
+`n_(d+1)[s]=(D-m)n_d[s]+(m-s+1)n_d[s-1]+(s+1)n_d[s+1]`,
+D=m*2^(j+1) for original random coefficient, D=m*2^j
+for a new separately domain-separated unit coefficient `g(v)=1`.
+The stochastic kernel is monotone because
+`(m+1)/D<=1`, so `P_d(S<=c)` is maximized for d>T
+at d=T+1. Cutoffs accepted by an exact integer
+`10^6 * CDF_numerator(T+1,c) <= D^(T+1)` comparison;
+162 independent complete small-bitmask probability oracle cases.
+
+For j=1, T=32: original ALWAYS_UNKNOWN (-1 cutoff),
+unit accepts S<=3. At T64: original S<=1, unit S<=13.
+At d=T/4 ideal one-shot power: T32 old=0, unit=0.364215;
+T64 old=0.063661, unit=0.997956 (integer-truncated ppm).
+At d=.75T unit power T32≈0.000145 and T64≈0.001189;
+**no near-threshold high-power claim**.
+Five GitHub-hosted workers, 1,800 source-pinned deterministic
+two-owner records, correctly maintain 512B per owner and
+fail closed on cross-profile/level XOR; sampled T32,d8
+unit SAFE 7/15; T64,d16 unit SAFE 15/15. Published test
+key is NOT random-secret Monte Carlo or real PRF security.
+
+Verdict **G1B_EXACT_CHAIN_CERT_PASS** and
+**G1B_B1_XOR_PASS_EMPIRICAL_UNIT_CANDIDATE**, in the original
+strict NONADAPTIVE ideal-oracle model only.
+**NO PUBLIC GUARD PRODUCT FREEZE; NO G1B-COMBINED LEVEL CERT**,
+no snapshot identity/wire interop between original and unit.
+Classical lazy Ehrenfest state/count calculus, NOT a new theorem.
+Do not infer real-world network/CPU/RSS performance or repeated
+adaptive query security. Next evaluate separately certified joint
+levels or direct exact comparator; issue #86 key/adaptive threat.
+Evidence docs/research/DELTAGUARD-G1B-EVIDENCE.md.
