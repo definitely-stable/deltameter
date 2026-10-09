@@ -34,7 +34,8 @@ changed records MUST NOT be silently accepted.
 Bounded max WAL bytes and count; no compaction in this slice.
 
 The receiver durably stores both source exact inventories,
-their generation and **respective last accepted chain digest**
+their generation, **respective last accepted chain digest AND the exact 88B
+accepted event receipt for each owner**
 inside ONE synced+atomically renamed two-owner receipt.
 On each physical two-owner TCP event request, independently
 verify owner/epoch/key/profile/frame checksum, monotone
@@ -56,8 +57,8 @@ Five independent GitHub-hosted workers × N=256 and N=65536,
 d=48, 3 deterministic fixture repeats × **100 successive
 generations (2..101) per source** = **3000 paired-source
 generation observations** (100 per lane/repeat/worker).
-Both sources alternate INSERT/DELETE of the SAME distinct
-per-owner token on every adjacent generation (ABA true
+Both sources alternate INSERT/DELETE of the SAME shared fixture
+sentinel token on every adjacent generation (ABA true
 insert→delete→insert→delete). 50 inserts, 50 deletes per
 owner. The receiver is independently checked against
 actual two-owner disk states and fixed external exact oracle
