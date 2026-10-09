@@ -54,12 +54,13 @@ fn b11_paced_write(stream:&mut std::net::TcpStream,bytes:&[u8],mbps:usize) {
     let start=std::time::Instant::now();
     let mut written=0_usize;
     for chunk in bytes.chunks(1024) {
-        stream.write_all(chunk).expect("write framed response");
-        written+=chunk.len();
-        let target=std::time::Duration::from_secs_f64(written as f64*8.0/(mbps as f64*1_000_000.0));
+        let target=std::time::Duration::from_secs_f64(
+            (written+chunk.len()) as f64*8.0/(mbps as f64*1_000_000.0));
         if let Some(left)=target.checked_sub(start.elapsed()) {
             std::thread::sleep(left);
         }
+        stream.write_all(chunk).expect("write paced framed response");
+        written+=chunk.len();
     }
 }
 fn b11_req(seq:usize)->[u8;B11_REQ] {
@@ -177,7 +178,7 @@ fn b11_peers(worker:usize,n:usize,d:usize,rep:usize,s:usize,mbps:usize,delay:u64
     let listener=TcpListener::bind(("127.0.0.1",0)).expect("listener");
     let addr=listener.local_addr().unwrap().to_string();
     let executable=std::env::current_exe().unwrap();
-    let mut children=Vec::new();
+    let mut children:[Option<std::process::Child>;2]=[None,None];
     for owner in 1..=2 {
         let child=Command::new(&executable)
             .args(["--sender".to_string(),worker.to_string(),n.to_string(),
@@ -185,7 +186,7 @@ fn b11_peers(worker:usize,n:usize,d:usize,rep:usize,s:usize,mbps:usize,delay:u64
                 delay.to_string(),owner.to_string(),mode.label().to_string(),addr.clone()])
             .stdout(Stdio::null()).stderr(Stdio::inherit())
             .spawn().expect("spawn distinct sender process");
-        children.push(child);
+        children[(owner-1) as usize]=Some(child);
     }
     let mut peers:[Option<B11Peer>;2]=[None,None];
     for _ in 0..2 {
@@ -203,11 +204,9 @@ fn b11_peers(worker:usize,n:usize,d:usize,rep:usize,s:usize,mbps:usize,delay:u64
         let build_ns=u64::from_le_bytes(hello[9..17].try_into().unwrap());
         let update_ns=u64::from_le_bytes(hello[17..25].try_into().unwrap());
         // Children are indexed by owner, regardless of accept ordering.
-        let child=std::mem::replace(&mut children[slot],
-            Command::new("true").stdout(Stdio::null()).spawn().unwrap());
+        let child=children[slot].take().expect("child identity");
         peers[slot]=Some(B11Peer {socket:stream,child,rss,build_ns,update_ns});
     }
-    for spare in &mut children {let _=spare.wait();}
     [peers[0].take().unwrap(),peers[1].take().unwrap()]
 }
 fn b11_as_words(payload:&[u8])->Vec<u64> {
@@ -262,7 +261,8 @@ fn b11_trial(worker:usize,lane:usize,rep:usize,mode:B11Mode) {
             for (idx,p) in peers.iter_mut().enumerate() {
                 let (full,count)=b11_recv(p,(idx+1) as u8,B1_FULL,s);
                 let tokens=b11_as_words(b1_decode(&full,(idx+1) as u8,B1_FULL,B1_EPOCH,s as u64).unwrap());
-                assert_eq!(tokens,if idx==0{&final_a}else{&final_b}.as_slice());
+                let expected=if idx==0{final_a.as_slice()}else{final_b.as_slice()};
+                assert_eq!(tokens,expected);
                 bytes+=count;
             }
         }
