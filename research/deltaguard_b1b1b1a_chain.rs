@@ -1,6 +1,5 @@
 // DeltaGuard B1-B1B1-B1-A research-only: fsync'd multigeneration WAL,
 // bound event chain and receiver receipt. Public BLAKE3 != authentication.
-use std::path::PathBuf;
 const BE_REC: usize = 88;
 const BE_MAGIC: &[u8;8] = b"DGEVT101";
 const BE_COMMIT: &[u8;8] = b"DGCOM101";
@@ -161,7 +160,8 @@ fn be_writer(args:&[String]){
     assert_eq!(reloaded.seq,seq);
     assert_eq!(reloaded.tokens,check);
 }
-fn be_save_receipt(root:&Path,lists:&[Vec<u64>;2],seqs:[usize;2],heads:[[u8;32];2])
+fn be_save_receipt(root:&Path,lists:&[Vec<u64>;2],seqs:[usize;2],heads:[[u8;32];2],
+    last:[[u8;BE_REC];2])
     ->usize
 {
     let fa=b1_encode(1,B1_FULL,B1_EPOCH,seqs[0] as u64,&b1_full_bytes(&lists[0]));
@@ -173,6 +173,8 @@ fn be_save_receipt(root:&Path,lists:&[Vec<u64>;2],seqs:[usize;2],heads:[[u8;32];
     body.extend_from_slice(&(seqs[1] as u64).to_le_bytes());
     body.extend_from_slice(&heads[0]);
     body.extend_from_slice(&heads[1]);
+    body.extend_from_slice(&last[0]);
+    body.extend_from_slice(&last[1]);
     body.extend_from_slice(&(fa.len() as u32).to_le_bytes());
     body.extend_from_slice(&(fb.len() as u32).to_le_bytes());
     body.extend_from_slice(&fa);
@@ -183,27 +185,28 @@ fn be_save_receipt(root:&Path,lists:&[Vec<u64>;2],seqs:[usize;2],heads:[[u8;32];
     bd_atomic(root,"receiver.chain",&body);
     bytes
 }
-struct BEReceipt {lists:[Vec<u64>;2],seq:[usize;2],heads:[[u8;32];2]}
+struct BEReceipt {lists:[Vec<u64>;2],seq:[usize;2],heads:[[u8;32];2],last:[[u8;BE_REC];2]}
 fn be_load_receipt(root:&Path)->Result<BEReceipt,&'static str>{
     let bytes=std::fs::read(root.join("receiver.chain")).map_err(|_|"receipt-missing")?;
-    if bytes.len()<136 || &bytes[..8]!=BE_RECEIPT ||
+    if bytes.len()<312 || &bytes[..8]!=BE_RECEIPT ||
         u64::from_le_bytes(bytes[8..16].try_into().unwrap())!=B1_EPOCH {
         return Err("receipt-identity");
     }
     let g1=u64::from_le_bytes(bytes[16..24].try_into().unwrap()) as usize;
     let g2=u64::from_le_bytes(bytes[24..32].try_into().unwrap()) as usize;
     let heads=[bytes[32..64].try_into().unwrap(),bytes[64..96].try_into().unwrap()];
-    let n1=u32::from_le_bytes(bytes[96..100].try_into().unwrap()) as usize;
-    let n2=u32::from_le_bytes(bytes[100..104].try_into().unwrap()) as usize;
+    let last=[bytes[96..184].try_into().unwrap(),bytes[184..272].try_into().unwrap()];
+    let n1=u32::from_le_bytes(bytes[272..276].try_into().unwrap()) as usize;
+    let n2=u32::from_le_bytes(bytes[276..280].try_into().unwrap()) as usize;
     if n1>B1_MAX_PAYLOAD+B1_HEADER||n2>B1_MAX_PAYLOAD+B1_HEADER||
-        bytes.len()!=104+n1+n2+32{return Err("receipt-size");}
-    if bytes[104+n1+n2..]!=be_digest(&bytes[..104+n1+n2]){return Err("receipt-checksum");}
+        bytes.len()!=280+n1+n2+32{return Err("receipt-size");}
+    if bytes[280+n1+n2..]!=be_digest(&bytes[..280+n1+n2]){return Err("receipt-checksum");}
     if ![1,2].contains(&g1.min(2)) || ![1,2].contains(&g2.min(2)) ||
         g1>BE_GENS+1 || g2>BE_GENS+1{return Err("receipt-generation");}
-    let fa=&bytes[104..104+n1];let fb=&bytes[104+n1..104+n1+n2];
+    let fa=&bytes[280..280+n1];let fb=&bytes[280+n1..280+n1+n2];
     let a=b11_as_words(b1_decode(fa,1,B1_FULL,B1_EPOCH,g1 as u64)?);
     let b=b11_as_words(b1_decode(fb,2,B1_FULL,B1_EPOCH,g2 as u64)?);
-    Ok(BEReceipt{lists:[a,b],seq:[g1,g2],heads})
+    Ok(BEReceipt{lists:[a,b],seq:[g1,g2],heads,last})
 }
 fn be_init(worker:usize,lane:usize,rep:usize,root:&Path){
     use std::process::{Command,Stdio};
@@ -219,7 +222,7 @@ fn be_init(worker:usize,lane:usize,rep:usize,root:&Path){
     let sources=[be_source_load(&bd_dir(root,1),1).unwrap(),
         be_source_load(&bd_dir(root,2),2).unwrap()];
     be_save_receipt(root,&[sources[0].tokens.clone(),sources[1].tokens.clone()],
-        [1,1],[sources[0].head,sources[1].head]);
+        [1,1],[sources[0].head,sources[1].head],[[0u8;BE_REC];2]);
 }
 fn be_sender(args:&[String]){
     use std::io::{Read,Write};
@@ -298,7 +301,8 @@ fn be_read_pair(listener:&std::net::TcpListener)
 }
 fn be_validate_transition(receipt:&BEReceipt,recs:&[[u8;BE_REC];2],
     frames:&[Vec<u8>;2],seq:usize)->Result<(BEReceipt,bool),&'static str>{
-    let mut next=BEReceipt{lists:receipt.lists.clone(),seq:receipt.seq,heads:receipt.heads};
+    let mut next=BEReceipt{lists:receipt.lists.clone(),seq:receipt.seq,
+        heads:receipt.heads,last:receipt.last};
     let mut fresh=[false;2];
     for i in 0..2 {
         let owner=(i+1) as u8;
@@ -312,12 +316,15 @@ fn be_validate_transition(receipt:&BEReceipt,recs:&[[u8;BE_REC];2],
             if ev_op!=op||ev_token!=token {return Err("event-frame-conflict");}
             be_apply(&mut next.lists[i],op,token)?;
             next.heads[i]=new_hash;
+            next.last[i]=recs[i];
             next.seq[i]=seq;
             fresh[i]=true;
         } else if seq==this_g {
             // A duplicate is accepted based on EXACT persisted digest,
             // never by membership of the token (ABA vulnerability).
-            if recs[i][56..88]!=receipt.heads[i] {return Err("conflicting-same-generation");}
+            if recs[i]!=receipt.last[i] || recs[i][56..88]!=receipt.heads[i] {
+                return Err("conflicting-same-generation");
+            }
             if &recs[i][..8]!=BE_MAGIC ||
                 u64::from_le_bytes(recs[i][16..24].try_into().unwrap())!=seq as u64 ||
                 recs[i][24]!=owner || recs[i][25]!=op ||
@@ -341,7 +348,7 @@ fn be_accept_and_commit(root:&Path,listener:&std::net::TcpListener,seq:usize,
     let (next,fresh)=be_validate_transition(&prev,&events,&frames,seq)
         .expect("strict B1B1B1A receipt chain + exact source oracle");
     if fresh {
-        be_save_receipt(root,&next.lists,next.seq,next.heads);
+        be_save_receipt(root,&next.lists,next.seq,next.heads,next.last);
     }
     let reopened=be_load_receipt(root).unwrap();
     assert_eq!(reopened.seq,[seq,seq]);
@@ -437,10 +444,6 @@ fn be_oracle(worker:usize,lane:usize,rep:usize,seq:usize,receiver:&BEReceipt){
     }
     assert_eq!(receiver.lists,expected);
     assert_eq!(b0_diff(&receiver.lists[0],&receiver.lists[1]).len(),48);
-    for owner in 1..=2{
-        let src=be_source_load(&bd_dir(Path::new(""),owner),owner);
-        let _=src; // Oracle never supplies source state after restart.
-    }
 }
 fn be_negative(worker:usize,lane:usize,rep:usize,root:&Path){
     let receipt=be_load_receipt(root).unwrap();
