@@ -65,7 +65,9 @@ def _float_kl(x: float, p: float) -> float:
     )
 
 
-def threshold_for_count(observed: int, target_kl: Decimal) -> int:
+def threshold_for_count(
+    observed: int, target_kl: Decimal, alpha: Decimal = ALPHA
+) -> int:
     if not (0 <= observed < ROWS // 2):
         raise ValueError("observed")
 
@@ -94,7 +96,7 @@ def threshold_for_count(observed: int, target_kl: Decimal) -> int:
     if q >= U64_MAX:
         raise OverflowError("finite Q32 proposal does not fit u64")
 
-    log_alpha = ALPHA.ln()
+    log_alpha = alpha.ln()
 
     # Repair upward until the high-precision evaluator proves this quantized
     # point is on the conservative side of the crossing.
@@ -117,12 +119,14 @@ def threshold_for_count(observed: int, target_kl: Decimal) -> int:
     return q
 
 
-def build_thresholds() -> list[int]:
+def build_thresholds(alpha: Decimal = ALPHA) -> list[int]:
     with localcontext() as context:
         context.prec = PRECISION
-        target_kl = (TWO / ALPHA).ln() / ROWS
+        if not (Decimal(0) < alpha < Decimal(1)):
+            raise ValueError("alpha")
+        target_kl = (TWO / alpha).ln() / ROWS
         table = [
-            threshold_for_count(observed, target_kl)
+            threshold_for_count(observed, target_kl, alpha)
             for observed in range(ROWS // 2)
         ]
 

@@ -181,7 +181,7 @@ def likelihood_crosses(observed: int, p_num: int) -> bool:
     return likelihood_crosses_target(observed, p_num, LIKELIHOOD_TARGET)
 
 
-def sentinel_is_valid(observed: int) -> bool:
+def sentinel_is_valid(observed: int, target: int = LIKELIHOOD_TARGET) -> bool:
     """At p->1/2 the KL divergence is maximal for fixed s<m/2.
 
     If even p=1/2 does not cross the target, no finite d can cross it.
@@ -194,14 +194,16 @@ def sentinel_is_valid(observed: int) -> bool:
     )
     left = left_core << ((P_Q_BITS - 12) * ROWS)
     right = (
-        LIKELIHOOD_TARGET
+        target
         * pow(p_half, observed)
         * pow(P_Q - p_half, ROWS - observed)
     )
     return left <= right
 
 
-def certify(table: list[int]) -> dict:
+def certify(table: list[int], target: int = LIKELIHOOD_TARGET) -> dict:
+    if not isinstance(target, int) or target <= 0:
+        raise ValueError("positive integer likelihood target")
     finite = 0
     sentinels = 0
     minimum_p_margin_numerator: int | None = None
@@ -212,7 +214,7 @@ def certify(table: list[int]) -> dict:
         if q32 == SENTINEL:
             saw_sentinel = True
             sentinels += 1
-            if not sentinel_is_valid(observed):
+            if not sentinel_is_valid(observed, target):
                 raise AssertionError(
                     f"invalid infinity sentinel at observed={observed}"
                 )
@@ -233,13 +235,14 @@ def certify(table: list[int]) -> dict:
         if minimum_p_margin_numerator is None or margin < minimum_p_margin_numerator:
             minimum_p_margin_numerator = margin
 
-        if not likelihood_crosses(observed, p_num):
+        if not (p_num * ROWS > observed * P_Q and
+                likelihood_crosses_target(observed, p_num, target)):
             raise AssertionError(
                 f"Q32 threshold not independently certified at observed={observed}"
             )
         finite += 1
 
-    if finite != 1853 or sentinels != 195:
+    if target == LIKELIHOOD_TARGET and (finite != 1853 or sentinels != 195):
         raise AssertionError(
             f"unexpected table split finite={finite} sentinel={sentinels}"
         )
@@ -249,13 +252,16 @@ def certify(table: list[int]) -> dict:
         "rows": ROWS,
         "stored_levels": LEVELS,
         "delta": "0.000001",
-        "alpha_per_level": "0.000000015625",
+        "alpha_per_level": (
+            "0.000000015625" if target == LIKELIHOOD_TARGET
+            else f"1/{target // 2}" if target % 2 == 0 else f"2/{target}"
+        ),
         "q32_entries": len(table),
         "finite_entries": finite,
         "sentinel_entries": sentinels,
         "p_interval_q_bits": P_Q_BITS,
         "exp_lower_taylor_degree": TAYLOR_DEGREE,
-        "likelihood_target_2_over_alpha": LIKELIHOOD_TARGET,
+        "likelihood_target_2_over_alpha": target,
         "minimum_certified_p_minus_x_q64_numerator": minimum_p_margin_numerator,
         "certificate": (
             "exact rational/integer proof that every finite Q32 threshold is "

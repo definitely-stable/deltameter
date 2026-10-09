@@ -305,6 +305,24 @@ especially tiny thresholds; #86: repeated/adaptive input/key model.
 Do not reuse old Q32 for m!=4096 or promote deterministic power curves
 to failure probability, and do not change public snapshot v1.
 
+## DeltaGuard G1-A / #85 — exact alpha frontier
+
+G1-A research-only calibration passes independent exact certificates for
+`k=1/2/4` and `alpha=10^-6/k` using unchanged m=4096/J52.
+Five GitHub-hosted workers and fail-closed 900-row paired old/new
+source observations succeeded. At T4096,d=.75T,
+k1 SAFE changes 10/15→14/15; k2/4 11/15→14/15.
+At T32/64,d=.25T, no new useful replies; exact certified
+minimum possible bounds are 59/61/64 for k1/2/4,
+making T32 unanswerable by this method (not universally).
+No change to production or snapshot; do not treat
+fixed public-test-key results as 1e-6 Monte Carlo proof.
+[Evidence](research/DELTAGUARD-G1A-EVIDENCE.md).
+Next G1-B: exact fixed-d Ehrenfest occupancy CDF and
+small-T stochastic-order proof, then independently certified
+decision cutoffs, not more binary64 fitting or untargeted
+m reduction. Key/adaptive threat issue #86 remains open.
+
 ## Post-v0 candidates
 
 Only after evidence:
