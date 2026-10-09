@@ -274,7 +274,8 @@ fn bb_worker(worker:usize) {
                     BBMode::Delta=>(B1_DELTA,B1_DELTA),
                     BBMode::Full=>(B1_FULL,B1_FULL),
                 };
-                let (packets,mut bytes,mut elapsed)=bb_round(&mut peers,kind,seq);
+                let query_started=std::time::Instant::now();
+                let (packets,mut bytes,_wire_ns)=bb_round(&mut peers,kind,seq);
                 let mut odd=0_u32;
                 let mut safe=2_u8;
                 let mut fallback=0_u8;
@@ -284,9 +285,8 @@ fn bb_worker(worker:usize) {
                     safe=u8::from(is_safe);
                     if d<=48 {assert_eq!(safe,1);}
                     if mode==BBMode::Resolved && !is_safe {
-                        let (lists,more,time)=bb_round(&mut peers,B1_FULL,seq);
+                        let (lists,more,_wire_ns)=bb_round(&mut peers,B1_FULL,seq);
                         bytes+=more;
-                        elapsed+=time;
                         for (idx,frame) in lists.iter().enumerate(){
                             let found=b11_as_words(b1_decode(frame,(idx+1) as u8,
                                 B1_FULL,B1_EPOCH,seq as u64).unwrap());
@@ -313,6 +313,7 @@ fn bb_worker(worker:usize) {
                 if mode==BBMode::Guard||mode==BBMode::Resolved {
                     assert!(odd<=d as u32);
                 }
+                let elapsed=query_started.elapsed().as_nanos();
                 println!("B1B1B0_SAMPLE worker={worker} lane={lane} generation={seq} N={n} d={d} mbps={mbps} delay={delay} mode={} bytes={bytes} wall_ns={elapsed} odd={odd} safe={safe} fallback={fallback} exact=1",mode.name());
                 records+=1;
                 total+=1;
