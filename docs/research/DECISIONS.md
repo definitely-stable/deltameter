@@ -1288,3 +1288,27 @@ while key provenance/authentication/snapshot lifecycle remain
 explicit public acceptance conditions.
 
 Evidence: docs/research/STRICT-COMPACT-OPT-C3C-EVIDENCE.md.
+
+### D52 — DeltaGuard G0 actual k-level state and small-T utility boundary
+
+Issue #84 / PR #87, measured source c9036ac68ab13656115a57c970049a696009ab7a,
+hosted run 37876830842: 5/5 workers, exact source-attested 1,200
+deterministic two-owner parity observations and checksum-pinned unchanged Q32
+m4096/alpha=1e-6/64 passed all algebraic/selected-state invariants.
+Actual per-owner bitmap payload k=1/2/4/8 is 512/1024/2048/4096B
+plus separately costed owner, key and allocator. SAFE iff U_selected<=T,
+with ideal-oracle one-sided guarantee inherited (NOT a new theorem).
+Observed useful at d=.75T among 15 deterministic fixed-key ranges:
+T64 0/15 any k; T4096 10/15 any k;
+T65536 10/15 (k1), 14/15 (k2), 15/15 (k4/8);
+T1048576 11/15 (k1), 14/15 (k2/4/8).
+Zero false-safe in empirical samples does NOT demonstrate probability 1e-6
+nor security for public deterministic test key or adaptive input.
+
+Decision **G0_FOUNDATION_PASS_EMPIRICAL_POWER_CANDIDATE**, only for
+existing fixed-m4096/known-Q32 research model.
+**NO GUARD PRODUCT FREEZE**: small T shows poor utility; further
+m/alpha/level optimization needs fresh exact finite-sample
+certificates (issue #85), key adaptive-query model issue #86, and
+system-cost comparator. Evidence:
+docs/research/DELTAGUARD-G0-EVIDENCE.md.
