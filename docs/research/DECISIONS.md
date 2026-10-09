@@ -1825,3 +1825,82 @@ B1B1B1-B1B with bounded incremental receiver
 durability, source journal checkpoint/recovery
 and whole-system physical cost; #86/#69 remain.
 Evidence: docs/research/DELTAGUARD-B1B1B1-B1A-EVIDENCE.md.
+
+### D64 — B1-B1B1-B1B0 receiver WAL: O(event) writes accept, no service/product GO
+
+Issue #107; research PR #108; frozen before measurements at
+`docs/research/DELTAGUARD-B1B1B1-B1B0-PROTOCOL.md` commit
+`48aafbbf15574430dfb6b36e16c90e3383fae4ba`.
+[GitHub-hosted CI #37985064187](https://github.com/definitely-stable/deltameter/actions/runs/37985064187)
+on code SHA `e3b92c9e606d219d465aa6199aa513ce698fc644`:
+5/5 separate GitHub-hosted workers, **3000/3000
+source-attested dual-owner TCP generation records**,
+unchanged regenerated B2A 24-profile exact cutoff,
+30 real receiver SIGKILL after ACK1/before ACK2,
+fresh OS receiver reopening and physically replaying
+both owners without double-apply, independent
+fail-closed correctness and byte/count aggregation
+**ALL PASS**. Strict negative checkpoint/commit/
+rollback/torn-uncommitted-tail/source-WAL/ABA replay
+tests pass for every session.
+
+Instead of D63 O(N) complete two-source receiver
+rewrite per update, this research implementation
+durably appends a fixed **256B two-owner transaction**
+plus atomically fsync-publishes a **48B commit
+marker** before ANY source ACK. At generations
+51 and 101 it atomically publishes a complete
+two-owner receipt checkpoint, then atomically
+rolls the WAL to empty. A just-published checkpoint
+is verified even while the old WAL prefix still
+exists; accepted event bytes and both hash heads
+survive checkpoint. Maximum active receiver WAL
+length in this preregistered 100-generation
+workload: **12,544B**.
+
+Frozen 100-generation, 50 inserts+50 deletes per
+source ABA fixture, 15 runs per N:
+- N256: receiver logical bytes per fixture
+  **454,400B D63 old → 39,520B new** (~11.5x less).
+- N65536: **104,902,400B old → 2,128,480B new**
+  (~49.3x less); 15 runs **1,573,536,000B →
+  31,927,200B**.
+- Normal generation: 304B receiver logical
+  writes and 3 actual sync invocations; at 50-gen
+  checkpoint: 7 actual sync invocations plus
+  snapshot; current on-disk WAL cleared.
+- Physically transmitted two-owner query remains
+  **356B**, ACK1 crash **340B** then actual
+  identical replay **356B**. No unilateral
+  owner ACK before whole receipt transaction
+  is durably committed.
+
+**Decision: B1B1B1_B1B0_INCREMENTAL_RECEIVER_RESEARCH_ACCEPT**:
+D63 `STOP_FULL_RECEIVER_RECEIPT_PER_EVENT_AS_PRODUCT_DESIGN`
+is RESOLVED **for this alternative bounded receiver
+WAL**, not a released library or an already-safe
+fully generalized crash-consistent protocol.
+The source ingests/checkpoints and sender/receiver
+disk read/replay cost, physical device IO, true p95,
+CPU/RSS, source authority, long WAL rollover,
+power cut and power-loss across fsync,
+multi-key/multi-epoch or malicious peer security
+were NOT demonstrated. In particular receiver
+loader reconstructs exact vectors from checkpoint
+and replay every query: **small writes are not
+proof of cheap latency/reads**.
+
+Crucially an equally durable maintained-exact
+receiver could use the same storage algorithm:
+this is a SHARED persistence improvement, not
+a new DeltaGuard mathematical advantage. Thus
+**NO SYSTEM_PRODUCT_GO** and all prior product
+NO-GO gates D60 warm N256 and near-T resolved
+STOP remain. Continue #107 with actual fair
+durable exact-vs-guard system comparison, more
+crash checkpoints/fault injection and device/
+CPU/memory/latency measurements. Parent #105/
+#103/#101/#99/#97/#92 and separate #86/#69
+security/public boundaries remain open.
+Canonical evidence:
+docs/research/DELTAGUARD-B1B1B1-B1B0-EVIDENCE.md.
