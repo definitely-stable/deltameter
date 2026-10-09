@@ -287,15 +287,24 @@ fn b1_frame_lab(worker: usize) {
         assert_eq!(measured_bytes, 640);
         let one = b1_decode(&p1, 1, B1_GUARD, B1_EPOCH, 1).unwrap();
         let two = b1_decode(&p2, 2, B1_GUARD, B1_EPOCH, 1).unwrap();
-        let odd: u32 = one
+        let merged: Vec<u64> = one
             .as_chunks::<8>().0.iter()
             .zip(two.as_chunks::<8>().0.iter())
-            .map(|(l, r)| {
-                (u64::from_le_bytes(*l)
-                    ^ u64::from_le_bytes(*r))
-                .count_ones()
-            })
-            .sum();
+            .map(|(l, r)| u64::from_le_bytes(*l) ^ u64::from_le_bytes(*r))
+            .collect();
+
+        // Independently rehash the true symmetric difference, not candidate state.
+        let mut exact_oracle = vec![0_u64; 32];
+        for token in b0_diff(&a, &b) {
+            let hash = blake3::keyed_hash(&ga.key, &token.to_le_bytes());
+            let slot = (u64::from_le_bytes(hash.as_bytes()[..8].try_into().unwrap()) & 2047)
+                as usize;
+            if slot < 2047 {
+                exact_oracle[slot / 64] ^= 1_u64 << (slot % 64);
+            }
+        }
+        assert_eq!(merged, exact_oracle, "TCP owner XOR differs from direct hash-bit oracle");
+        let odd: u32 = merged.iter().map(|word| word.count_ones()).sum();
         let safe = odd <= 48;
         if d <= 48 {
             assert!(safe, "S <= d gives deterministic SAFE");
