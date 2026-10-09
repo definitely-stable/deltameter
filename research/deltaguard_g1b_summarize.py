@@ -113,7 +113,7 @@ def main()->None:
     report=run(a.input,a.head,a.cutoffs)
     a.out.parent.mkdir(parents=True,exist_ok=True)
     a.out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-    print("G1B_B1_AGGREGATE_PASS rows=900 result="+report["verdict"])
+    print("G1B_B1_AGGREGATE_PASS rows=1800 result="+report["verdict"])
     for row in report["profiles_power"]:
         if row["T"] in (32,64) and row["d_ratio_num"] in (2,6):
             print(f"G1B_POWER T={row['T']} d_over_t={row['d_ratio_num']}/8 "
