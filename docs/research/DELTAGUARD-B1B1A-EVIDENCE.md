@@ -79,7 +79,7 @@ feedback-induced delay.
 ## Latency evidence and critical comparability caveat
 
 The raw logs record wall-clock times (ns), child source-build/
-incremental-update elapsed wall-clock diagnostics, owner RSS and parent RSS,
+incremental-update elapsed wall-clock diagnostics, owner **pre-transfer** RSS and parent RSS,
 with per-worker *3-sample nearest-rank p95 = MAXIMUM*.
 This is numerically correct but statistically weak.
 
