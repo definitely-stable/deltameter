@@ -1438,3 +1438,51 @@ Decision:
 
 Canonical evidence:
 `docs/research/DELTAGUARD-G1B2A-EVIDENCE.md`.
+
+### D56 — G1-B2-B0 retained-source guard-only byte model passes, resolved near-T stops
+
+PR #93, issue #92. Protocol was frozen BEFORE first B0 runs,
+`docs/research/DELTAGUARD-G1B2B0-PROTOCOL.md`.
+A real Rust physical retained-state comparison uses two independently
+maintained and actually sorted canonical u64 source lists for
+N={256,4096,65536}, d={0,16,48,57,64,65},
+sessions={1,10,100}, three fixture repetitions, B2A b11/b12,
+G1B unit j1 and full J52 baseline. Every sample independently
+rechecks exact `|A△B|` and XOR parity after source-maintained
+incremental updates.
+
+Five GitHub-hosted worker matrices and strict source-/certificate-
+pinned aggregation passed **3,240/3,240** physical raw records;
+first completed CI run 37896624499 source
+`a7fa51c3f2e9da2da9f7b32ccb019e40d26cd839`.
+Regenerated B2A proof certificate is byte-identical
+(SHA256 `c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59a6f5f36a0d95f51d9e935`).
+Rust initial/update/XOR/query native wall-clock timings are recorded;
+network application bytes and modeled RTT/bandwidth **are NOT TCP**.
+
+At predeclared T64,d48, b11 c48 means the independently maintained
+two-owner 256B-per-owner guard ALWAYS SAFE since S<=d<=c.
+With 64B/model peer headers: modeled single-round **640B**
+versus 4,368B direct canonical source transfer at N256, and
+1,048,848B at N65536, session10; 15/15 per N fixture
+observations. G1B unit j1 returns 0/15 SAFE at the named N256,
+d48 lane and needs a full exact fallback for resolved decisions.
+
+At d57 the b11 and b12 guards return UNKNOWN in the named
+fixtures. Forced resolution adds 24B request, a second RTT and the
+full direct exact lists: b11 N256 costs 5,040B vs direct 4,376B;
+N65536 1,049,520B vs direct 1,048,856B.
+Thus **STOP_RESOLVED_NEAR_T**, and ZERO claim that UNKNOWN proves
+d>T, or that a one-sender 24B scalar is available to isolated
+two-source XOR receiver. J52 is a physical size/update baseline
+only here, not an unverified Q32 classifier.
+
+Decision: **B2B0_PHYSICAL_SOURCE_PASS_GUARD_SCOPED_MODEL_CANDIDATE**.
+Preserve the useful true two-owner precommitted threshold niche,
+but **NO SYSTEM_PRODUCT_GO / PUBLIC API / SNAPSHOT change**.
+B2-B1 must physically implement/run sender-first independent
+two-peer localhost TCP and measure p95 RTT/bandwidth plus
+corruption/session identity; explicit #86 keyed/adaptive and
+#69 persistence/key lifecycle gates remain open.
+No originality claim for classic bitmap XOR/Markov chain.
+Canonical: `docs/research/DELTAGUARD-G1B2B0-EVIDENCE.md`.
