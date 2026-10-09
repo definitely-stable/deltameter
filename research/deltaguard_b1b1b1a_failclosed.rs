@@ -35,8 +35,8 @@ fn bc_full_child(args: &[String]) {
     let worker: usize = args[1].parse().unwrap();
     let lane: usize = args[2].parse().unwrap();
     let rep: usize = args[3].parse().unwrap();
-    let seq: usize = args[4].parse().unwrap();
-    let owner: u8 = args[5].parse().unwrap();
+    let owner: u8 = args[4].parse().unwrap();
+    let seq: usize = args[5].parse().unwrap();
     assert!((1..=5).contains(&worker) && lane < 2 && rep < 3 && [1, 2].contains(&seq));
     let (_, mbps, _) = BC_LANES[lane];
     let source = bc_source(worker, lane, rep, owner, seq);
