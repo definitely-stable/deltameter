@@ -61,7 +61,7 @@ this as a lower bound on all sketches.
 
 Five hosted workers × 3 T × 5 d/T values {0,.25,.75,1,1.125}
 × 3 deterministic public-key token ranges × 4 levels × 2 profiles
-= **900 physical two-owner observation rows**.
+= **1,800 physical two-owner observation rows**.
 Each source independently creates and updates a real 512B bitmap, XOR
 reconstructs, checks level count/cutoff, source/head binding and profile
 rejection; original profile's selected 512B state must equal the original
@@ -83,7 +83,7 @@ as derived display, never as the proof gate.
 - EXACT_CHAIN_CERT_PASS: normalization, monotonically ordered kernel
   with independent finite-bitmask oracle, exact T+1 cutoffs and valid
   table-source digest. If no safe cutoff, explicitly report -1.
-- G1B_B1_XOR_PASS: all 900 source-pinned rows and original projection,
+- G1B_B1_XOR_PASS: all 1,800 source-pinned rows and original projection,
   unit profile protection, no hidden full state in candidate;
   finished five-worker aggregate.
 - Empirical utility candidate when *any predeclared unit-level j* at
@@ -109,3 +109,13 @@ https://people.math.umass.edu/~lr7q/ps_files/teaching/math697/StochMC.pdf .
 The monotone-kernel inequality and the exact DP are elementary known
 Markov-chain techniques. G1-B's question is whether their strict
 finite-sample **engineering profile** earns useful threshold power.
+
+## Non-outcome protocol erratum
+
+The preregistered Cartesian product was transcribed as 900 rows, but
+`5 workers × 3 thresholds × 5 ratios × 3 seeds × 4 levels × 2 profiles
+= 1,800`. **All factors were explicitly frozen before execution.**
+No factors, endpoints, cutoffs, or acceptance thresholds changed;
+only the arithmetic total and fail-closed aggregator expected row
+count were corrected after the first successful five-worker execution.
+This erratum is not a re-registration of a smaller/selected matrix.
