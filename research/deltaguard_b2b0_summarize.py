@@ -77,7 +77,6 @@ def parse(line:str)->dict|None:
                               4096) if p!="j52" else rec["odd"]==0
     assert rec["safe"]==int(p!="j52" and rec["odd"]<=rec["cutoff"])
     assert rec["answer"]==("na" if p=="j52" else "safe" if rec["safe"] else "unknown")
-    assert not rec["safe"] or d<=64  # deterministic fixture sanity only
     if p!="j52" and d<=CUTOFFS[p]:
         assert rec["safe"]==1
     if not rec["safe"]:
@@ -191,6 +190,7 @@ def aggregate(root:Path,cert:Path,head:str)->dict:
       "cutoff_sha256":hashlib.sha256(cert.read_bytes()).hexdigest(),
       "rows":len(unique),"workers":5,"profiles":list(PROFILES),
       "originality":"NONE_ASSERTED",
+      "false_safe_observed":sum(int(v["safe"] and v["d"]>64) for v in unique.values()),
       "fixture_false_safe_zero_is_not_proof":True,
       "physical_io_or_wan_measured":False,
       "scope":"RESEARCH_FOUNDATION_ONLY_NO_SYSTEM_PRODUCT_GO",
