@@ -1383,3 +1383,58 @@ Do not infer real-world network/CPU/RSS performance or repeated
 adaptive query security. Next evaluate separately certified joint
 levels or direct exact comparator; issue #86 key/adaptive threat.
 Evidence docs/research/DELTAGUARD-G1B-EVIDENCE.md.
+
+### D55 — G1-B2-A near-full single-level GF(2) guard is a strong scoped research candidate
+
+Parent DeltaGuard #89, PR #91; preregistered
+`docs/research/DELTAGUARD-G1B2A-PROTOCOL.md` before running experiments.
+New profile uses m=2^b-1 physical parity rows and D=2^b
+equiprobable keyed BLAKE3 slots, exactly one no-toggle dummy
+slot. This profile is **key-domain-separated** and incompatible with
+J52/G0 and G1B original/unit XOR states. It is NOT a new theorem:
+lazy Ehrenfest chain and Odd Sketch XOR construction are prior art.
+
+Independent arbitrary-precision integer certificate for each
+T in {32,64,128}, b in {6..13}:
+`n_(d+1)[s]=(D-m)n_d[s]+(m-s+1)n_d[s-1]+(s+1)n_d[s+1]`.
+Since `(m+1)/D=1`, the chain is stochastically monotone
+from zero, so `P_d(S<=c)` for any d>T is bounded by the
+exact integer law at d=T+1. Cutoffs are accepted by
+`1,000,000*sum_{s<=c}n_(T+1)[s]<=D^(T+1)`.
+Twenty-four full profiles and 39 independent exact full-bitmask
+oracle cases passed the hosted proof check. This is a
+**single predeclared T,b,nonadaptive ideal-oracle** one-sided
+1e-6 guarantee, NOT unconditional keyed-PRF/adaptive security.
+
+Source `68b2e2c3d894f3716c79f41919d840449b3a774b`,
+[run 37889355518](https://github.com/definitely-stable/deltameter/actions/runs/37889355518):
+five GitHub-hosted two-owner physical XOR workers and fail-closed
+aggregate passed **3,240** uniquely keyed deterministic source
+records. Each owner holds a genuine single-level Box bitmap;
+direct-keyed per-token bitmap reference and cross-b/T/key errors
+passed. Physical payload 8..1024B, Rust owner object 64B
+including derived-key 32B, plus allocator overhead.
+
+Crucial **T64,d48,b11**: bitmap 256B/owner,
+cutoff S<=48. Since S<=d pointwise, SAFE is **guaranteed**
+for all inputs with true d<=48, and false SAFE remains
+ideal-probability <=1e-6 for all d>64.
+Named fixture 15/15 SAFE; T32,d24,b12 512B/owner
+cutoff=24 also 15/15. Near boundary T64,d57,
+both b11 and b12 samples returned 0/15 SAFE,
+so **no near-threshold/high-precision product claim**.
+
+Decision:
+- **B2A_EXACT_CERT_PASS / B2A_PHYSICAL_3240_PASS_UTILITY_CANDIDATE**;
+- rank B2A single-level above a complex correlated joint-level
+  G1-B2 proof until a realistic two-owner cost/power comparison;
+- **NO G1-B2-A PUBLIC API OR SNAPSHOT GO**; B2A remains
+  a specialized optional research candidate;
+- next preregister end-to-end source-maintenance, CPU, heap,
+  network and RTT vs direct exact, trusted scalar,
+  G1B1 and J52, including repeated sessions/fallback;
+- #86 computational PRF/attacker/key model and #69 public
+  product/key/snapshot lifecycle remain independent blockers.
+
+Canonical evidence:
+`docs/research/DELTAGUARD-G1B2A-EVIDENCE.md`.

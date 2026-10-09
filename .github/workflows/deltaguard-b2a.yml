@@ -1,0 +1,113 @@
+name: DeltaGuard B2A near-full exact chain
+
+on:
+  pull_request:
+    paths:
+      - "research/deltaguard_b2a_certify.py"
+      - "research/deltaguard_b2a.rs"
+      - "research/deltaguard_b2a_summarize.py"
+      - "examples/deltaguard_b2a_lab.rs"
+      - "docs/research/DELTAGUARD-G1B2A-PROTOCOL.md"
+      - "docs/research/DELTAGUARD-G1B2A-EVIDENCE.md"
+      - ".github/workflows/deltaguard-b2a.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Exact integer chain; independent tiny full-mask oracle; negative periodicity witness
+        run: |
+          python -m py_compile research/deltaguard_b2a_certify.py research/deltaguard_b2a_summarize.py
+          mkdir -p b2a-cert
+          python research/deltaguard_b2a_certify.py --out-dir b2a-cert | tee b2a-cert/proof-log.txt
+          grep -q '^B2A_EXACT_CERT_PASS profiles=24 tiny_oracles=39 ' b2a-cert/proof-log.txt
+          (cd b2a-cert && sha256sum cutoffs.tsv > cutoffs.sha256)
+          git rev-parse HEAD > b2a-cert/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b2a-exact-${{ github.run_id }}-${{ github.run_attempt }}
+          path: b2a-cert/
+          if-no-files-found: error
+
+  worker:
+    needs: exact-certificate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b2a-exact-*
+          path: b2a-cert
+          merge-multiple: true
+      - name: Verify certificate against source and style/lint
+        run: |
+          test "$(cat b2a-cert/head.txt)" = "$(git rev-parse HEAD)"
+          (cd b2a-cert && sha256sum --check cutoffs.sha256)
+          mkdir -p b2a-worker
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+      - name: Independent two-owner live XOR and mismatched-profile vectors
+        run: |
+          cargo run --release --example deltaguard_b2a_lab -- b2a-cert/cutoffs.tsv ${{ matrix.worker }} | tee b2a-worker/worker-${{ matrix.worker }}.txt
+          grep -q "^DELTAGUARD_B2A_WORKER_PASS worker=${{ matrix.worker }}$" b2a-worker/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > b2a-worker/head-${{ matrix.worker }}.txt
+          rustc -Vv > b2a-worker/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b2a-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: b2a-worker/
+          if-no-files-found: warn
+
+  aggregate:
+    needs: [exact-certificate, worker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b2a-worker-*
+          path: b2a-input
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b2a-exact-*
+          path: b2a-cert
+          merge-multiple: true
+      - name: Exact source SHA, cutoffs digest, 3240 unique records and all utility gates
+        run: |
+          mkdir -p b2a-results
+          test "$(cat b2a-cert/head.txt)" = "$(git rev-parse HEAD)"
+          (cd b2a-cert && sha256sum --check cutoffs.sha256)
+          python research/deltaguard_b2a_summarize.py --input b2a-input --cutoffs b2a-cert/cutoffs.tsv --head "$(git rev-parse HEAD)" --out b2a-results/summary.json | tee b2a-results/log.txt
+          grep -q '^B2A_AGGREGATE_PASS rows=3240 verdict=B2A_PHYSICAL_3240_PASS_UTILITY_CANDIDATE$' b2a-results/log.txt
+          git rev-parse HEAD > b2a-results/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b2a-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: b2a-results/
+          if-no-files-found: error
