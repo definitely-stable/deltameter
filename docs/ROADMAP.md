@@ -323,6 +323,30 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard G1-B1 exact fixed-d GF(2) thresholds
+
+#89 G1-B1 research-only mathematical foundation **ACCEPT**:
+24 exact integer-cutoff profiles (m4096, T32/64/256, j1..4,
+original g random vs new domain-separated g(v)=1), 162
+independent full bitmask-state oracle comparisons, and 1,800
+five-hosted-worker two-owner physical parity observations.
+Single-level exact fixed-d lazy Ehrenfest monotonic law avoids the
+conservative de-Poissonization/KL inversion for *precommitted T,j*.
+Unit g=1 j1 at T32,d8 has exact ideal-oracle SAFE power
+0.364215 and at T64,d16 0.997956; near d=.75T
+unit power just 0.000145/0.001189 respectively.
+Experimental named 15-seed cells gave 7/15 and 15/15.
+Original and unit keys/profiles are incompatible by construction;
+no old Q32/canonical wire transfers apply to unit.
+
+Evidence:
+[DELTAGUARD-G1B](research/DELTAGUARD-G1B-EVIDENCE.md).
+NO PRODUCT API GO. Next #89 G1-B2 honest joint-level/delta
+budget proof OR STOP_NEAR_T; #86 repeated/adaptive key threat;
+then fully-accounted two-owner maintained-state performance.
+Do not call this a novel theorem, a PRF security proof, or
+a near-T 95%-power strict guarantee.
+
 ## Post-v0 candidates
 
 Only after evidence:
