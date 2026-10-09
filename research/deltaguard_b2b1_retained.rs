@@ -45,14 +45,32 @@ fn b1b_remove(token: u64) -> [u8; 9] {
 
 fn b1b_apply(target: &mut Vec<u64>, event: &[u8]) -> Result<(), &'static str> {
     b1_canonical_delta(event)?;
+    // Phase 1: validate ALL operations before any mutation.
+    // Canonical batches contain each token at most once, so membership against
+    // the original target remains sufficient for the entire transaction.
     for record in event.as_chunks::<9>().0 {
         let token = u64::from_le_bytes(record[1..].try_into().unwrap());
         match (record[0], target.binary_search(&token)) {
-            (1, Err(pos)) => target.insert(pos, token),
-            (2, Ok(pos)) => { target.remove(pos); },
+            (1, Err(_)) | (2, Ok(_)) => (),
             (1, Ok(_)) => return Err("repeated-insert"),
             (2, Err(_)) => return Err("delete-missing"),
             _ => return Err("delta-op"),
+        }
+    }
+    // Phase 2 cannot fail after complete prevalidation, even for batched
+    // ordered inserts/deletes. No partially committed malformed frame.
+    for record in event.as_chunks::<9>().0 {
+        let token = u64::from_le_bytes(record[1..].try_into().unwrap());
+        match record[0] {
+            1 => {
+                let pos = target.binary_search(&token).unwrap_err();
+                target.insert(pos, token);
+            }
+            2 => {
+                let pos = target.binary_search(&token).unwrap();
+                target.remove(pos);
+            }
+            _ => unreachable!("prevalidated operation"),
         }
     }
     Ok(())
@@ -162,6 +180,12 @@ fn b1b_negative_tests() {
     assert_eq!(b1b_apply(&mut source, &b1b_remove(9)),Err("delete-missing"));
     assert!(b1b_apply(&mut source, &b1b_remove(3)).is_ok());
     assert_eq!(source,vec![1,5,7]);
+    let before = source.clone();
+    let mut invalid_batch = Vec::new();
+    invalid_batch.extend_from_slice(&b1b_insert(8));
+    invalid_batch.extend_from_slice(&b1b_remove(9));
+    assert_eq!(b1b_apply(&mut source, &invalid_batch), Err("delete-missing"));
+    assert_eq!(source, before, "partial malformed batch mutated source");
     // Difference preservation and cancellation under legitimate asymmetric churn.
     let mut a=vec![1,3,5];
     let mut b=vec![1,5,7];
