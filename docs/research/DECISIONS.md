@@ -1312,3 +1312,36 @@ m/alpha/level optimization needs fresh exact finite-sample
 certificates (issue #85), key adaptive-query model issue #86, and
 system-cost comparator. Evidence:
 docs/research/DELTAGUARD-G0-EVIDENCE.md.
+
+### D53 — G1-A certified per-k alpha, but no general small-T product
+
+Issue #85, DeltaGuard #84, research PR #88.
+Frozen 1/2/4 selected-level prior allocation
+`alpha_j=1/(1,000,000*k)` at unchanged m4096 and G0
+physical two-owner XOR parity state.
+Three regenerated Q32 lookup tables have independent
+exact-rational/Taylor and integer-likelihood certificates
+under original fixed-input ideal-oracle theorem. Control
+delta/64 Q32 hash unchanged. 900 paired raw source-attested
+observations from five GitHub-hosted workers, run
+37877960458, plus certified table artifact.
+At T4096,d=.75T, k1 SAFE improves 10/15 → 14/15;
+k2/k4 11/15 → 14/15. T32 and T64 at d=.25T
+remain 0/15 across k1/2/4; T256,d=.75T remains 0/15.
+Exact monotone-table minimum endpoint is 59/61/64 for
+k1/2/4, making T32 SAFE **impossible in THIS method**
+under any state. This does not prove information-theoretic
+impossibility of a different decision algorithm.
+
+Verdict **G1A_CERT_PASS /
+G1A_ALGEBRA_PASS_EMPIRICAL_UTILITY_CANDIDATE**;
+**NO G1A SMALL-T PRODUCT / PUBLIC API FREEZE**.
+A selected k/T must be fixed before observing input.
+The preallocated delta/k guarantee is not an arbitrary
+adaptive-T or repeated-profile union guarantee; keyed BLAKE3
+assumption computational, independent of certified ideal tail.
+No new theorem novelty claim. Next: G1-B exact fixed-d
+lazy Ehrenfest/odd-occupancy CDF inversion and independent
+finite T+1 safety, with conditional product power gate;
+issue #86 security boundary. Evidence:
+docs/research/DELTAGUARD-G1A-EVIDENCE.md.
