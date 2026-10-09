@@ -85,15 +85,15 @@ fn bf_load_marker(root: &Path) -> Result<(usize, [u8; 32]), &'static str> {
 fn bf_encode_checkpoint(state: &BFState) -> Vec<u8> {
     let receipt = &state.receipt;
     assert_eq!(receipt.seq[0], receipt.seq[1]);
-    let gen = receipt.seq[0];
-    let a = b1_encode(1, B1_FULL, B1_EPOCH, gen as u64,
+    let generation = receipt.seq[0];
+    let a = b1_encode(1, B1_FULL, B1_EPOCH, generation as u64,
         &b1_full_bytes(&receipt.lists[0]));
-    let b = b1_encode(2, B1_FULL, B1_EPOCH, gen as u64,
+    let b = b1_encode(2, B1_FULL, B1_EPOCH, generation as u64,
         &b1_full_bytes(&receipt.lists[1]));
     let mut v = Vec::with_capacity(336 + a.len() + b.len());
     v.extend_from_slice(BF_CP_MAGIC);
     v.extend_from_slice(&B1_EPOCH.to_le_bytes());
-    v.extend_from_slice(&(gen as u64).to_le_bytes());
+    v.extend_from_slice(&(generation as u64).to_le_bytes());
     v.extend_from_slice(&state.tx_head);
     for h in &receipt.heads { v.extend_from_slice(h); }
     for e in &receipt.last { v.extend_from_slice(e); }
@@ -116,7 +116,7 @@ fn bf_read_checkpoint(root: &Path) -> Result<BFState, &'static str> {
     if !(1..=BE_GENS + 1).contains(&seq) { return Err("checkpoint-generation"); }
     let tx_head = v[24..56].try_into().unwrap();
     let heads = [v[56..88].try_into().unwrap(), v[88..120].try_into().unwrap()];
-    let last = [v[120..208].try_into().unwrap(), v[208..296].try_into().unwrap()];
+    let last: [[u8; BE_REC]; 2] = [v[120..208].try_into().unwrap(), v[208..296].try_into().unwrap()];
     let n1 = u32::from_le_bytes(v[296..300].try_into().unwrap()) as usize;
     let n2 = u32::from_le_bytes(v[300..304].try_into().unwrap()) as usize;
     if n1 > B1_HEADER + B1_MAX_PAYLOAD ||
