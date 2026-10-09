@@ -323,6 +323,47 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard B1-B1B1-A — fail-closed real TCP faults and physical full reset
+
+Issue #101, PR #102, D61: **390/390** exact
+source-bound failure probes across 5 hosted runners.
+13 physical fault classes for both N256 and N65536,
+including real SIGKILL midbody, ACK lost with
+same-generation identical retransmission ACKed
+without double-application, checksum/key/owner/
+generation rejection, truncation, oversize,
+noncanonical and exact-membership conflicts.
+Fresh two-owner OS sender processes physically
+transmit generation2 complete source inventories
+after each failed session, verified against
+an independent exact oracle before both receiver
+lists are atomically replaced. No silently free
+receiver/source state.
+
+Measured post-fault FULL recovery costs:
+**4,354B (N256,d48)** and **1,048,834B
+(N65536,d48)** per fault at generation2,
+including 2 owner frames, requests, ACK
+and full post-transfer child RSS + CPU ticks
+telemetry; failure traffic extra. This
+demonstrates how a missing durable replay
+journal can erase savings of cheap exact
+deltas or sparse guard checks.
+
+**RESEARCH ONLY / NO SYSTEM_PRODUCT_GO**.
+Resumed source states are regenerated from
+public deterministic fixtures, **not**
+crash-durable source event files/ACK records.
+Next B1-B1B1-B: actual fsync journals,
+restart/reconnect/ACK loss across crashes,
+source provenance and complete CPU/RSS,
+fault-frequency and cold N65536 viable-niche
+comparisons. D60 warm N256 exact dominance,
+near-T resolved STOP, #86 security and #69
+public release gates unchanged.
+Evidence:
+[DELTAGUARD-B1B1B1A-EVIDENCE.md](research/DELTAGUARD-B1B1B1A-EVIDENCE.md).
+
 ## DeltaGuard B1-B1B0 — persistent same-lifecycle hot/hot receiver comparison
 
 Parent #99/#97/#92, PR #100, decision D60:
