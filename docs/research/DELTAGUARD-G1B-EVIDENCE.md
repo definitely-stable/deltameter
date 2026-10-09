@@ -92,7 +92,7 @@ They are NOT confidence intervals nor finite test frequencies.
 | 32 | 24 | 0 | 0.000145 |
 | 64 | 16 | 0.063661 | 0.997956 |
 | 64 | 48 | 0.000017 | 0.001189 |
-| 256 | 64 | 0.999995 | 1.000000 (truncated ppm) |
+| 256 | 64 | 0.999995 | 1.000000 (exact for d<=cutoff) |
 | 256 | 192 | 0.004663 | 0.145960 |
 
 The useful range depends strongly on slack (T-d).
@@ -116,7 +116,7 @@ A 26KiB J52 sketch exists only in the *test oracle*.
 
 Frozen raw comparison: 5 GitHub-hosted workers × 3 thresholds ×
 5 ratios × 3 seeds × 4 levels × 2 profiles =
-**1,800 independent scenario rows** (deterministic seed windows
+**1,800 complete scenario rows** (deterministic seed windows
 with one PUBLIC fixture key, not 1,800 independent PRF draws).
 Exact source and TSV SHA match required; duplicate, absent,
 incorrect cutoff/row, conflicting profile rejected in aggregator.
@@ -135,7 +135,7 @@ m=2/3/5, j=1/2/3, original/unit, d=0..8
 (3*3*2*9=**162** complete non-approximated comparisons).
 The proof script checks state normalization at each time,
 exact sampled stochastic-order CDF comparisons, invalid inputs,
-and deliberately skewed cutoffs. Compilation/format/Clippy
+and deliberately malformed probability inputs. Compilation/format/Clippy
 are separate Rust CI gates.
 
 ## Artifact reproducibility and erratum
