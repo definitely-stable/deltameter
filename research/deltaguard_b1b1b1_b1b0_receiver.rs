@@ -451,7 +451,8 @@ fn bf_worker(worker: usize) {
                 assert_eq!(cost.sync_calls, if ckpt > 0 {7} else {3});
                 println!("B1B1B1B1B0_SAMPLE worker={worker} lane={lane} rep={rep} gen={seq} N={n} mode={} tcp={wire} retry={retry} wal_bytes={} written={} sync={} checkpoint={} crash={} exact=1",
                     if seq.is_multiple_of(2) {"insert"} else {"delete"},
-                    (seq - 1) * BF_TX, cost.data_bytes, cost.sync_calls,
+                    std::fs::metadata(root.join("receiver.wal")).unwrap().len(),
+                    cost.data_bytes, cost.sync_calls,
                     cost.checkpoint_bytes, u8::from(seq == 51));
                 count += 1;
             }
