@@ -101,7 +101,7 @@ fn be_source_load(dir:&Path,owner:u8)->Result<BESource,&'static str>{
     let log=std::fs::read(dir.join("chain.wal")).map_err(|_|"wal-missing")?;
     if log.len()!=(seq-1)*BE_REC {return Err("wal-length");}
     let mut head=genesis;
-    for (i,ev) in log.chunks_exact(BE_REC).enumerate(){
+    for (i,ev) in log.as_chunks::<BE_REC>().0.iter().enumerate(){
         let (op,token,next)=be_check_event(ev,owner,i+2,&head)?;
         be_apply(&mut tokens,op,token)?;
         head=next;
@@ -267,8 +267,8 @@ fn be_sender(args:&[String]){
         Err(e)=>panic!("sender ACK IO: {e}"),
     }
 }
-fn be_read_pair(listener:&std::net::TcpListener)
-    ->([std::net::TcpStream;2],[[u8;BE_REC];2],[Vec<u8>;2],usize)
+type BEWirePair = ([std::net::TcpStream;2],[[u8;BE_REC];2],[Vec<u8>;2],usize);
+fn be_read_pair(listener:&std::net::TcpListener)->BEWirePair
 {
     use std::io::Read;
     let mut sockets:[Option<std::net::TcpStream>;2]=[None,None];
@@ -439,7 +439,7 @@ fn be_oracle(worker:usize,lane:usize,rep:usize,seq:usize,receiver:&BEReceipt){
     let mut expected=[Vec::new(),Vec::new()];
     for owner in 1..=2{
         let (mut initial,seed)=b11_owner_initial(worker,BE_NS[lane],48,rep,owner);
-        if seq%2==0 {initial.push(seed+9_999);}
+        if seq.is_multiple_of(2) {initial.push(seed+9_999);}
         expected[(owner-1) as usize]=initial;
     }
     assert_eq!(receiver.lists,expected);
@@ -490,7 +490,7 @@ fn be_negative(worker:usize,lane:usize,rep:usize,root:&Path){
 fn be_worker(worker:usize){
     assert!((1..=5).contains(&worker));
     let mut cases=0;let mut interruptions=0;
-    for lane in 0..2{
+    for (lane,_) in BE_NS.iter().enumerate(){
         for rep in 0..3{
             let root=std::env::temp_dir().join(format!(
                 "deltameter-b1b1b1a-w{worker}-l{lane}-r{rep}-pid{}",std::process::id()));
@@ -513,7 +513,7 @@ fn be_worker(worker:usize){
                     assert_eq!(src.head,receiver.heads[(owner-1) as usize]);
                 }
                 println!("B1B1B1A_SAMPLE worker={worker} lane={lane} rep={rep} generation={seq} N={} op={} source_wal_bytes={} wire_bytes={bytes} retry_bytes={retry} receiver_crash={} exact=1",
-                    BE_NS[lane],if seq%2==0{"insert"}else{"delete"},
+                    BE_NS[lane],if seq.is_multiple_of(2){"insert"}else{"delete"},
                     2*(seq-1)*BE_REC,u8::from(seq==51));
                 cases+=1;
             }
