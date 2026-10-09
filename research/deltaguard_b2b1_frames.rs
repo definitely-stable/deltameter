@@ -178,9 +178,10 @@ fn b1_actual_pair(
             .set_read_timeout(Some(Duration::from_secs(5)))
             .map_err(|_| "read-timeout")?;
         let mut header = [0_u8; B1_HEADER];
-        socket
-            .read_exact(&mut header)
-            .map_err(|_| "short-header-over-tcp")?;
+        if socket.read_exact(&mut header).is_err() {
+            error = Some("short-header-over-tcp");
+            break;
+        }
         let len = u32::from_le_bytes(header[28..32].try_into().unwrap()) as usize;
         if len > B1_MAX_PAYLOAD {
             error = Some("oversized-over-tcp");
