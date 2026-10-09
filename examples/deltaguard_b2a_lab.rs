@@ -10,9 +10,7 @@ mod b2a {
 }
 fn main() {
     let mut args = std::env::args().skip(1);
-    let cutoff_file = args
-        .next()
-        .expect("independently certified B2A cutoff TSV");
+    let cutoff_file = args.next().expect("independently certified B2A cutoff TSV");
     let worker: usize = args
         .next()
         .expect("hosted worker 1..5")
