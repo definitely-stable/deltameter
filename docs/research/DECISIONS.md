@@ -1599,3 +1599,56 @@ and fail-closed reconnect, more samples, RSS separation and
 accounted full cold bootstrap; #86 and #69 still public blockers.
 No change to canonical snapshot or public Rust API.
 Evidence: docs/research/DELTAGUARD-B1B1A-EVIDENCE.md.
+
+### D60 — B1-B1B0 persistent-source hot/hot: warm exact is stronger on N256, leave cold large-N niche open
+
+Parent #99/#97/#92, PR #100. Precommitted B1-B1B0 research protocol
+`docs/research/DELTAGUARD-B1B1B0-PROTOCOL.md` at commit
+`c2c0386f988ad37015a5a70392b88d984afa78c9`, BEFORE CI
+measurement. Exact source `1353dacac4fa65cd14225f6078bf4d0e4fb3efe0`,
+[run 37913434241](https://github.com/definitely-stable/deltameter/actions/runs/37913434241):
+5 GitHub-hosted workers, exact regenerated cutoff hash, 1000/1000
+physically TCP-transferred source-bound hot/hot records, source A/B
+persistent across 20 different generations each, all workers and
+independent fail-closed aggregator PASS. Fifteen true physical
+tampered-checksum→NACK→same-generation replay cases leave exact
+receiver state unchanged before correct retransmission, then
+reconcile exactly. Per-owner VmHWM is sampled at termination after
+frame transfers, correcting D59's earlier pre-response RSS scope.
+
+Frozen same-lifecycle source processes make query delay comparison
+substantially fairer: source initialization and physical receiver
+exact bootstrap are completed BEFORE a common query timer for
+`guard`, `retained_delta`, and `direct_full` at SAME source
+generation. The source-advance 96B per generation is shared
+control overhead, charged outside each query. Every query counts
+two real requests, frames and two ACKs, and full exact receiver
+source/membership correctness is verified.
+
+- N256,d48,20 consecutive queries, per-owner pacing 10Mbps,
+  injected response delay 0ms: B2A guard 14720B vs
+  warm retained exact **4840B** (plus physical earlier cold
+  bootstrap 4322B) vs direct full 89760B. All five workers'
+  n20 empirical p95: guard 0.42–0.51ms vs exact 0.20–0.28ms.
+  Warm exact wins query bytes AND observed tail on these fixtures;
+  even source bootstrap+20 exact queries costs 9162B<14720B.
+- N256,d57 injected delay 10ms: guard 14720B vs
+  maintained exact 4840B, resolved guard 104640B vs
+  direct full 89920B. `STOP_RESOLVED_NEAR_T` remains.
+- N65536,d48 injected delay 10ms and 100Mbps: guard
+  14720B warm query vs exact 4840B query, but exact
+  cold sync **1,048,802B** makes cold+20 exact ≈1.054MB:
+  therefore cold large-N sparse-guard niche is still viable
+  for further system evaluation.
+
+Decision:
+**B1B1B0_PERSISTENT_HOT_HOT_CORRECTNESS_ACCEPT** as physical system
+foundation; scoped **WARM_N256_20_QUERY_GENERAL_B2A_NO_GO**.
+**NO SYSTEM_PRODUCT_GO**, no new hash function, no larger claim than
+fixed-source nonadaptive exact oracle, no Snapshot v1/public change.
+Nearest-rank p95 n20 is not a WAN tail distribution guarantee;
+this is per-sender app pacing, response sleep and localhost,
+not independent WAN hosts. B1-B1B1 still needs durable replay
+across crashes/reconnect, actual CPU-clock/RSS accounting, wide
+preregistered scenario coverage and #86/#69 security/lifecycle gates.
+Canonical: docs/research/DELTAGUARD-B1B1B0-EVIDENCE.md.
