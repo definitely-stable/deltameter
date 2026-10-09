@@ -323,6 +323,54 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard B1-B1B1-B1B0 — bounded atomic receiver WAL/checkpoint
+
+Issue #107, research PR #108, D64; frozen-before-run protocol
+`docs/research/DELTAGUARD-B1B1B1-B1B0-PROTOCOL.md`.
+Five hosted workers, **3,000/3,000** physically
+source-bound two-owner ABA generations (100 per
+fixture, N256/N65536, d48, 50 INSERT and
+50 DELETE per owner). Thirty real receiver
+process SIGKILL after ACK1 but before ACK2;
+a fresh receiver child physically reloads
+the fsync'd two-owner checkpoint+WAL and
+acknowledges identical repeated events
+WITHOUT reapplication. Independent exact
+source oracle and failure/rollback/torn
+journal tests are all PASS.
+
+The receiver now commits one fixed **256B
+two-owner WAL transaction** and a **48B
+atomic commit marker** BEFORE either source
+ACK, with full fsync checkpoint every
+50 generations, bounded active WAL max
+**12,544B**. Replaces D63's O(N) full
+two-source rewrite per event. N65536
+receiver logical write bytes per 100-generation
+run: **104,902,400B old → 2,128,480B**
+(~49.3x reduction), but these are *file
+payload bytes*, NOT physical disk blocks.
+Normal generation invokes 3 sync calls;
+checkpoint generations 7. Cold initial
+receiver snapshot and source WAL/ACK sync
+costs remain separately payable.
+
+**Research correctness ACCEPT, NO SYSTEM_PRODUCT_GO.**
+This receiver improvement can be shared by
+equally durable exact. Full CPU/RSS, disk
+reads, fsync elapsed latency and a same-
+lifecycle true exact-vs-guard n20 tail
+comparison are STILL MISSING, as are
+many-key/checkpoint-boundary crash tests,
+real WAN, #86 security and #69 release
+boundary. D60 warm N256 guard NO-GO and
+nearT resolved STOP unchanged. Continue
+issue #107 with separately frozen matched
+durable exact/guard physical system cost
+and crash boundary protocol.
+Evidence:
+[DELTAGUARD-B1B1B1-B1B0-EVIDENCE.md](research/DELTAGUARD-B1B1B1-B1B0-EVIDENCE.md).
+
 ## DeltaGuard B1-B1B1-B1-A — hash-chained ABA receipts and real partial-ACK receiver crash
 
 Parent #105, PR #106, decision D63: frozen protocol
