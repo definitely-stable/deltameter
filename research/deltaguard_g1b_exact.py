@@ -118,8 +118,8 @@ def tiny_oracles() -> int:
                 for t in range(9):
                     count, den = all_laws[t]
                     oracle = mask_oracle(m,j,profile,t)
-                    assert count == oracle
-                    assert sum(oracle) == den
+                    assert count == oracle, (m,j,profile,t,count,oracle)
+                    assert sum(oracle) == den, (m,j,profile,t,den,sum(oracle))
                     tested += 1
     # One-sided independent rejection / missing-state / type errors.
     for invalid in ((0,1,"original"), (5,0,"original"), (5,1,"wrong")):
