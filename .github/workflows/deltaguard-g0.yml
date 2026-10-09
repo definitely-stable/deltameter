@@ -1,0 +1,83 @@
+name: DeltaGuard G0 fixed-m proof and identity
+
+on:
+  pull_request:
+    paths:
+      - "docs/research/DELTAGUARD-G0-PROTOCOL.md"
+      - "research/deltaguard_g0.rs"
+      - "research/deltaguard_g0_summarize.py"
+      - "examples/deltaguard_g0_lab.rs"
+      - ".github/workflows/deltaguard-g0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - name: Validate Rust and exact locked table identity
+        run: |
+          mkdir -p guard-raw
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+          python -m py_compile research/deltaguard_g0_summarize.py
+          python research/strict_compact_lookup_q32.py --table-out guard-raw/q32.txt
+          test "$(sha256sum guard-raw/q32.txt | cut -d' ' -f1)" = 634ea5dd196e0e03fc74422a85d926351c7c81b42b0d9ba724fccfd45fb3cc7a
+      - name: Run fixed-T two-source algebra and deterministic power
+        run: |
+          cargo run --release --example deltaguard_g0_lab -- guard-raw/q32.txt ${{ matrix.worker }} | tee guard-raw/worker-${{ matrix.worker }}.txt
+          grep -q "^DELTAGUARD_G0_WORKER_PASS worker=${{ matrix.worker }}$" guard-raw/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > guard-raw/head-${{ matrix.worker }}.txt
+          rustc -Vv > guard-raw/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guard-g0-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: guard-raw/
+          if-no-files-found: error
+
+  aggregate:
+    needs: worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: guard-g0-worker-*
+          path: guard-input
+          merge-multiple: true
+      - name: Fail-closed source and exact 1200 row verification
+        run: |
+          mkdir -p guard-summary
+          python research/deltaguard_g0_summarize.py --input guard-input --head "$(git rev-parse HEAD)" --out guard-summary/results.json | tee guard-summary/summary.txt
+          grep -q '^DELTAGUARD_G0_EVIDENCE_PASS samples=1200 ' guard-summary/summary.txt
+          git rev-parse HEAD > guard-summary/head.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guard-g0-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: guard-summary/
+          if-no-files-found: error
