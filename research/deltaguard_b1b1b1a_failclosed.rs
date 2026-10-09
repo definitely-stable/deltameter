@@ -237,7 +237,7 @@ fn bc_fault(worker: usize, lane: usize, rep: usize, case: &str,
         let claimed=u32::from_le_bytes(header[28..32].try_into().unwrap()) as usize;
         if claimed<=B1_MAX_PAYLOAD {
             let mut payload=Vec::new();
-            let mut complete=true;
+            let complete;
             if case=="sigkill" {
                 let (prefix,ok)=bc_read_bytes(&mut stream,4);
                 wire+=prefix.len();
