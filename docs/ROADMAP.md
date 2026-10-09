@@ -323,6 +323,33 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard B1-B1B0 — persistent same-lifecycle hot/hot receiver comparison
+
+Parent #99/#97/#92, PR #100, decision D60:
+five GitHub-hosted workers, **1000/1000 source-bound physical**
+samples, two distinct long-lived OS sender processes through 20
+consecutive generations, source receiver exact sync, per-owner real
+request/frame/ACK and strict corruption→NACK→retry (15 probes).
+Initial physical exact bootstrap, shared update control, and final
+post-transmission VmHWM are separately charged.
+N256,d48, 20 queries: B2A guard **14,720B**, warm maintained
+exact **4,840B** (+ paid earlier bootstrap 4,322B);
+direct full 89,760B. Empirical n20 worker p95:
+guard 0.42–0.51ms, exact 0.20–0.28ms.
+**SCOPED NO-GO for guard as general warm N256 replacement**.
+For N65536 cold exact bootstrap 1,048,802B, so a distinct
+large-N sparse cold receiver niche remains possible.
+Near-T fully resolved B2A is still STOP (N256,d57,
+104,640B vs direct full 89,920B).
+
+Evidence: [B1-B1B0](research/DELTAGUARD-B1B1B0-EVIDENCE.md).
+**NO SYSTEM_PRODUCT_GO**. Next B1-B1B1 must physically test
+dropped/truncated/reordered replies, durable restart/reconnect
+and ACK persistence, actual CPU accounting and expanded
+predeclared latency/pacing workloads; all on GitHub-hosted CI.
+Threat #86 and public lifecycle #69 are independent blockers.
+Do not return to sketch algebraic microoptimization.
+
 ## DeltaGuard B1-B1-A — true two OS sender processes and paced localhost cost
 
 Issue #97, PR #98, D59: five GitHub-hosted workers, exactly
