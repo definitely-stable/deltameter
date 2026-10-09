@@ -323,6 +323,36 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard B1-B1-A — true two OS sender processes and paced localhost cost
+
+Issue #97, PR #98, D59: five GitHub-hosted workers, exactly
+300 preregistered source-bound physical two-process TCP records,
+and strict evidence aggregation. Owners run in **distinct OS
+processes** communicating over separate localhost sockets;
+real control bytes, per-owner app pacing, artificial response
+delay, physical UNKNOWN→full-list fallback, physical cold
+source bootstrap and receiver-warm exact, child process RSS
+high-water marks and source-build/update wall timing are recorded.
+At N256,d48,S10: guard 738B vs warm exact query 338B
+(+ previously paid physical source sync 4322B).
+At N256,d48,S100: guard 738B vs warm exact 1958B.
+At N256,d57,S10: fully resolved guard costs 5162B vs
+direct full 4474B — retain **STOP_RESOLVED_NEAR_T**.
+
+**B1-B1-A is DIAGNOSTIC ONLY, not product p95 GO**.
+The initial guard timer includes process startup; warm exact
+timer excludes its separately reported completed bootstrap,
+so direct p95 comparisons between them are NOT lifecycle-fair.
+Each worker has only three repeats (nearest-rank p95 = max),
+insufficient for a reliable tail-latency verdict. Next #97
+B1-B1B: persistent process sources and hot/hot paired
+latency, ACK/retry, crash/restart, sufficient p95 repetitions
+and explicit cold/warm bootstrap and RSS accounting.
+Security #86 and public product #69 are independent gates.
+
+Evidence:
+[DELTAGUARD-B1B1A-EVIDENCE.md](research/DELTAGUARD-B1B1A-EVIDENCE.md).
+
 ## DeltaGuard G1-B2-B1-B0 — physically retained exact and real fallback
 
 Parent #92, research PR #96, D58:

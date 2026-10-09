@@ -1554,3 +1554,48 @@ Next B1-B1 must measure those with named 5-worker paired scenarios,
 and compare a *warm pre-cached* exact receiver separately from cold
 bootstrap. Keep #92 open; #86 and #69 block public semantics.
 Canonical evidence: docs/research/DELTAGUARD-G1B2B1B0-EVIDENCE.md.
+
+### D59 — B1-B1-A two OS sender processes and app-paced cost frontier; mixed p95 cannot decide product
+
+Parent #97/#92, PR #98, frozen preregistration
+`docs/research/DELTAGUARD-B1B1A-PROTOCOL.md` at
+`cb62948b8a1101e96dba1ac50941305f8cd13627`
+before first B1-B1-A timing. First completely valid
+[run 37911404072](https://github.com/definitely-stable/deltameter/actions/runs/37911404072),
+source `5a91d358cb9801130bd4804e225eacd28c9403ed`:
+24 pinned B2A exact cutoff profiles, 300/300 complete verified
+records, 5 hosted independent worker CI jobs and strict aggregator PASS.
+
+This is **ACTUAL two distinct sender OS processes**, each on
+its own localhost TCP socket. Real 25B hello, 24B requests, 64B
+response frames and (when UNKNOWN) second two-owner full source
+request, per-owner app-paced transfer, injected server response
+delay, Linux **pre-response sampled** per-child VmHWM and build/update elapsed-wall diagnostics; late serialization/transfer memory peaks are NOT captured by the child hello and need separate post-transfer measurement.
+It does NOT reproduce shared-wire bandwidth, network RTT, hostile
+sender authentication or durable source daemon lifecycle.
+
+At N256,d48,S10 (one named query), guard 738B, warm exact 338B
+plus **previously physically delivered** 4322B source bootstrap.
+At N256,d48,S100, guard 738B, warm exact 1958B after the
+same 4322B warm bootstrap. N65536,d48,S10 guard 738B
+vs warm exact query 338B after 1,048,802B physically provisioned
+bootstrap. N256,d57,S10 resolved real fallback 5162B versus
+direct full 4474B: **STOP_RESOLVED_NEAR_T** remains.
+
+**Critical fairness check:** guard/full query `wall_ns` includes
+source child spawning + first build, whereas warm exact `wall_ns`
+begins after physically completed bootstrap with connected senders.
+Comparing their reported 'p95' is invalid as a product latency
+verdict. Per-worker maximum of THREE repeats is a weak p95 estimator
+even on comparable states. Maintain separate setup/query times.
+The cumulative dense-vs-sparse 100-generation byte crossover from
+D58 is separate evidence, not contradicted by the B1-B1-A
+single-query timings.
+
+Decision: **B1B1A_PHYSICAL_TWO_PROCESS_COST_FOUNDATION_PASS_NO_PRODUCT_GO**.
+Next #97 B1-B1B must have stateful sender-daemon persistent warm
+source and repeated same-lifecycle hot/hot timing, real ACK/retry
+and fail-closed reconnect, more samples, RSS separation and
+accounted full cold bootstrap; #86 and #69 still public blockers.
+No change to canonical snapshot or public Rust API.
+Evidence: docs/research/DELTAGUARD-B1B1A-EVIDENCE.md.
