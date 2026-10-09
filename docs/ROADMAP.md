@@ -323,6 +323,33 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard G1-B2-A near-full single-level strict guard
+
+#89 B2-A mathematical/integration stage **ACCEPTED RESEARCH ONLY**.
+Preregistered new m=2^b-1, D=2^b single-dummy-slot
+XOR bitmap, b=6..13, T32/64/128. With D=m+1 the
+lazy Ehrenfest kernel is stochastically monotone, enabling
+an exact all-d>T integer cutoff at d=T+1,
+independent of the old G1B1 or J52 probability tables.
+
+24 full exact certificate profiles, 39 independent tiny
+whole-bitmap-state oracles and 3,240 physical two-owner
+source-attested GitHub-hosted rows passed. T64,d48,b11:
+256B/owner bitmap, cutoff S<=48, hence *guaranteed*
+SAFE for every input with d<=48, under a fixed, compatible
+profile. The false-SAFE tail for all d>T is bounded
+by 10^-6 only in the **nonadaptive ideal-oracle** model;
+keyed BLAKE3 has an unquantified computational replacement
+assumption. Close-to-T utility remains poor.
+
+Canonical evidence:
+[DELTAGUARD-G1B2A-EVIDENCE.md](research/DELTAGUARD-G1B2A-EVIDENCE.md).
+**NO PUBLIC API/SNAPSHOT GO**. Next G1-B2-B costed retained
+state/system comparison vs direct exact, G1B1, J52, trusted
+24B scalar where admissible, before considering joint-level
+multivariate DP or productization. #86 key/adaptive and
+#69 public contract remain open.
+
 ## DeltaGuard G1-B1 exact fixed-d GF(2) thresholds
 
 #89 G1-B1 research-only mathematical foundation **ACCEPT**:
