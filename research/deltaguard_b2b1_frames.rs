@@ -321,10 +321,21 @@ fn b1_frame_lab(worker: usize) {
         corrupt[64] ^= 1;
         let clean = p2;
         assert!(b1_actual_pair(corrupt, clean, B1_GUARD, 1).is_err());
+
+        // Real socket short read: advertised body length exceeds transmitted body.
+        let mut truncated = b1_encode(1, B1_GUARD, B1_EPOCH, 1, &b1_words_bytes(&ga.words));
+        truncated.pop();
+        let second = b1_encode(2, B1_GUARD, B1_EPOCH, 1, &b1_words_bytes(&gb.words));
+        assert!(b1_actual_pair(truncated, second, B1_GUARD, 1).is_err());
+
+        // Two connections identifying as owner 1 cannot be accepted as A and B.
+        let first = b1_encode(1, B1_GUARD, B1_EPOCH, 1, &b1_words_bytes(&ga.words));
+        let duplicate = b1_encode(1, B1_GUARD, B1_EPOCH, 1, &b1_words_bytes(&gb.words));
+        assert!(b1_actual_pair(first, duplicate, B1_GUARD, 1).is_err());
         println!(
             "B1A_TCP_SAMPLE worker={worker} d={d} guard_wire={measured_bytes} exact_wire={full_bytes} odd={odd} safe={}",
             u8::from(safe)
         );
     }
-    println!("DELTAGUARD_B1A_FRAME_PASS worker={worker} physical_pairs=9");
+    println!("DELTAGUARD_B1A_FRAME_PASS worker={worker} physical_pairs=15");
 }
