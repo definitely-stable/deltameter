@@ -392,6 +392,38 @@ fn be_receiver_child(args:&[String]){
     std::io::stdout().flush().unwrap();
     be_accept_and_commit(root,&listener,seq,true);
 }
+fn be_receiver_normal_child(args:&[String]) {
+    use std::io::Write;
+    assert_eq!(args.len(),3);
+    let seq:usize=args[1].parse().unwrap();
+    let root=Path::new(&args[2]);
+    let listener=std::net::TcpListener::bind(("127.0.0.1",0)).unwrap();
+    println!("BE_PORT {}",listener.local_addr().unwrap());
+    std::io::stdout().flush().unwrap();
+    let bytes=be_accept_and_commit(root,&listener,seq,false);
+    println!("BE_NORMAL_BYTES {bytes}");
+    std::io::stdout().flush().unwrap();
+}
+fn be_restarted_receiver_round(root:&Path,seq:usize)->usize {
+    use std::io::{BufRead,BufReader};
+    use std::process::{Command,Stdio};
+    let mut receiver=Command::new(std::env::current_exe().unwrap())
+        .args(["--receiver-normal",&seq.to_string(),root.to_str().unwrap()])
+        .stdout(Stdio::piped()).stderr(Stdio::inherit()).spawn().unwrap();
+    let mut lines=BufReader::new(receiver.stdout.take().unwrap());
+    let mut port=String::new();
+    lines.read_line(&mut port).unwrap();
+    assert!(port.starts_with("BE_PORT "));
+    let addr=port.trim().strip_prefix("BE_PORT ").unwrap();
+    let mut owners=be_child_send(seq,root,addr);
+    let mut result=String::new();
+    lines.read_line(&mut result).unwrap();
+    let bytes:usize=result.trim().strip_prefix("BE_NORMAL_BYTES ")
+        .expect("receiver fresh OS process result").parse().unwrap();
+    assert!(receiver.wait().unwrap().success(),"restarted receiver failed");
+    for child in &mut owners {assert!(child.wait().unwrap().success());}
+    bytes
+}
 fn be_crash_first_ack(root:&Path,seq:usize)->(usize,usize) {
     use std::io::{BufRead,BufReader};
     use std::process::{Command,Stdio};
@@ -415,7 +447,7 @@ fn be_crash_first_ack(root:&Path,seq:usize)->(usize,usize) {
     assert_eq!(be_source_load(&bd_dir(root,1),1).unwrap().ack,seq);
     assert_eq!(be_source_load(&bd_dir(root,2),2).unwrap().ack,seq-1);
     // A fresh receiver can identify a precisely identical frame after crash.
-    let retry=be_parent_round(root,seq);
+    let retry=be_restarted_receiver_round(root,seq);
     let reread=be_load_receipt(root).unwrap();
     assert_eq!(reread.seq,[seq,seq]);
     for owner in 1..=2 {
