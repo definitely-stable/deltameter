@@ -44,11 +44,11 @@ fn b1_encode(owner: u8, kind: u8, epoch: u64, seq: u64, body: &[u8]) -> Vec<u8> 
 }
 
 fn b1_canonical_full(body: &[u8]) -> Result<(), &'static str> {
-    if body.len() % 8 != 0 {
+    if !body.len().is_multiple_of(8) {
         return Err("full-width");
     }
     let mut previous = None;
-    for chunk in body.chunks_exact(8) {
+    for chunk in body.as_chunks::<8>().0.iter() {
         let token = u64::from_le_bytes(chunk.try_into().unwrap());
         if previous.is_some_and(|value| token <= value) {
             return Err("full-not-canonical");
@@ -59,11 +59,11 @@ fn b1_canonical_full(body: &[u8]) -> Result<(), &'static str> {
 }
 
 fn b1_canonical_delta(body: &[u8]) -> Result<(), &'static str> {
-    if body.len() % 9 != 0 {
+    if !body.len().is_multiple_of(9) {
         return Err("delta-width");
     }
     let mut previous = None;
-    for chunk in body.chunks_exact(9) {
+    for chunk in body.as_chunks::<9>().0.iter() {
         if chunk[0] != 1 && chunk[0] != 2 {
             return Err("delta-op");
         }
@@ -76,13 +76,13 @@ fn b1_canonical_delta(body: &[u8]) -> Result<(), &'static str> {
     Ok(())
 }
 
-fn b1_decode<'a>(
-    packet: &'a [u8],
+fn b1_decode(
+    packet: &[u8],
     expected_owner: u8,
     expected_kind: u8,
     epoch: u64,
     seq: u64,
-) -> Result<&'a [u8], &'static str> {
+) -> Result<&[u8], &'static str> {
     if packet.len() < B1_HEADER {
         return Err("short-header");
     }
@@ -287,8 +287,8 @@ fn b1_frame_lab(worker: usize) {
         let one = b1_decode(&p1, 1, B1_GUARD, B1_EPOCH, 1).unwrap();
         let two = b1_decode(&p2, 2, B1_GUARD, B1_EPOCH, 1).unwrap();
         let odd: u32 = one
-            .chunks_exact(8)
-            .zip(two.chunks_exact(8))
+            .as_chunks::<8>().0.iter()
+            .zip(two.as_chunks::<8>().0.iter())
             .map(|(l, r)| {
                 (u64::from_le_bytes(l.try_into().unwrap())
                     ^ u64::from_le_bytes(r.try_into().unwrap()))
@@ -311,7 +311,7 @@ fn b1_frame_lab(worker: usize) {
         let read_tokens = |frame: &[u8], owner: u8| {
             b1_decode(frame, owner, B1_FULL, B1_EPOCH, 1)
                 .unwrap()
-                .chunks_exact(8)
+                .as_chunks::<8>().0.iter()
                 .map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap()))
                 .collect::<Vec<u64>>()
         };
