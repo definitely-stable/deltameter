@@ -5,16 +5,19 @@ const G1_NUM: [u64; 5] = [0, 2, 6, 8, 9];
 const G1_KS: [usize; 3] = [1, 2, 4];
 const G1_SEEDS: usize = 3;
 
-fn g1_one(
+struct G1Case {
     t: u64,
     d: u64,
     worker: usize,
     scenario: usize,
     ratio: usize,
     seed: usize,
-    old: &[u64],
-    new: &[Vec<u64>; 3],
-) {
+}
+
+fn g1_one(case: G1Case, old: &[u64], new: &[Vec<u64>; 3]) {
+    let G1Case {
+        t, d, worker, scenario, ratio, seed,
+    } = case;
     let begin = (worker as u64 * 1000
         + scenario as u64 * 100
         + ratio as u64 * 10
@@ -92,7 +95,7 @@ fn run_g1a(data_dir: &Path, worker: usize) {
         for (ratio, number) in G1_NUM.into_iter().enumerate() {
             let d = t * number / 8;
             for seed in 0..G1_SEEDS {
-                g1_one(t, d, worker, i, ratio, seed, &old, &new);
+                g1_one(G1Case { t, d, worker, scenario: i, ratio, seed }, &old, &new);
             }
         }
     }
