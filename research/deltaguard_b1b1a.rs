@@ -169,8 +169,11 @@ fn b11_send_request(peer:&mut B11Peer,seq:usize) {
     use std::io::Write;
     peer.socket.write_all(&b11_req(seq)).expect("real receiver request");
 }
-fn b11_peers(worker:usize,n:usize,d:usize,rep:usize,s:usize,mbps:usize,delay:u64,mode:B11Mode)
- -> [B11Peer;2] {
+struct B11Case {
+    worker:usize,n:usize,d:usize,rep:usize,s:usize,mbps:usize,delay:u64,mode:B11Mode
+}
+fn b11_peers(case:B11Case)->[B11Peer;2] {
+    let B11Case {worker,n,d,rep,s,mbps,delay,mode}=case;
     use std::io::Read;
     use std::net::TcpListener;
     use std::process::{Command,Stdio};
@@ -226,7 +229,7 @@ fn b11_trial(worker:usize,lane:usize,rep:usize,mode:B11Mode) {
     }
     assert_eq!(b0_diff(&final_a,&final_b).len(),d);
     let started=Instant::now();
-    let mut peers=b11_peers(worker,n,d,rep,s,mbps,delay,mode);
+    let mut peers=b11_peers(B11Case{worker,n,d,rep,s,mbps,delay,mode});
     let mut bytes=2*B11_HELLO;
     let mut bootstrap_bytes=0_usize;
     let mut query_start=started;
