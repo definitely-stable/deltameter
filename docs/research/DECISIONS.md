@@ -1486,3 +1486,32 @@ corruption/session identity; explicit #86 keyed/adaptive and
 #69 persistence/key lifecycle gates remain open.
 No originality claim for classic bitmap XOR/Markov chain.
 Canonical: `docs/research/DELTAGUARD-G1B2B0-EVIDENCE.md`.
+
+### D57 — B1-A two-physical-sender TCP frame correctness; no measured system verdict
+
+Parent #92, research PR #95; B1-B protocol preregistered before
+any B1 TCP run. Exact test-code source
+`e63608dc3cc870bb45b835012ff1cc1e28103609`,
+five GitHub-hosted workers SUCCESS in
+[run 37899112626](https://github.com/definitely-stable/deltameter/actions/runs/37899112626):
+75 actual two-connection localhost TCP transactions
+(15/worker including corrupted frame, duplicate owner, truncated body).
+Source u64 lists are physically independent per sender actor;
+receiver guard payload is XOR'd and compared with independent per-token
+rehashing of exact A triangle B. Version/key-ID/owner/profile/epoch/
+sequence/checksum/canonical payload errors fail closed.
+N256,T64,d48 guard = 640 application bytes vs full direct 4224B;
+d57/65 gave UNKNOWN on all five public-fixture source pairs.
+This is not an independent statistical trial for delta=1e-6.
+
+Decision: **B1_A_FRAME_CORRECTNESS_PASS (RESEARCH ONLY)**. Source
+threads reside in one process and use a public fixture/key ID and
+unkeyed corruption tag; no malicious-peer authentication is claimed.
+No application bandwidth/RTT p95, true session churn, receiver-retained
+exact delta replication, retransmission/ACK, fully resolved fallback,
+or total memory/RSS product gate was executed here. NO SYSTEM_PRODUCT_GO,
+NO public API or Snapshot v1. Next B1-B must compare same-topology
+retained exact, count initial sync plus delta event traffic across
+1/10/100 sessions, and run the frozen five-worker real TCP p95 test.
+Security #86 and public lifecycle #69 remain independent blockers.
+Canonical: docs/research/DELTAGUARD-G1B2B1A-EVIDENCE.md.
