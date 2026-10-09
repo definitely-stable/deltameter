@@ -12,7 +12,11 @@ mod guard {
 fn main() {
     let mut args = std::env::args().skip(1);
     let table = args.next().expect("Q32 table");
-    let worker: usize = args.next().expect("worker 1..5").parse().expect("worker integer");
+    let worker: usize = args
+        .next()
+        .expect("worker 1..5")
+        .parse()
+        .expect("worker integer");
     assert!(args.next().is_none(), "unexpected argument");
     guard::run(std::path::Path::new(&table), worker);
 }
