@@ -53,6 +53,18 @@ and verify receiver exact truth. Fallback is not a second SAFE test.
 EVERY intervening incremental event and computes exact truth at the
 three checkpoints. Count total cumulative bytes up to each S.
 
+**Batched sparse exact**: unlike online exact, a subscriber which only needs
+three sparse query checkpoints can buffer canonical consecutive token
+updates between checkpoints. Include this legal same-topology competitor,
+transmitting *one physically measured variable-length delta frame per
+owner per checkpoint* (not 1 per generation), with the final epoch and
+generation, exact receiver state and all event bytes verified. For the
+frozen append-only history its cumulative bytes are bootstrap +
+2*64*(number of post-bootstrap checkpoints) + 2*9*(S-1).
+This is a separate source-to-receiver event delivery contract, not
+a free exact scalar. B1-B1 must address batch-loss/retransmission and
+per-event replay/recovery before treating batched generation as robust.
+
 **Dense checks**: one guard query for EVERY source generation 1..S,
 while exact cache receives exactly the same per-generation event stream.
 For identical source histories, guard cumulative cost is 640*S; exact
