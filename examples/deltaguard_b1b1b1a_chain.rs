@@ -18,6 +18,7 @@ mod lab {
             Some("--write") => be_writer(args),
             Some("--send") => be_sender(args),
             Some("--receiver") => be_receiver_child(args),
+            Some("--receiver-normal") => be_receiver_normal_child(args),
             Some(worker) => {
                 assert_eq!(args.len(), 1);
                 be_worker(worker.parse().expect("worker index 1..5"));
