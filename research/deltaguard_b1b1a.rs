@@ -222,7 +222,7 @@ fn b11_trial(worker:usize,lane:usize,rep:usize,mode:B11Mode) {
     let mut final_b=initial_b.clone();
     for generation in 2..=s {
         final_a.push(next+generation as u64);
-        final_b.push(next+gen as u64);
+        final_b.push(next+generation as u64);
     }
     assert_eq!(b0_diff(&final_a,&final_b).len(),d);
     let started=Instant::now();
