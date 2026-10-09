@@ -1,0 +1,113 @@
+name: DeltaGuard B2B0 retained system foundation
+
+on:
+  pull_request:
+    paths:
+      - "research/deltaguard_b2b0.rs"
+      - "research/deltaguard_b2b0_summarize.py"
+      - "examples/deltaguard_b2b0_lab.rs"
+      - "docs/research/DELTAGUARD-G1B2B0-PROTOCOL.md"
+      - "docs/research/DELTAGUARD-G1B2B0-EVIDENCE.md"
+      - ".github/workflows/deltaguard-b2b0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Rebuild proof from accepted B2A and pin source
+        run: |
+          mkdir -p b0-cert
+          python -m py_compile research/deltaguard_b2b0_summarize.py
+          python research/deltaguard_b2a_certify.py --out-dir b0-cert | tee b0-cert/proof.log
+          grep -q '^B2A_EXACT_CERT_PASS profiles=24 tiny_oracles=39 ' b0-cert/proof.log
+          test "$(sha256sum b0-cert/cutoffs.tsv | cut -d' ' -f1)" = "c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59a6f5f36a0d95f51d9e935"
+          (cd b0-cert && sha256sum cutoffs.tsv > cutoffs.sha256)
+          git rev-parse HEAD > b0-cert/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b0-cert-${{ github.run_id }}-${{ github.run_attempt }}
+          path: b0-cert/
+          if-no-files-found: error
+
+  worker:
+    needs: certificate
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b0-cert-*
+          path: b0-cert
+          merge-multiple: true
+      - name: Source/certificate/fmt/clippy gates
+        run: |
+          test "$(cat b0-cert/head.txt)" = "$(git rev-parse HEAD)"
+          (cd b0-cert && sha256sum --check cutoffs.sha256)
+          mkdir -p b0-worker
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+      - name: Retained physical B2A/B1/J52 source updates and actual CPU timings
+        run: |
+          cargo run --release --example deltaguard_b2b0_lab -- b0-cert/cutoffs.tsv ${{ matrix.worker }} | tee b0-worker/worker-${{ matrix.worker }}.txt
+          grep -q '^DELTAGUARD_B2B0_WORKER_PASS worker=${{ matrix.worker }} records=648$' b0-worker/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > b0-worker/head-${{ matrix.worker }}.txt
+          rustc -Vv > b0-worker/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b0-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: b0-worker/
+          if-no-files-found: warn
+
+  aggregate:
+    needs: [certificate, worker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b0-worker-*
+          path: b0-input
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b0-cert-*
+          path: b0-cert
+          merge-multiple: true
+      - name: Fail-closed all 3240 physical and modeled-wire records
+        run: |
+          mkdir -p b0-summary
+          test "$(cat b0-cert/head.txt)" = "$(git rev-parse HEAD)"
+          (cd b0-cert && sha256sum --check cutoffs.sha256)
+          python research/deltaguard_b2b0_summarize.py --input b0-input --cutoffs b0-cert/cutoffs.tsv --head "$(git rev-parse HEAD)" --out b0-summary/summary.json | tee b0-summary/log.txt
+          grep -q '^B2B0_AGGREGATE_PASS rows=3240 verdict=B2B0_PHYSICAL_SOURCE_PASS_GUARD_SCOPED_MODEL_CANDIDATE$' b0-summary/log.txt
+          git rev-parse HEAD > b0-summary/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b0-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: b0-summary/
+          if-no-files-found: error

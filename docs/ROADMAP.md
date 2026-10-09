@@ -323,6 +323,30 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard G1-B2-B0 — retained physical sources and model cost gate
+
+Issue #92, PR #93: **SCOPED PHYSICAL/MODELED FOUNDATION PASS**.
+On five GitHub-hosted workers with exactly 3,240 source-attested
+physical records, two owners retain actual u64 lists and independently
+maintain B2A b11/b12, B1 unit and J52. B2A certificate remains
+unchanged; physical XOR verified against the canonical exact
+symmetric-difference source. Native build/update/query CPU
+measurements are recorded, but application transfer bytes and
+network latency remain a fixed **analytical model**, not TCP.
+
+At T64, d48, b11 physical payload 256B/owner gives deterministic
+SAFE and 640B modeled two-owner response versus direct exact
+4,368B for N256 or 1,048,848B for N65536, session10.
+For near-threshold d57 UNKNOWN, fully resolved exact fallback
+costs MORE than direct exact: **STOP_RESOLVED_NEAR_T**.
+J52 remains physical size/XOR cost-only control in B0;
+no uncertified Q32 threshold is assumed.
+
+Evidence: [DELTAGUARD-G1B2B0-EVIDENCE.md](research/DELTAGUARD-G1B2B0-EVIDENCE.md).
+Next stage B2-B1: genuine two-owner TCP, p95 latency, framed
+identity/fail-closed tests, and explicit exact-fallback accounting.
+No public release/API/Snapshot v1; #86 and #69 remain blockers.
+
 ## DeltaGuard G1-B2-A near-full single-level strict guard
 
 #89 B2-A mathematical/integration stage **ACCEPTED RESEARCH ONLY**.
