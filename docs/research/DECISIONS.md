@@ -1757,3 +1757,71 @@ source independent state provenance, with #86/#69
 security/public gates still blocked. D60 warm-N256
 guard NO-GO and near-T resolved STOP remain.
 Evidence: docs/research/DELTAGUARD-B1B1B1B0-EVIDENCE.md.
+
+### D63 — B1-B1B1-B1-A hash-chained 100-generation ABA receipt correctness; STOP O(N) durable receipt rewrite
+
+Parent #105/#103/#101/#99/#97/#92, PR #106. Protocol frozen
+BEFORE tests at `docs/research/DELTAGUARD-B1B1B1-B1A-PROTOCOL.md`,
+commit `934ff11ea393f16487619001c7911ab8d50e1339`;
+identity clarification added before tests at `a39da0b677e7aabf256b9bec5136e9ff45bac678`.
+Verified hosted
+[CI #37942833576](https://github.com/definitely-stable/deltameter/actions/runs/37942833576)
+code `9ad9411081525f075ceb7f59a57a47c86c68cfe7`:
+**5/5 independent GitHub-hosted workers**, original B2A exact
+24-profile certificate revalidated, 3000/3000 source-pinned
+physical TCP two-owner event rounds, 30 real receiver OS
+SIGKILL after first ACK + genuinely new OS receiver
+process restarts, and a strict independent source/byte
+aggregator **SUCCESS**.
+
+Owners persist base canonical source, 88B owner/key/profile/
+epoch/sequence/operation/token hash-chained WAL per generation,
+fsync'd commit marker and post-ACK watermark. The receiver
+fsyncs exact two-owner state and *both 32B chain heads AND
+their exact 88B accepted event receipts* atomically BEFORE
+either ACK. Thus identical replays are idempotent by exact
+event identity, not unsafe membership. 100 consecutive
+INSERT/DELETE ABA generations per owner, 50 each, including
+source-disk WAL reopening and independent exact truth per
+generation. Negative changed-same-generation event/hash,
+rollback/gap, wrong owner, invalid removal, WAL truncation,
+ACK ahead and corrupted receiver receipt are fail closed.
+
+Actual two-owner localhost application bytes: **356B**
+per normal generation, **340B** before ACK#2
+SIGKILL and additional **356B** real post-crash
+replay. Across all 3000 generations: 1,067,520B
+first-attempt physical event bytes and 10,680B
+physical replay traffic. This is link-level evidence,
+not system p95 or WAN.
+
+**Critical additional outcome**: the simple atomic
+receiver implementation rewrites TWO COMPLETE inventory
+snapshots every generation. Exact logical receiver
+write volume for N65536 (d48, 100 generations,
+15 hosted worker/fixture combinations) is
+**1,573,536,000B**, despite source WAL requiring
+only 8,800B/owner/100 generations plus commit/ACK
+markers. These are file serialization bytes,
+NOT actual device-sector write amplification.
+**STOP_FULL_RECEIVER_RECEIPT_PER_EVENT_AS_PRODUCT_DESIGN**.
+A real incremental crash-atomic two-owner receiver
+WAL / checkpoint scheme, with bounded page rewrites
+and end-to-end disk/fsync cost against an equally
+durable exact reference, is required before any
+large-N system GO.
+
+Decision:
+**B1B1B1_B1A_ABA_RECEIPT_CHAIN_RESEARCH_ACCEPT**
+for single-token insert/delete, one epoch/100
+sequences and exact already-opened pre-authoritative
+source, **NO SYSTEM_PRODUCT_GO**. This does NOT
+prove power-cut/torn fsync, authenticated peer,
+arbitrary concurrent/mixed batch changes,
+compaction or WAL recycling, real WAN or tail p95.
+D60 **WARM_N256_GENERAL_B2A_NO_GO** and d57
+fully resolved STOP unchanged. Continue #105
+B1B1B1-B1B with bounded incremental receiver
+durability, source journal checkpoint/recovery
+and whole-system physical cost; #86/#69 remain.
+Evidence: docs/research/DELTAGUARD-B1B1B1-B1A-EVIDENCE.md.

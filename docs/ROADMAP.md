@@ -323,6 +323,46 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard B1-B1B1-B1-A — hash-chained ABA receipts and real partial-ACK receiver crash
+
+Parent #105, PR #106, decision D63: frozen protocol
+`docs/research/DELTAGUARD-B1B1B1-B1A-PROTOCOL.md`.
+Five GitHub-hosted workers, **3,000/3,000** physical
+two-owner TCP event rounds across 100 successive
+INSERT/DELETE (50+50, actual ABA) generations per
+fixture and 30 receiver subprocess SIGKILL after
+the FIRST owner ACK but before the SECOND ACK.
+A newly spawned receiver reopens its fsync'd two-owner
+source inventories, chain digests and exact 88B
+last accepted event receipts; the replay is safe
+because it compares exact **accepted event identity**,
+not merely token membership.
+
+Normal physical two-owner chain event + ACK is
+**356B**; interrupted first attempt **340B** then
+retransmit **356B** over actual localhost sockets.
+Source fsync WAL, commit and post-ACK markers survive
+source process recreation. Integrity tests reject
+changed/reordered sequences, invalid deletes, checksum
+or source/receiver disk corruption.
+
+**Important negative product result:** atomic
+receiver storage is currently implemented by
+rewriting both complete exact source lists every
+generation, costing **1,573,536,000 logical receiver
+write bytes** over 15 N65536 ×100-generation
+runs. This is NOT measured disk-device blocks,
+but proves **STOP_FULL_RECEIVER_RECEIPT_PER_EVENT
+AS PRODUCT DESIGN**. The next bounded B1B1B1-B1B
+step must build crash-atomic incremental receiver
+WAL/checkpoint, count fsync/disk bytes and compare
+with an equally durable exact baseline. No public
+Snapshot v1/API changes, no WAN p95 or security GO.
+D60 warm N256 general-guard NO-GO, d57 resolved
+STOP and #86/#69 blockers remain unchanged.
+Evidence:
+[DELTAGUARD-B1B1B1-B1A-EVIDENCE.md](research/DELTAGUARD-B1B1B1-B1A-EVIDENCE.md).
+
 ## DeltaGuard B1-B1B1-B0 — fsync'd two-owner WAL/ACK and physical process restart
 
 Parent #103, PR #104, D62; frozen premeasurement protocol
