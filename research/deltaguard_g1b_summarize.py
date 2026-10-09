@@ -70,7 +70,7 @@ def run(root:Path, source:str,cutoff_path:Path)->dict:
             rows[key]=rec
             local+=1
         assert local==3*5*3*2*4, (w,local)
-    assert len(rows)==900
+    assert len(rows)==1800
     counts=[]
     for profile in PROFILES:
         for tix,t in enumerate(TS):
