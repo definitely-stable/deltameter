@@ -1730,7 +1730,7 @@ delta is applied once on a stale generation1 receiver;
 already durable generation2 state detects duplicate
 and is ACKed without second insertion. Five explicit
 disk corruption/rollback probes per worker reject
-invalid WAL/key/owner/receiver identity/ACK ahead.
+invalid committed WAL, snapshot owner identity, receiver epoch/checksum and ACK ahead; a separate key-identity mutation is not a named disk fault in this slice.
 
 Measured physical two-owner TCP bytes:
 - initial cold exact snapshot including handshake
