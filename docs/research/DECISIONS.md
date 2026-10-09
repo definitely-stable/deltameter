@@ -1652,3 +1652,51 @@ not independent WAN hosts. B1-B1B1 still needs durable replay
 across crashes/reconnect, actual CPU-clock/RSS accounting, wide
 preregistered scenario coverage and #86/#69 security/lifecycle gates.
 Canonical: docs/research/DELTAGUARD-B1B1B0-EVIDENCE.md.
+
+### D61 — B1-B1B1-A fail-closed physical full reset; crash-safe incremental replay still NO-GO
+
+Parent #101/#99/#97/#92, PR #102, frozen
+`docs/research/DELTAGUARD-B1B1B1A-PROTOCOL.md` at
+`60f712de6f2e6a6ff125cec58c0f4e2d4e0bc9e7`
+BEFORE measurements. [Hosted run 37918069691](https://github.com/definitely-stable/deltameter/actions/runs/37918069691)
+on source `d3b3fafdc7e49446acf9fa6936337999bb5be71e`:
+five independent GitHub-hosted workers, 390/390
+source-attested physical TCP fault probes, 13 preregistered
+failure types each for N256 and N65536, 3 deterministic fixtures,
+reproducible cutoff certificate and fail-closed independent
+aggregator ALL PASS. Thirty actual child SIGKILL mid-body cases
+and thirty lost-ACK/identical-packet-retransmission cases.
+Invalid and truncated frames never mutate exact receiver.
+ACK-loss retransmits identical generation and ACKs without
+reapplying. All probes reconstruct two independent owner
+sources through physically transmitted generation2 FULL
+lists and atomically replace both receiver inventories after
+independent exact truth checks.
+
+Actual full receiver recovery per failure, with two owner
+hellos/requests/frames/ACKs and post-transfer RSS/CPU telemetry:
+**4,354B at N256** and **1,048,834B at N65536**
+(d48 + one shared insert per owner). Invalid single frame
+adds extra traffic, including 90B checksum rejection/NACK,
+163B ACK-loss duplicated frame+ACK or 69B physically killed
+midbody. A 242B two-owner hot exact delta query may therefore
+incur a full two-owner 1MiB resync at large N when reliable
+incremental lineage is absent.
+
+Decision: **B1B1B1A_FAILCLOSED_FULL_RESET_ACCEPT (RESEARCH ONLY)**.
+**DURABLE_INCREMENTAL_CRASH_REPLAY_NOT_PROVEN**. Healthy
+owners regenerate fixture data from deterministic seeds
+after simulated loss, NOT disk-persisted writes/journals:
+this is fail-closed FULL reset, not a durable crash-safe
+production replication system. Per-child VmHWM read after
+serialization, actual Linux CPU ticks captured, but CPU
+resolution insufficient to infer microbenchmark benefit.
+No authenticated sender, fsync journal, source restart
+provenance, WAN RTT/p95, public API or Snapshot v1 change.
+D60 **WARM_N256_NO_GO** and **STOP_RESOLVED_NEAR_T**
+unchanged. Next separately preregistered B1-B1B1-B:
+real fsync journal, restart/epoch/ACK/reconnect, broader
+source+receiver cost/fault-rate frontier and explicit
+cold N65536 sparse viability; #86/#69 security/lifecycle
+remain independent public blockers.
+Canonical: docs/research/DELTAGUARD-B1B1B1A-EVIDENCE.md.
