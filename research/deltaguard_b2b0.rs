@@ -177,10 +177,9 @@ fn b0_generation_token(worker:usize,ni:usize,di:usize,repeat:usize,generation:us
 fn b0_validate() {
     let mut a=B0State::new(B0Kind::Near11);
     let wrong=B0State::new(B0Kind::Near12);
-    if let B0State::Near(ref mut left, _) = a {
-        if let B0State::Near(ref right, _) = wrong {
-            assert_eq!(left.xor_assign(right),Err("incompatible-b-t-or-key"));
-        }
+    if let B0State::Near(ref mut left, _) = a
+        && let B0State::Near(ref right, _) = wrong {
+        assert_eq!(left.xor_assign(right), Err("incompatible-b-t-or-key"));
     }
     let a=vec![3,5,7,10]; let b=vec![3,5,8,11];
     assert_eq!(b0_diff(&a,&b),vec![7,8,10,11]);
