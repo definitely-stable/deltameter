@@ -283,6 +283,28 @@ using J52 LEVEL_MAJOR and the OPT-B derived nonserialized counters.
 Do not freeze a public wire/key lifecycle until #69's own acceptance;
 keep sender-first as an optional future application-specific lane.
 
+## Post-OPT-C research — DeltaGuard G0 / #84
+
+G0 completed as a research-only independently maintained k-level
+parity guard using the exact same m4096 / J52 keyed BLAKE3 mapping
+and original alpha=delta/64 Q32 per-level bound. TinyGuard physically
+stores k=1/2/4/8 selected levels (512/1024/2048/4096B bitmap per
+source, not total allocation), XORs compatible states and returns
+SAFE_BELOW_T only when the inherited one-sided upper bound is <=T.
+Hosted 5-worker/1200 fixed-input observations prove *implementation
+equivalence*, not a new probabilistic or adaptive-input theorem.
+Observed T=64 usefulness was 0/15 even at d=0.25T; for T>=65536 and
+d=0.75T k=2/4 yielded 14–15/15 deterministic safe decisions.
+
+Verdict **G0_FOUNDATION_PASS_EMPIRICAL_POWER_CANDIDATE**,
+**NO PUBLIC GUARD GO**. See
+[protocol](research/DELTAGUARD-G0-PROTOCOL.md),
+[evidence](research/DELTAGUARD-G0-EVIDENCE.md), D52.
+Next #85: new *exact* finite-sample calibration for changed m/J/alpha,
+especially tiny thresholds; #86: repeated/adaptive input/key model.
+Do not reuse old Q32 for m!=4096 or promote deterministic power curves
+to failure probability, and do not change public snapshot v1.
+
 ## Post-v0 candidates
 
 Only after evidence:
