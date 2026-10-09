@@ -323,6 +323,29 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard G1-B2-B1-A — actual two-owner TCP frame correctness
+
+Parent #92, research PR #95. Frozen
+[protocol](research/DELTAGUARD-G1B2B1-PROTOCOL.md) makes a receiver-retained
+exact inventory with initial sync + sequenced incremental events an explicit
+**same-topology comparator**, not a magically trusted 24B single-source scalar.
+B1-A validates two actual loopback TCP sender connections, schema/profile/
+sender/key ID/epoch/sequence/length/integrity checks, independently reconstructed
+B2A XOR against direct per-token oracle, physical byte equality and malformed
+frame rejection on five GitHub-hosted workers. Verified source-head run
+[37899112626](https://github.com/definitely-stable/deltameter/actions/runs/37899112626):
+5/5 worker success, 75 two-sender physical transactions including negative
+cases; N256/d48 transfers 640B guard vs 4224B direct full. The research
+tag/key is a PUBLIC test fixture, not malicious-sender authentication.
+
+**B1-A ONLY:** no p95/RTT/throughput, full fallback, separate processes,
+receiver-cached exact update lifecycle or security proof yet; no public/product
+GO. Evidence:
+[DELTAGUARD-G1B2B1A-EVIDENCE.md](research/DELTAGUARD-G1B2B1A-EVIDENCE.md).
+Next B1-B must implement and physically compare retained exact vs B2A
+at cold/warm horizons, full two-owner fallback, p95, RSS and hostile/mismatched
+epoch failure; issue #86 security and #69 public lifecycle still open.
+
 ## DeltaGuard G1-B2-B0 — retained physical sources and model cost gate
 
 Issue #92, PR #93: **SCOPED PHYSICAL/MODELED FOUNDATION PASS**.

@@ -1,0 +1,44 @@
+name: DeltaGuard B2-B1-A TCP frame correctness
+
+on:
+  pull_request:
+    paths:
+      - "research/deltaguard_b2b1_frames.rs"
+      - "examples/deltaguard_b2b1_frames.rs"
+      - "docs/research/DELTAGUARD-G1B2B1-PROTOCOL.md"
+      - ".github/workflows/deltaguard-b2b1-frames.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Pinned protocol and Rust checks
+        run: |
+          test -s docs/research/DELTAGUARD-G1B2B1-PROTOCOL.md
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+      - name: Real two-independent-sender TCP, guard/exact parity and corruption
+        run: |
+          mkdir -p b1a-worker
+          cargo run --release --example deltaguard_b2b1_frames -- ${{ matrix.worker }} | tee b1a-worker/worker-${{ matrix.worker }}.txt
+          grep -q "^DELTAGUARD_B1A_FRAME_PASS worker=${{ matrix.worker }} physical_pairs=15$" b1a-worker/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > b1a-worker/head-${{ matrix.worker }}.txt
+          rustc -Vv > b1a-worker/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b1a-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: b1a-worker/
+          if-no-files-found: warn
