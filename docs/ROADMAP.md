@@ -323,6 +323,32 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard G1-B2-B1-B0 — physically retained exact and real fallback
+
+Parent #92, research PR #96, D58:
+**B1B0_RETAINED_PHYSICAL_EXACT_FALLBACK_PASS** on five
+GitHub-hosted workers (360/360 source-bound physical TCP records),
+independent receiver-retained exact lists with per-generation and
+batched update streams, true two-owner B2A physical XOR and full
+resolved request/response. The fixed T64/b11/c48 ideal certificate
+and frozen Snapshot v1 are unchanged.
+
+Crucial N256,d48,100-generation *cumulative real app bytes*:
+guard dense 64,000; streaming retained exact 18,678;
+batched exact with sparse queries 6,262; sparse guard 1,920.
+N65536,d48: guard dense 64,000 vs streaming exact 1,063,158.
+Thus query cadence, N, cold vs warm bootstrap and admissible
+batching determine which system is economical; do not infer a
+universal product win. Unknown d57 resolved full-list fallback
+remains STOP (N256,S100: 6,506B vs direct 5,816B).
+Evidence [B1-B0](research/DELTAGUARD-G1B2B1B0-EVIDENCE.md).
+Atomic malformed-batch rejection is tested.
+
+**NO SYSTEM_PRODUCT_GO**: next B1-B1 is real paired five-worker
+p95/bandwidth/RTT with request/ACK/retry, separate process owners,
+full heap/RSS, warm receiver state, crash/epoch recovery.
+Security #86 and public API/key lifecycle #69 still block exposure.
+
 ## DeltaGuard G1-B2-B1-A — actual two-owner TCP frame correctness
 
 Parent #92, research PR #95. Frozen
