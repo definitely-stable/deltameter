@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir -p b1a-worker
           cargo run --release --example deltaguard_b2b1_frames -- ${{ matrix.worker }} | tee b1a-worker/worker-${{ matrix.worker }}.txt
-          grep -q "^DELTAGUARD_B1A_FRAME_PASS worker=${{ matrix.worker }} physical_pairs=9$" b1a-worker/worker-${{ matrix.worker }}.txt
+          grep -q "^DELTAGUARD_B1A_FRAME_PASS worker=${{ matrix.worker }} physical_pairs=15$" b1a-worker/worker-${{ matrix.worker }}.txt
           git rev-parse HEAD > b1a-worker/head-${{ matrix.worker }}.txt
           rustc -Vv > b1a-worker/rust-${{ matrix.worker }}.txt
       - uses: actions/upload-artifact@v4
