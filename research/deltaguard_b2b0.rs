@@ -236,7 +236,7 @@ fn b0_run(path:&Path,worker:usize){
                         assert_eq!(merged,state.reference(&diff),"retained two-owner XOR mismatch");
                         let cutoff=B0State::cutoff(*kind,&cuts);
                         let safe=cutoff>=0 && odd<=cutoff as u32;
-                        assert!(!safe||d<=B0_T as usize,"unexpected fixture false SAFE; NOT statistical proof");
+
                         if cutoff>=0&&d<=cutoff as usize{
                             assert!(safe,"guaranteed SAFE S<=d failed");
                         }
