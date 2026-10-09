@@ -10,7 +10,9 @@ mod g1b {
 }
 fn main() {
     let mut args = std::env::args().skip(1);
-    let cutoff_file = args.next().expect("independently certified G1B cutoffs TSV");
+    let cutoff_file = args
+        .next()
+        .expect("independently certified G1B cutoffs TSV");
     let worker: usize = args
         .next()
         .expect("worker 1..5")
