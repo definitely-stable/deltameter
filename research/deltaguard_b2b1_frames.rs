@@ -49,7 +49,7 @@ fn b1_canonical_full(body: &[u8]) -> Result<(), &'static str> {
     }
     let mut previous = None;
     for chunk in body.as_chunks::<8>().0.iter() {
-        let token = u64::from_le_bytes(chunk.try_into().unwrap());
+        let token = u64::from_le_bytes(*chunk);
         if previous.is_some_and(|value| token <= value) {
             return Err("full-not-canonical");
         }
@@ -290,8 +290,8 @@ fn b1_frame_lab(worker: usize) {
             .as_chunks::<8>().0.iter()
             .zip(two.as_chunks::<8>().0.iter())
             .map(|(l, r)| {
-                (u64::from_le_bytes(l.try_into().unwrap())
-                    ^ u64::from_le_bytes(r.try_into().unwrap()))
+                (u64::from_le_bytes(*l)
+                    ^ u64::from_le_bytes(*r))
                 .count_ones()
             })
             .sum();
@@ -312,7 +312,7 @@ fn b1_frame_lab(worker: usize) {
             b1_decode(frame, owner, B1_FULL, B1_EPOCH, 1)
                 .unwrap()
                 .as_chunks::<8>().0.iter()
-                .map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap()))
+                .map(|chunk| u64::from_le_bytes(*chunk))
                 .collect::<Vec<u64>>()
         };
         assert_eq!(b0_diff(&read_tokens(&f1, 1), &read_tokens(&f2, 2)).len(), d);
