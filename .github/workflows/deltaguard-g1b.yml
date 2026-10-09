@@ -32,7 +32,7 @@ jobs:
           mkdir -p g1b-cert
           python research/deltaguard_g1b_exact.py --out-dir g1b-cert | tee g1b-cert/log.txt
           grep -q '^G1B_EXACT_CHAIN_CERT_PASS profiles=24 tiny_oracle_cases=162 ' g1b-cert/log.txt
-          sha256sum g1b-cert/cutoffs.tsv > g1b-cert/cutoffs.sha256
+          (cd g1b-cert && sha256sum cutoffs.tsv > cutoffs.sha256)
           git rev-parse HEAD > g1b-cert/head.txt
       - uses: actions/upload-artifact@v4
         with:
