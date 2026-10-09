@@ -33,7 +33,7 @@ fn b2a_d(t: u64, ratio: (u64, u64)) -> u64 {
 fn b2a_slot(key: &[u8; 32], b: u8, token: u64) -> usize {
     let hash = blake3::keyed_hash(key, &token.to_le_bytes());
     let word = u64::from_le_bytes(hash.as_bytes()[..8].try_into().unwrap());
-    ((word & ((1_u64 << b) - 1)) as usize)
+    (word & ((1_u64 << b) - 1)) as usize
 }
 
 struct NearFullGuard {
@@ -144,7 +144,7 @@ fn b2a_vectors() {
             s.toggle(token);
         }
         assert!(s.padding_is_zero());
-        assert_eq!(s.payload_bytes(), (s.m() + 63) / 64 * 8);
+        assert_eq!(s.payload_bytes(), s.m().div_ceil(64) * 8);
     }
 }
 
@@ -235,7 +235,7 @@ fn b2a_one(case: B2ACase, cuts: &B2ACutoffs) {
         let odd = left.odd_count();
         let cutoff = *cuts.get(&(t, b)).expect("predeclared certificate exists");
         let safe = cutoff >= 0 && odd <= cutoff as u32;
-        if d <= cutoff.max(-1) as u64 && cutoff >= 0 {
+        if cutoff >= 0 && d <= cutoff as u64 {
             assert!(safe, "deterministic TRUE guarantee when d<=cutoff");
         }
         println!(
