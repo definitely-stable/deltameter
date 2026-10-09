@@ -1515,3 +1515,42 @@ retained exact, count initial sync plus delta event traffic across
 1/10/100 sessions, and run the frozen five-worker real TCP p95 test.
 Security #86 and public lifecycle #69 remain independent blockers.
 Canonical: docs/research/DELTAGUARD-G1B2B1A-EVIDENCE.md.
+
+### D58 — B1-B0 physical retained exact and resolved fallback: query cadence is a product parameter
+
+Parent #92; PR #96. Preregistered B1-B0 protocol before evidence.
+Reproducible code source `f885785749aa607aac5173ffb8755153bc26a8d0`,
+hosted [run 37902855683](https://github.com/definitely-stable/deltameter/actions/runs/37902855683):
+five workers, exactly 360 source-bound records and PASS aggregator.
+Each retains independent A/B sorted lists and B2A11 XOR bitmap,
+physically streams every generation delta to a separate exact
+receiver (99 events/owner), physically batches the same deltas for
+S1/10/100 sparse checkpoint queries, sends a B2A guard pair on
+EVERY generation, and uses a second real TCP request/complete full
+list transaction for guard UNKNOWN. Exact B2A c48 certificate unchanged.
+Full exact source agreement on every generation; independent bit-oracle
+XOR per checkpoint. Atomic two-pass batch-validation explicitly prevents
+partial receiver mutations on malformed later event.
+
+**N256,d48,S100** actual cumulative application bytes:
+B2A dense guard 64000, retained online exact 18678,
+batched sparse exact 6262, B2A sparse guard 1920.
+**N65536,d48,S100**: guard dense 64000, retained exact online
+1063158 and batched 1050742, guard sparse 1920.
+So no single "guard always best" conclusion; it depends on N,
+cold/warm receiver bootstrap, query cadence, and permitted batching.
+For N256,d57,S100, UNKNOWN and mandatory *physical* full fallback
+costs 6506B vs direct full 5816B; maintain STOP_RESOLVED_NEAR_T.
+The earlier B0 single 24B hypothetical request is NOT the real
+B1-B0 two-owner fallback (two 24B requests plus two 1B hellos).
+
+Decision: **B1B0_RETAINED_PHYSICAL_EXACT_FALLBACK_PASS,
+RESEARCH ONLY / NO SYSTEM_PRODUCT_GO**. All byte counts are real
+application TCP counts on localhost; owners are separate threads,
+not separate processes or WAN. Current checksum/key fixture is not
+hostile sender authentication; no real RTT/bandwidth paced p95,
+retries/ACK, crash-safe generations, or RSS HWM.
+Next B1-B1 must measure those with named 5-worker paired scenarios,
+and compare a *warm pre-cached* exact receiver separately from cold
+bootstrap. Keep #92 open; #86 and #69 block public semantics.
+Canonical evidence: docs/research/DELTAGUARD-G1B2B1B0-EVIDENCE.md.
