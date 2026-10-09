@@ -414,6 +414,18 @@ fn bf_negative(root: &Path) {
     assert!(be_source_load(&bd_dir(root, 1), 1).is_err());
     bd_atomic(&bd_dir(root, 1), "chain.wal", &wal);
     assert_eq!(bf_load(root).unwrap().receipt.lists, before);
+    // ABA duplicate MUST bind the exact persisted last accepted event,
+    // not a coincidentally identical token-membership state.
+    let stable = bf_load(root).unwrap();
+    let first = stable.receipt.last[0];
+    let second = stable.receipt.last[1];
+    let mut altered = first;
+    altered[32] ^= 1;
+    let seq = stable.receipt.seq[0];
+    let frames = [bf_event_frame(1, seq, &first), bf_event_frame(2, seq, &second)];
+    assert!(be_validate_transition(&stable.receipt,
+        &[altered, second], &frames, seq).is_err());
+    assert_eq!(bf_load(root).unwrap().receipt.lists, before);
 }
 fn bf_worker(worker: usize) {
     assert!((1..=5).contains(&worker));
