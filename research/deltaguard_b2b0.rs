@@ -166,13 +166,13 @@ fn b0_inputs(worker:usize,ni:usize,di:usize,repeat:usize)->(Vec<u64>,Vec<u64>){
     assert_eq!(b0_diff(&a,&b).len(),d);
     (a,b)
 }
-fn b0_generation_token(worker:usize,ni:usize,di:usize,repeat:usize,gen:usize)->u64{
+fn b0_generation_token(worker:usize,ni:usize,di:usize,repeat:usize,generation:usize)->u64{
     100_000_000_000
     +worker as u64*10_000_000_000
     +ni as u64*1_000_000_000
     +di as u64*100_000_000
     +repeat as u64*1_000_000
-    +gen as u64
+    +generation as u64
 }
 fn b0_validate() {
     let mut a=B0State::new(B0Kind::Near11);
@@ -209,8 +209,8 @@ fn b0_run(path:&Path,worker:usize){
                 let mut last=1_usize;
                 for &session in &B0_SESSIONS{
                     let start=Instant::now();
-                    for gen in last..session{
-                        let token=b0_generation_token(worker,ni,di,rep,gen);
+                    for generation in last..session{
+                        let token=b0_generation_token(worker,ni,di,rep,generation);
                         // canonical vectors grow in strictly ascending order
                         assert!(a.last().is_none_or(|x|*x<token));
                         assert!(b.last().is_none_or(|x|*x<token));
@@ -224,8 +224,8 @@ fn b0_run(path:&Path,worker:usize){
                     let direct_bytes=2*B0_HEADER+8*(a.len()+b.len());
                     for (kind,state,build_ns) in &mut states{
                         let start=Instant::now();
-                        for gen in last..session{
-                            let token=b0_generation_token(worker,ni,di,rep,gen);
+                        for generation in last..session{
+                            let token=b0_generation_token(worker,ni,di,rep,generation);
                             state.toggle(false,token);
                             state.toggle(true,token);
                         }
