@@ -1570,7 +1570,7 @@ This is **ACTUAL two distinct sender OS processes**, each on
 its own localhost TCP socket. Real 25B hello, 24B requests, 64B
 response frames and (when UNKNOWN) second two-owner full source
 request, per-owner app-paced transfer, injected server response
-delay, Linux per-child VmHWM and build/update diagnostic times.
+delay, Linux **pre-response sampled** per-child VmHWM and build/update elapsed-wall diagnostics; late serialization/transfer memory peaks are NOT captured by the child hello and need separate post-transfer measurement.
 It does NOT reproduce shared-wire bandwidth, network RTT, hostile
 sender authentication or durable source daemon lifecycle.
 
