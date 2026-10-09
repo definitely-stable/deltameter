@@ -10,7 +10,7 @@ mod lab {
     include!("../research/deltaguard_b1b1b0_persistent.rs");
     include!("../research/deltaguard_b1b1b1a_failclosed.rs");
 
-    pub(super) fn run(args: &[String]) {
+    pub(super) fn fault_entry(args: &[String]) {
         match args.first().map(String::as_str) {
             Some("--full") => bc_full_child(args),
             Some("--fault") => bc_fault_child(args),
@@ -24,5 +24,5 @@ mod lab {
 }
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    lab::run(&args);
+    lab::fault_entry(&args);
 }
