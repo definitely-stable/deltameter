@@ -80,8 +80,21 @@ def run(out_dir: Path) -> dict:
         manifest.append(f"{sha}  {file}")
         exact["table_sha256"] = sha
         exact["profile"] = f"fixed-prior-T k={k} alpha=1/{DELTA_DENOMINATOR*k}"
+        # Exact informativeness floor: monotone Q32 implies minimum U is
+        # achieved by the count s=0 at every selected level.
+        # All G1 T values are <=4096: G0 CENTER pivot clamps to level 1,
+        # so the selected levels are exactly 1..k.
+        def upper_at_zero(level: int) -> int:
+            if table[0] == SENTINEL:
+                return 1 << 64
+            return min(1 << 64, (table[0] * (1 << level) + (1 << 32) - 1) // (1 << 32))
+
+        safe_floor = min(upper_at_zero(level) for level in range(1, k + 1))
+        cannot_ever_answer = [t for t in (32, 64, 256, 4096) if t < safe_floor]
         profiles.append({
             "k": k,
+            "theorem_minimum_possible_bound": str(safe_floor),
+            "thresholds_provably_never_safe": cannot_ever_answer,
             "alpha_numerator": 1,
             "alpha_denominator": DELTA_DENOMINATOR * k,
             "likelihood_target": target,
