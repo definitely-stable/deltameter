@@ -4,7 +4,7 @@ mod guard {
     include!("../research/strict_compact_opt_c1_core.rs");
     include!("../research/deltaguard_g0.rs");
 
-    pub(super) fn run(path: &std::path::Path, worker: usize) {
+    pub(super) fn run_guard_entry(path: &std::path::Path, worker: usize) {
         run_guard_g0(path, worker);
     }
 }
@@ -18,5 +18,5 @@ fn main() {
         .parse()
         .expect("worker integer");
     assert!(args.next().is_none(), "unexpected argument");
-    guard::run(std::path::Path::new(&table), worker);
+    guard::run_guard_entry(std::path::Path::new(&table), worker);
 }
