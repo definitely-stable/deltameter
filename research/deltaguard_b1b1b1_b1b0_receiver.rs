@@ -181,7 +181,7 @@ fn bf_load(root: &Path) -> Result<BFState, &'static str> {
     // exactly this durable checkpoint, then ignore it.
     let mut last_old = 0_usize;
     let mut last_old_head = [0_u8; 32];
-    for entry in wal.chunks_exact(BF_TX) {
+    for entry in wal.as_chunks::<BF_TX>().0 {
         let seq = u64::from_le_bytes(entry[8..16].try_into().unwrap()) as usize;
         if seq <= state.checkpoint_gen {
             if &entry[..8] != BF_TX_MAGIC { return Err("stale-wal-magic"); }
