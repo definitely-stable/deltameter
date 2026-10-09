@@ -315,7 +315,8 @@ fn bd_stage(worker:usize,lane:usize,rep:usize,case:&str,root:&Path)->(usize,bool
     ];
     let mut socks=bd_accept_pair(&listener);
     let mut bytes=2_usize;
-    let sent=case.contains("send")||case.contains("receiver")||case.contains("ack_before");
+    let sent=["after_send_before_ack","after_receiver_sync_before_ack",
+        "after_ack_before_owner_sync"].contains(&case);
     let mut delivered=Vec::new();
     for (idx,sock) in socks.iter_mut().enumerate(){
         let mut report=[0_u8;1];
