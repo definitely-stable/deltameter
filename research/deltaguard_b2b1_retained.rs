@@ -197,6 +197,11 @@ fn b1b_worker(worker:usize) {
                 assert_eq!(recv_a,a);
                 assert_eq!(recv_b,b);
                 let mut exact_bytes=bootstrap_bytes;
+                let mut batched_a=recv_a.clone();
+                let mut batched_b=recv_b.clone();
+                let mut pending_a=Vec::<u8>::new();
+                let mut pending_b=Vec::<u8>::new();
+                let mut batched_exact_bytes=bootstrap_bytes;
                 let mut updates_ns=0_u128;
                 let mut dense_bytes=0_usize;
                 let mut sparse_bytes=0_usize;
@@ -208,6 +213,8 @@ fn b1b_worker(worker:usize) {
                         b.push(token);
                         ga.toggle(token);
                         gb.toggle(token);
+                        pending_a.extend_from_slice(&b1b_insert(token));
+                        pending_b.extend_from_slice(&b1b_insert(token));
                         let t0=Instant::now();
                         let (pa,pb,wire)=b1_actual_pair(
                             b1_encode(1,B1_DELTA,B1_EPOCH,generation as u64,&b1b_insert(token)),
@@ -229,6 +236,21 @@ fn b1b_worker(worker:usize) {
                     if B1B_CHECKPOINTS.contains(&generation) {
                         index+=1;
                         sparse_bytes+=gb_wire;
+                        if generation>1 {
+                            let (ba,bb,bytes)=b1_actual_pair(
+                                b1_encode(1,B1_DELTA,B1_EPOCH,generation as u64,&pending_a),
+                                b1_encode(2,B1_DELTA,B1_EPOCH,generation as u64,&pending_b),
+                                B1_DELTA,generation as u64,
+                            ).expect("physical canonical batched sparse updates");
+                            b1b_apply(&mut batched_a,b1_decode(&ba,1,B1_DELTA,B1_EPOCH,generation as u64).unwrap()).unwrap();
+                            b1b_apply(&mut batched_b,b1_decode(&bb,2,B1_DELTA,B1_EPOCH,generation as u64).unwrap()).unwrap();
+                            batched_exact_bytes+=bytes;
+                            pending_a.clear();
+                            pending_b.clear();
+                        }
+                        assert_eq!(batched_a,a,"batched owner A divergence");
+                        assert_eq!(batched_b,b,"batched owner B divergence");
+                        assert_eq!(batched_exact_bytes,bootstrap_bytes+128*(index-1)+18*(generation-1));
                         let source_diff=b0_diff(&a,&b);
                         assert_eq!(source_diff.len(),d);
                         let independent=b1b_reference_diff(&a,&b,&ga.key);
@@ -255,7 +277,7 @@ fn b1b_worker(worker:usize) {
                         assert_eq!(sparse_bytes,640*index);
                         assert_eq!(direct_bytes,128+8*(a.len()+b.len()));
                         if fallback_bytes!=0 {assert!(640+fallback_bytes>direct_bytes);}
-                        println!("B1B0_SAMPLE worker={worker} ni={ni} di={di} rep={rep} N={n} d={d} S={generation} odd={odd} safe={} source_a={} source_b={} build_ns={build_ns} bootstrap_ns={bootstrap_ns} delta_ns={updates_ns} bootstrap_bytes={bootstrap_bytes} retained_exact_bytes={exact_bytes} guard_sparse_bytes={sparse_bytes} guard_dense_bytes={dense_bytes} direct_bytes={direct_bytes} fallback_bytes={fallback_bytes} resolved_bytes={} generations={} queries_sparse={index}",
+                        println!("B1B0_SAMPLE worker={worker} ni={ni} di={di} rep={rep} N={n} d={d} S={generation} odd={odd} safe={} source_a={} source_b={} build_ns={build_ns} bootstrap_ns={bootstrap_ns} delta_ns={updates_ns} bootstrap_bytes={bootstrap_bytes} retained_exact_bytes={exact_bytes} retained_batched_bytes={batched_exact_bytes} guard_sparse_bytes={sparse_bytes} guard_dense_bytes={dense_bytes} direct_bytes={direct_bytes} fallback_bytes={fallback_bytes} resolved_bytes={} generations={} queries_sparse={index}",
                             u8::from(safe),a.len(),b.len(),640+fallback_bytes,generation-1);
                         samples+=1;
                     }
