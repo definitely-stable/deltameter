@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - "docs/research/DELTAGUARD-G0-PROTOCOL.md"
+      - "docs/research/DELTAGUARD-G0-EVIDENCE.md"
+      - "docs/research/DECISIONS.md"
+      - "docs/ROADMAP.md"
       - "research/deltaguard_g0.rs"
       - "research/deltaguard_g0_summarize.py"
       - "examples/deltaguard_g0_lab.rs"
