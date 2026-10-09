@@ -1,0 +1,108 @@
+name: DeltaGuard G1A exact alpha and paired power
+
+on:
+  pull_request:
+    paths:
+      - "research/strict_compact_lookup_q32.py"
+      - "research/strict_compact_lookup_certify.py"
+      - "research/deltaguard_g1a_certify.py"
+      - "research/deltaguard_g1a.rs"
+      - "research/deltaguard_g1a_summarize.py"
+      - "examples/deltaguard_g1a_lab.rs"
+      - "docs/research/DELTAGUARD-G1A-PROTOCOL.md"
+      - "docs/research/DELTAGUARD-G1A-EVIDENCE.md"
+      - ".github/workflows/deltaguard-g1a.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Exact-independent Q32 profile proof
+        run: |
+          python -m py_compile research/strict_compact_lookup_q32.py research/strict_compact_lookup_certify.py research/deltaguard_g1a_certify.py research/deltaguard_g1a_summarize.py
+          mkdir -p g1a-cert
+          python research/deltaguard_g1a_certify.py --out-dir g1a-cert | tee g1a-cert/log.txt
+          grep -q '^DELTAGUARD_G1A_CERT_PASS$' g1a-cert/log.txt
+          (cd g1a-cert && sha256sum --check sha256sum.txt)
+          git rev-parse HEAD > g1a-cert/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: guard-g1a-cert-${{ github.run_id }}-${{ github.run_attempt }}
+          path: g1a-cert/
+          if-no-files-found: error
+
+  worker:
+    needs: certificate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: guard-g1a-cert-*
+          path: g1a-cert
+          merge-multiple: true
+      - name: Independent source and exact table identity
+        run: |
+          test "$(cat g1a-cert/head.txt)" = "$(git rev-parse HEAD)"
+          (cd g1a-cert && sha256sum --check sha256sum.txt)
+          mkdir -p g1a-worker
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+      - name: Paired k-level independently maintained two-owner matrix
+        run: |
+          cargo run --release --example deltaguard_g1a_lab -- g1a-cert ${{ matrix.worker }} | tee g1a-worker/worker-${{ matrix.worker }}.txt
+          grep -q "^DELTAGUARD_G1A_WORKER_PASS worker=${{ matrix.worker }}$" g1a-worker/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > g1a-worker/head-${{ matrix.worker }}.txt
+          rustc -Vv > g1a-worker/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guard-g1a-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: g1a-worker/
+          if-no-files-found: error
+
+  aggregate:
+    needs: [certificate, worker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: guard-g1a-worker-*
+          path: g1a-input
+          merge-multiple: true
+      - name: Validate 900 paired records before power verdict
+        run: |
+          mkdir -p g1a-summary
+          python research/deltaguard_g1a_summarize.py --input g1a-input --head "$(git rev-parse HEAD)" --out g1a-summary/summary.json | tee g1a-summary/log.txt
+          grep -q '^DELTAGUARD_G1A_UTILITY_PASS rows=900 ' g1a-summary/log.txt
+          git rev-parse HEAD > g1a-summary/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: guard-g1a-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: g1a-summary/
+          if-no-files-found: error
