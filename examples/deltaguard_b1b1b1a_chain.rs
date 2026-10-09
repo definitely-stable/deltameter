@@ -1,0 +1,32 @@
+// B1-B1B1-B1-A research-only hash-chained journal, ABA and receiver ACK crash.
+#[allow(dead_code)]
+mod lab {
+    include!("../research/strict_compact_opt_c1_core.rs");
+    include!("../research/deltaguard_b2a.rs");
+    include!("../research/deltaguard_b2b0.rs");
+    include!("../research/deltaguard_b2b1_frames.rs");
+    include!("../research/deltaguard_b2b1_retained.rs");
+    include!("../research/deltaguard_b1b1a.rs");
+    include!("../research/deltaguard_b1b1b0_persistent.rs");
+    include!("../research/deltaguard_b1b1b1a_failclosed.rs");
+    include!("../research/deltaguard_b1b1b1b0_durable.rs");
+    include!("../research/deltaguard_b1b1b1a_chain.rs");
+
+    pub(super) fn chain_entry(args: &[String]) {
+        match args.first().map(String::as_str) {
+            Some("--seed") => be_seed(args),
+            Some("--write") => be_writer(args),
+            Some("--send") => be_sender(args),
+            Some("--receiver") => be_receiver_child(args),
+            Some(worker) => {
+                assert_eq!(args.len(), 1);
+                be_worker(worker.parse().expect("worker index 1..5"));
+            }
+            None => panic!("worker index or chain role required"),
+        }
+    }
+}
+fn main() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    lab::chain_entry(&args);
+}
