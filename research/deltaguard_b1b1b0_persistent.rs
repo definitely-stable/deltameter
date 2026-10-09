@@ -246,8 +246,7 @@ fn bb_worker(worker:usize) {
     assert!((1..=5).contains(&worker));
     bb_negative_unit();
     let mut total=0_usize;
-    for lane in 0..BB_LANES.len(){
-        let (n,d,mbps,delay)=BB_LANES[lane];
+    for (lane,&(n,d,mbps,delay)) in BB_LANES.iter().enumerate(){
         let (mut a,mut b,next)=bb_fixture(worker,lane);
         let mut peers=bb_start(worker,lane);
         let (init,boot_bytes,_)=bb_round(&mut peers,B1_FULL,1);
