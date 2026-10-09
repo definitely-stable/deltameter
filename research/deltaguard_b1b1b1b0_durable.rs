@@ -165,7 +165,8 @@ fn bd_stage_child(args:&[String]){
     bd_stage_event(&dir,owner,token_seed+2,case);
     let src=bd_owner_load(&dir,owner).unwrap();
     let mut sock=bd_new_socket(&args[7],owner);
-    let sent=case.contains("send")||case.contains("receiver")||case.contains("ack_before");
+    let sent=["after_send_before_ack","after_receiver_sync_before_ack",
+        "after_ack_before_owner_sync"].contains(&case.as_str());
     // after_send_before_ack, after_receiver_sync_before_ack and
     // after_ack_before_owner_sync have a physically sent delta.
     sock.write_all(&[u8::from(sent)]).unwrap();
@@ -186,7 +187,7 @@ fn bd_stage_child(args:&[String]){
 }
 fn bd_reboot_child(args:&[String]){
     use std::io::{Read,Write};
-    assert_eq!(args.len(),5);
+    assert_eq!(args.len(),4);
     let owner:u8=args[1].parse().unwrap();
     let dir=PathBuf::from(&args[2]);
     let src=bd_owner_load(&dir,owner).expect("only durable owner source can reconnect");
@@ -408,8 +409,8 @@ fn bd_receiver_recovery(worker:usize,lane:usize,rep:usize,root:&Path) {
     if source_g!=gs {
         bd_store_receiver(root,&updated[0],&updated[1],source_g[0],source_g[1]);
     }
-    for sock in &mut socks {
-        sock.write_all(&bb_ack(true,source_g[if std::ptr::eq(sock,&socks[0]){0}else{1}])).unwrap();
+    for (idx,sock) in socks.iter_mut().enumerate(){
+        sock.write_all(&bb_ack(true,source_g[idx])).unwrap();
         bytes+=BB_ACK;
     }
     for sock in &mut socks {
