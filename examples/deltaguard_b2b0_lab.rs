@@ -12,7 +12,11 @@ mod b2b0 {
 fn main() {
     let mut args = std::env::args().skip(1);
     let cutoff_path = args.next().expect("certified B2A cutoff TSV path");
-    let worker: usize = args.next().expect("worker 1..5").parse().expect("integer worker");
+    let worker: usize = args
+        .next()
+        .expect("worker 1..5")
+        .parse()
+        .expect("integer worker");
     assert!(args.next().is_none());
     b2b0::entry(std::path::Path::new(&cutoff_path), worker);
 }
