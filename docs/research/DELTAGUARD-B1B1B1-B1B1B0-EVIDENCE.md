@@ -124,8 +124,10 @@ and syncs:
 | 65,536,48 | 2,098,408B | 11 |
 | 65,536,57 | 2,098,424B | 11 |
 
-These are source+receiver serialization BYTES,
-not OS storage device sectors, SSD write
+These are receiver-side serialized file payload BYTES
+only; independently persisted source WAL/base bytes are
+not included in this receiver table. They are NOT
+OS storage device sectors or SSD write
 amplification, real IOPS or fsync elapsed latency.
 
 For N256,d48, even **cold FULL+gen2 event**
