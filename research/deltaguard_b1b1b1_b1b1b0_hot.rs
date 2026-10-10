@@ -183,12 +183,12 @@ fn bh_setup(worker: usize, n: usize, d: usize, rep: usize,
     let a = b11_as_words(b1_decode(&frames[0], 1, B1_FULL, B1_EPOCH, 1).unwrap());
     let b = b11_as_words(b1_decode(&frames[1], 2, B1_FULL, B1_EPOCH, 1).unwrap());
     assert_eq!(a.len(), n);
-    assert_eq!(b.len(), n);
+    assert_eq!(b.len(), n + d % 2);
     let (truth_a, _) = b11_owner_initial(worker, n, d, rep, 1);
     let (truth_b, _) = b11_owner_initial(worker, n, d, rep, 2);
     assert_eq!(a, truth_a);
     assert_eq!(b, truth_b);
-    assert_eq!(cold_wire, 224 + 16 * n);
+    assert_eq!(cold_wire, 224 + 16 * n + 8 * (d % 2));
     let heads = [1_u8,2_u8].map(|owner|
         be_genesis(owner,&std::fs::read(bd_dir(root,owner)
             .join("base.snap")).unwrap()));
@@ -208,7 +208,7 @@ fn bh_setup(worker: usize, n: usize, d: usize, rep: usize,
         be_source_load(&bd_dir(root,1),1).unwrap().tokens);
     assert_eq!(current.receipt.lists[1],
         be_source_load(&bd_dir(root,2),2).unwrap().tokens);
-    let raw_receipt = 440 + 16 * n;
+    let raw_receipt = 440 + 16 * n + 8 * (d % 2);
     let logical_exact_write = raw_receipt + initial_checkpoint + 48 + 304;
     (cold_wire + 2, event_wire, logical_exact_write,
         2 + 6 + event_cost.sync_calls, current.receipt.lists)
@@ -263,7 +263,7 @@ fn bh_fixture(worker: usize, ni: usize, di: usize, rep: usize) {
         let (full_bytes, full_ns)=measured_full;
         assert!(odd<=d as u32);
         assert_eq!(guard_bytes,736);
-        assert_eq!(full_bytes,240+16*n);
+        assert_eq!(full_bytes,240+16*n+8*(d%2));
         guard_total+=guard_bytes;
         full_total+=full_bytes;
         under+=usize::from(odd<=48);
