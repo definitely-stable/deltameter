@@ -2086,3 +2086,101 @@ fsync comparisons. Security #86 and
 public lifecycle #69 still independent
 BLOCKERS. Evidence:
 docs/research/DELTAGUARD-B1B1B1-B1B1B0-EVIDENCE.md.
+
+### D67 — B1B1B1-B1B1-B1A exact-output same-capability STOP for stateless B2A GUARD→FULL
+
+Parent #109/#107/#105/#103/#101/#99/#97/#92, PR #112.
+Frozen [protocol](DELTAGUARD-B1B1B1-B1B1B1A-PROTOCOL.md)
+BEFORE measurements, initial commit
+`d9414fc2e87201b2fad7604cab1bbdfd68aa304f`,
+pre-run count correction `46f7c28734da03deb1dd9ecc896b4f671b45d7a8`.
+The predeclared latency measure distinguishes first n20
+Q100, n10 Q10 and one raw Q1, never invents n20 from Q1.
+The original B2A exact nonadaptive 24-profile c48 cutoff
+certificate SHA256 remains
+`c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59a6f5f36a0d95f51d9e935`.
+
+First complete hosted [CI #38028833535](https://github.com/definitely-stable/deltameter/actions/runs/38028833535),
+source SHA `d0ba1d8d2fa345b0cb207be64241cdb7e3f5092a`:
+five distinct GH-hosted workers, **90/90** independently
+source-WAL-backed OS sessions, **4815/4815** matched
+real TCP query pairs, **210/210** Q1/Q10/Q100 prefix rows,
+strict source-SHA and exact source oracle/hash checker
+**SUCCESS**. Source snapshots, canonical chain WAL,
+commit and ACK are privately fsync'd by two separate owners;
+their query processes reopen source disk and remain live;
+receiver exact cold FULL and gen2 source events are actually
+transferred, and receiver B1B0 WAL+commit fsync'd.
+The direct baseline transfers two physical FULL frames.
+The existing stateless GUARD protocol sends two GUARD frames
+AND THEN physical FULL from both sources to provide the
+**same exact difference token list**, even when S<=48.
+Every exact FULL decoded equals both durable source owners and
+receiver exact inventories. Keyed B2A S verified against
+independent true symmetric difference.
+
+**Strict and trivial existing-format composition:**
+One B2A GUARD pair costs **736 actual application TCP
+bytes** including both requests, framed 256B payloads and ACKs.
+Since S does NOT return exact differing token IDs,
+no exact-output query may omit FULL with only this
+stateless B2A protocol. For Q>=1
+`bytes(GUARD then FULL)-bytes(FULL) = 736Q > 0`,
+independently of d/rate/delay for the SAME B1_FULL
+serialization. The source-pinned run physically confirmed
+this for **every one of 4815 query pairs**: unnecessary
+additional total **3,543,840 bytes** across all
+hosted workers/fixtures. This is elementary accounting,
+not a new lower-bound theorem, and says nothing about
+a different exact-capable sketch/backend.
+
+Frozen six physical lanes:
+- N256,d48 100Mbps/0ms Q100; N256,d57 10Mbps/10ms Q100;
+  N256,d48 1Mbps/50ms Q100; N65536,d48 100Mbps/0ms Q10;
+  N65536,d57 100Mbps/10ms Q10; N65536,d57
+  1Mbps/50ms **Q1 ONLY**, no fictitious large-N low-rate Q100.
+- Per Q100 first-n20 nearest-rank p95:
+  lane A direct 0.298–0.421ms vs resolved 0.435–0.693ms;
+  lane B 11.868–11.983ms vs 22.329–22.567ms;
+  lane C 67.205–67.406ms vs 120.020–120.443ms.
+- For N65536 100Mbps/0ms Q10, direct p95
+  42.875–263.012ms vs resolved 43.025–72.282ms:
+  **scheduler outlier** means no universal per-worker
+  latency ordering proven. Named Q1 single latency
+  **NOT** called p95 guarantee. Local app pacing
+  is PER OWNER socket and is not a shared WAN rate.
+
+**Decision: B1B1B1_B1B1B1A_RESOLVED_EXACT_CAPABILITY_RESEARCH_ACCEPT
+and STOP_STATELESS_GUARD_FOR_EXACT_V1.**
+The existing guard + mandatory FULL fallback is
+strictly wire-dominated by direct FULL for the
+SAME exact-output capability; stop promoting
+stateless B2A GUARD as an exact reconciliation
+network optimization, and stop its algebraic
+microoptimizations for that contract.
+
+This does NOT close the distinct S-only cold
+large-N statistical screening niche, where
+source guard updates, false-pass/adaptive
+security, cold cache, query rate and receiver
+resource costs need independent product evidence.
+Maintained exact cold boot and B1B0 receiver
+write+sync are included separately and its
+unchanged hot exact queries cost no new TCP.
+Stateless S-only and exact maintained are
+DIFFERENT user-facing capabilities, not a
+fair same-output product benchmark.
+
+All source and receiver logical writes vs actual
+device block IO, fsync wall times, true WAN
+rates/drops, hardware power cut, mixed multi-key
+updates, multi-epoch and malicious adaptive
+query authentication are NOT resolved. D60 warm
+N256 exact NO-GO and D65 recoverability
+research ACCEPT persist. #109 remains OPEN
+for distinct S-only niche or fair exact-capable
+NEW primitive evaluation; #86 security and #69
+public release remain independent blockers.
+**NO SYSTEM_PRODUCT_GO**.
+Canonical evidence:
+docs/research/DELTAGUARD-B1B1B1-B1B1B1A-EVIDENCE.md.
