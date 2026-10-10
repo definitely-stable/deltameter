@@ -274,7 +274,7 @@ fn bh_fixture(worker: usize, ni: usize, di: usize, rep: usize) {
             q+1,u8::from(odd<=48));
     }
     assert_eq!(guard_total,20*736);
-    assert_eq!(full_total,20*(240+16*n));
+    assert_eq!(full_total,20*(240+16*n+8*(d%2)));
     let (rss,ticks,quit)=bh_finish(&mut peers.sources);
     for (current, previous) in ticks.iter().zip(&peers.initial_ticks) {
         assert!(current >= previous);
