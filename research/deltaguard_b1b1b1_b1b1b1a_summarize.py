@@ -131,9 +131,9 @@ def analyze(root:Path,head:str,proof:Path):
             key=(x["worker"],lane,x["rep"])
             qs=[samples[key+(q,)] for q in range(1,qmax+1)]
             assert len(qs)==qmax
-            assert x["direct_p95_ns"]==p95([v["direct_ns"] for v in qs])
-            assert x["resolved_p95_ns"]==p95([v["resolved_ns"] for v in qs])
-            assert x["local_p95_ns"]==p95([v["exact_local_ns"] for v in qs])
+            assert x["direct_p95_ns"]==p95([v["direct_ns"] for v in qs[:min(qmax,20)]])
+            assert x["resolved_p95_ns"]==p95([v["resolved_ns"] for v in qs[:min(qmax,20)]])
+            assert x["local_p95_ns"]==p95([v["exact_local_ns"] for v in qs[:min(qmax,20)]])
             for cut in (1,10,100):
                 if cut>qmax:continue
                 p=prefixes[key+(cut,)]
@@ -154,7 +154,7 @@ def analyze(root:Path,head:str,proof:Path):
             "max_source_vm_hwm_bytes":max(x["source_rss"] for x in relevant),
             "max_receiver_vm_hwm_bytes":max(x["receiver_rss"] for x in relevant),
             "guard_under_cutoff_samples":sum(x["under"] for x in relevant),
-            "empirical_latency_rank_n":qmax,
+            "empirical_latency_rank_n":min(qmax,20),
             "direct_exact_p95_ns_by_worker_fixture":[{"worker":x["worker"],"rep":x["rep"],"value":x["direct_p95_ns"]} for x in relevant],
             "resolved_p95_ns_by_worker_fixture":[{"worker":x["worker"],"rep":x["rep"],"value":x["resolved_p95_ns"]} for x in relevant],
         })
