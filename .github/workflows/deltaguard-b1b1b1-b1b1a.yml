@@ -32,7 +32,7 @@ jobs:
           python -m py_compile research/deltaguard_b1b1b1_b1b1a_summarize.py
           python research/deltaguard_b2a_certify.py --out-dir bg-cert | tee bg-cert/log.txt
           grep -q '^B2A_EXACT_CERT_PASS profiles=24 tiny_oracles=39 ' bg-cert/log.txt
-          test "$(sha256sum bg-cert/cutoffs.tsv | cut -d' ' -f1)" = "c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59d9e935"
+          test "$(sha256sum bg-cert/cutoffs.tsv | cut -d' ' -f1)" = "c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59a6f5f36a0d95f51d9e935"
           git rev-parse HEAD > bg-cert/head.txt
       - uses: actions/upload-artifact@v4
         with:
