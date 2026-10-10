@@ -323,6 +323,59 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard B1B1B1-B1B1-B0 — persisted-source hot query contracts and cold accounting
+
+Open #109, research PR #111, decision D66; frozen-before-samples
+`docs/research/DELTAGUARD-B1B1B1-B1B1B0-PROTOCOL.md`.
+Five GH-hosted workers, 60 independent persisted source
+sessions, **1,200/1,200 physically paired**
+guard/full/direct exact vs RAM-resident maintained
+exact questions, N256/N65536, d48/d57 and
+20 hot queries per fixture. Two long-lived source
+owner processes reopen independently persisted
+canonical snapshots+WAL, build fixed B2A keyed
+bitmap once and respond on SAME physical socket
+lifecycle. Exact receiver pays physical cold
+source transfer, crash-atomic B1B0 checkpoint,
+real physically delivered two-owner gen2 update
+and actual receiver fsync BEFORE Q20.
+
+N256,d48 **14,720B guard Q20** versus
+**4,322B exact cold bootstrap +356B
+physical gen2 update +0B exact hot queries**.
+N65536,d48 guard **14,720B** vs exact
+**1,048,802B cold +356B update +0B hot**,
+but guard-only supplies S/nearfull
+statistical observation, NOT precise
+set reconciliation; UNKNOWN/resolution
+must pay FULL, not magic offline
+receiver data. All d57 fixtures have
+S>48 and require fallback; derived
+resolved TCP is always worse than
+direct full, reinforcing near-T
+RESOLVED STOP. Odd d57 source2
+contains N+1, correctly byte accounted.
+Warm n20 p95 was checked per worker,
+but different user-facing outputs and
+receiver-state contracts prohibit any
+equal-capability performance GO.
+
+**RESEARCH ACCEPT for strict measured
+contracts; NO SYSTEM_PRODUCT_GO**. Source
+Fs/FACK/Disk and cold receiver writes
+recorded, but real fsync wall,
+auth/malicious/adaptive #86, power cut,
+remote WAN, Q1/Q10/Q100 and
+1/10/100Mbps with delays 0/10/50ms
+remain. Next #109 must freeze same-
+capability fully RESOLVED fallback,
+fresh/hot resets, exact decoder
+vs durable maintained exact, CPU/RSS,
+source/sink I/O and n20 per-worker p95;
+public API #69 still blocked.
+Evidence:
+[DELTAGUARD-B1B1B1-B1B1B0-EVIDENCE.md](research/DELTAGUARD-B1B1B1-B1B1B0-EVIDENCE.md).
+
 ## DeltaGuard B1-B1B1-B1B1-A — crash-cut committed WAL repair and read-path audit
 
 Issue #109, research PR #110, D65; premeasurement
