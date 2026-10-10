@@ -1,0 +1,113 @@
+name: DeltaGuard B1B1B1-B1B1B1A exact capability comparator
+
+on:
+  pull_request:
+    paths:
+      - "research/deltaguard_b1b1b1_b1b1b1a_resolved.rs"
+      - "research/deltaguard_b1b1b1_b1b1b1a_summarize.py"
+      - "examples/deltaguard_b1b1b1_b1b1b1a_resolved.rs"
+      - "docs/research/DELTAGUARD-B1B1B1-B1B1B1A-PROTOCOL.md"
+      - "docs/research/DELTAGUARD-B1B1B1-B1B1B1A-EVIDENCE.md"
+      - ".github/workflows/deltaguard-b1b1b1-b1b1b1a.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Reproduce original B2A proof cutoff and strict negative evidence checks
+        run: |
+          set -euo pipefail
+          mkdir -p bj-cert
+          python -m py_compile research/deltaguard_b1b1b1_b1b1b1a_summarize.py
+          python research/deltaguard_b2a_certify.py --out-dir bj-cert | tee bj-cert/log.txt
+          grep -q '^B2A_EXACT_CERT_PASS profiles=24 tiny_oracles=39 ' bj-cert/log.txt
+          test "$(sha256sum bj-cert/cutoffs.tsv | cut -d' ' -f1)" = "c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59a6f5f36a0d95f51d9e935"
+          git rev-parse HEAD > bj-cert/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bj-cert-${{ github.run_id }}-${{ github.run_attempt }}
+          path: bj-cert/
+          if-no-files-found: error
+
+  worker:
+    needs: certificate
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bj-cert-*
+          path: bj-cert
+          merge-multiple: true
+      - name: Source SHA equality and strict Rust lint/format
+        run: |
+          test "$(cat bj-cert/head.txt)" = "$(git rev-parse HEAD)"
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+      - name: 18 physical source WAL sessions and 963 exact-capability pairs
+        run: |
+          set -euo pipefail
+          mkdir -p bj-worker
+          cargo run --release --example deltaguard_b1b1b1_b1b1b1a_resolved -- ${{ matrix.worker }} | tee bj-worker/worker-${{ matrix.worker }}.txt
+          grep -q '^DELTAGUARD_B1B1B1_B1B1B1A_WORKER_PASS worker=${{ matrix.worker }} sessions=18 paired_queries=963 full_reconstruction=1$' bj-worker/worker-${{ matrix.worker }}.txt
+          git rev-parse HEAD > bj-worker/head-${{ matrix.worker }}.txt
+          rustc -Vv > bj-worker/rust-${{ matrix.worker }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bj-worker-${{ matrix.worker }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: bj-worker/
+          if-no-files-found: warn
+
+  aggregate:
+    needs: [certificate, worker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bj-worker-*
+          path: bj-input
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bj-cert-*
+          path: bj-cert
+          merge-multiple: true
+      - name: Fail closed exact-source 4815 physical pairs and 210 prefixes
+        run: |
+          set -euo pipefail
+          mkdir -p bj-summary
+          test "$(cat bj-cert/head.txt)" = "$(git rev-parse HEAD)"
+          python research/deltaguard_b1b1b1_b1b1b1a_summarize.py --input bj-input --head "$(git rev-parse HEAD)" --certificate bj-cert/cutoffs.tsv --out bj-summary/summary.json | tee bj-summary/log.txt
+          grep -q '^B1B1B1_B1B1B1A_AGGREGATE_PASS sessions=90 pairs=4815 prefixes=210 verdict=B1B1B1_B1B1B1A_RESOLVED_EXACT_CAPABILITY_RESEARCH_ACCEPT_STOP_STATELESS_GUARD_FOR_EXACT_V1$' bj-summary/log.txt
+          git rev-parse HEAD > bj-summary/head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bj-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: bj-summary/
+          if-no-files-found: error
