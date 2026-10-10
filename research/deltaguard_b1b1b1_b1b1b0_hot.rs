@@ -276,7 +276,9 @@ fn bh_fixture(worker: usize, ni: usize, di: usize, rep: usize) {
     assert_eq!(guard_total,20*736);
     assert_eq!(full_total,20*(240+16*n));
     let (rss,ticks,quit)=bh_finish(&mut peers.sources);
-    for i in 0..2 {assert!(ticks[i]>=peers.initial_ticks[i]);}
+    for (current, previous) in ticks.iter().zip(&peers.initial_ticks) {
+        assert!(current >= previous);
+    }
     let p95 = |vals:&mut Vec<u128>|->u128 {
         vals.sort_unstable();
         vals[18]
