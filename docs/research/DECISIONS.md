@@ -1976,3 +1976,113 @@ resolved STOP still binding. Parent #109/#107/
 #86/#69 security/lifecycle remain OPEN.
 Canonical evidence:
 docs/research/DELTAGUARD-B1B1B1-B1B1A-EVIDENCE.md.
+
+### D66 — B1B1B1-B1B1-B0 actual hot state contracts: guard-only cold niche, no exact product superiority
+
+Parent #109/#107/#105/#103/#101/#99/#97/#92; research PR #111.
+[Premeasurement frozen protocol](DELTAGUARD-B1B1B1-B1B1B0-PROTOCOL.md)
+commit `72636c019f20de89e3fb3de6a49d64a156b58c50`.
+After a Clippy issue and a correctly detected
+odd-d57 source-size accounting error
+(second source N+1), the fixed matrix
+completed at source SHA
+`3ffe9b81533bf11a35f5a54f8640884132a78448`,
+[CI #38023917391](https://github.com/definitely-stable/deltameter/actions/runs/38023917391):
+5/5 independent hosted workers, exact original
+24-profile B2A nonadaptive c48 SHA unchanged,
+**60/60 persisted-source OS sessions and
+1200/1200 source SHA-bound physically paired
+guard/direct-full/hot-maintained-exact samples**,
+strict fail-closed aggregate PASS.
+
+Owners are two LIVE source OS processes per
+fixture which reopen independently fsync'd
+base+generation2 chain WAL and build the keyed
+B2A m2047 bitmap once. Both source exact
+inventories are physically bootstrapped into
+the maintained exact receiver, then two
+source gen2 events are physically transferred
+and atomically WAL+commit fsync'd before
+queries. Each session has 20 rotated-order
+guard and FULL 100Mbps/0ms app-paced TCP
+queries; maintained exact computes a REAL
+local symmetric difference from hot retained
+owner inventories, not a cached d or a
+fabricated free precondition. It pays cold
+network/bootstrap and receiver durable
+checkpoint/WAL, source WAL fsync is common.
+Guard-only receiver **does not store exact**
+and cannot recover precise set members from
+S; any UNKNOWN/reconstruction fallback
+must pay full on-wire exact transfer.
+
+Physical source-byte outcomes per Q20:
+- N256,d48: guard **14,720B**, maintained exact
+  cold FULL **4,322B**, subsequent hot exact
+  queries **0B**, direct FULL **86,720B**.
+- N65536,d48: guard **14,720B**, exact
+  cold FULL **1,048,802B**, subsequent
+  hot exact **0B**, direct FULL **20,976,320B**.
+- d57 second owner has N+1 elements; exact
+  cold FULL 4,330B/1,048,810B,
+  direct FULL 86,880B/20,976,480B.
+- One gen2 exact maintenance transaction
+  costs additional physically observed
+  **356B source TCP**, **304B logical
+  receiver WAL+commit**, 3 actual sync
+  calls; exact cold receiver logical write
+  receipt+checkpoint+marker+event cost
+  9,448B N256,d48 /2,098,408B
+  N65536,d48. None of those setup
+  costs may be assigned to a stateless
+  guard. Owner source WAL ingestion and
+  source construction are common and
+  must not be written off as free.
+
+Empirical n20 nearest-rank p95 range
+over 15 hosted worker/fixture sets:
+N256,d48 guard 0.147–0.257ms,
+full 0.304–0.409ms,
+hot exact 0.0013–0.0031ms;
+N65536,d48 guard 0.165–0.369ms,
+full 43.033–44.308ms at app-paced
+100Mbps, hot exact 0.0562–0.1886ms.
+Mode capabilities NOT equivalent, so
+these timings do **not** establish a
+DeltaGuard vs exact product performance
+ranking. Real WAN, source/offline fsync
+duration, device block IO and Q1/Q100
+not measured. OS process CPU tick granularity
+was often zero for N256; no CPU ns claim.
+
+For d57 every one of 300 same-source
+guard observations **per N** has
+S>48. Any RESOLVED mode requiring
+exact output must pay both 736B guard
+and physically grounded FULL query,
+which is strictly larger network
+than direct FULL, reinforcing
+**STOP_RESOLVED_NEAR_T**. For d48,
+all 300 per N satisfy S<=48,
+but **S<=48 is NOT a deterministic
+certificate that d<=48**, nor an exact
+reconciliation result.
+
+**Decision: B1B1B1_B1B1B0_HOT_CONTRACT_COMPARISON_RESEARCH_ACCEPT**
+for distinct query capabilities,
+**NO SYSTEM_PRODUCT_GO**. D60 warm
+N256 exact superiority remains;
+cold N65536 guard-only can be cheaper
+on wire at Q20 if limited S observation
+suffices, but its false-pass risk,
+malicious owner authentication, key
+reuse, resilient source production,
+and cost against an equally capable
+exact/fully resolved comparator
+remain unproved. Next #109 B1B1B1-B1B1-B1
+must prefreeze exact-capability and
+Q1/10/100/loss/delay/source+receiver
+fsync comparisons. Security #86 and
+public lifecycle #69 still independent
+BLOCKERS. Evidence:
+docs/research/DELTAGUARD-B1B1B1-B1B1B0-EVIDENCE.md.
