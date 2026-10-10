@@ -323,6 +323,54 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard B1-B1B1-B1B1-A — crash-cut committed WAL repair and read-path audit
+
+Issue #109, research PR #110, D65; premeasurement
+[DELTAGUARD-B1B1B1-B1B1A-PROTOCOL.md](research/DELTAGUARD-B1B1B1-B1B1A-PROTOCOL.md).
+The prior B1B1B1-B1B0 receiver could accept a
+valid committed checkpoint and ignore a torn
+uncommitted WAL tail, but then append a new
+generation BEHIND that tail, damaging future
+replay. Fixed under exclusive receiver writer
+by verifying committed state and atomically
+normalizing the WAL to the exact durable
+post-checkpoint prefix BEFORE any new append
+or ACK. A healthy normal WAL adds no repair
+fsync; a corrupted COMMITTED prefix is fatal.
+
+Five GitHub-hosted CI workers: **150/150
+real receiver SIGKILL** across partial WAL,
+fsynced-uncommitted WAL, committed marker
+before ACK, conflicting same-gen event after
+commit, checkpoint after fsync+rename before
+WAL reset. **90/90 canonical repairs**;
+new receiver OS processes physically replay
+two separately persisted source records and
+verify exact source state. 600/600 paired
+nonmutating read audits: BF loader rereads
+**4,608B N256** or **1,049,088B N65536**
+per access after checkpoint; hosted n20
+empirical p95 **0.023–0.035ms** / **0.310–
+0.951ms**, respectively, on warmed Linux
+page cache. These are NOT device IO metrics,
+WAN or matched service competitor comparisons.
+
+**Research ACCEPT only, NO SYSTEM_PRODUCT_GO.**
+The fixed O(256B) WAL append/write cost from
+D64 remains useful but rebuilding exact
+vectors from full checkpoint ON EVERY query
+still imposes avoidable O(N) read, allocation
+and CPU overhead. Next #109 B1B1B1-B1B1-B:
+hot materialized receiver + same fsync atomic
+WAL, paired SAME lifecycle against equally
+durable maintained exact vs guard-only
+SAFE/UNKNOWN and fully resolved fallback;
+measure real CPU/RSS, fsync, physical IO,
+cold Q1/Q10/Q100 and n20 p95, with
+#86 security / #69 public API still blocked.
+Evidence:
+[DELTAGUARD-B1B1B1-B1B1A-EVIDENCE.md](research/DELTAGUARD-B1B1B1-B1B1A-EVIDENCE.md).
+
 ## DeltaGuard B1-B1B1-B1B0 — bounded atomic receiver WAL/checkpoint
 
 Issue #107, research PR #108, D64; frozen-before-run protocol

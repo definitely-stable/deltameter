@@ -1904,3 +1904,75 @@ CPU/memory/latency measurements. Parent #105/
 security/public boundaries remain open.
 Canonical evidence:
 docs/research/DELTAGUARD-B1B1B1-B1B0-EVIDENCE.md.
+
+### D65 — B1-B1B1-B1B1-A committed-prefix WAL crash-cut repair ACCEPT; hot receiver/read-cost still open
+
+Issue #109, research PR #110, frozen-before-runs protocol
+`docs/research/DELTAGUARD-B1B1B1-B1B1A-PROTOCOL.md`.
+The initial proof job detected a typo in the *text* of
+the original B2A certificate SHA **before any fault
+workload ran**; corrected premeasurement at
+`0ad0e01eabbfcb8f703f14246c631b881db10262`.
+The underlying 24-profile original exact proof cutoff
+unchanged (SHA256 `c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59a6f5f36a0d95f51d9e935`).
+
+Hosted [CI #38022477456](https://github.com/definitely-stable/deltameter/actions/runs/38022477456)
+code `11af7ffa2ececea4af043a3e188a6a64035bbf69`:
+5/5 independent GitHub-hosted workers, **150/150 actual
+OS receiver SIGKILL** across 2 source sizes×3 fixtures×
+5 frozen crash windows, **90/90** pre-ACK WAL canonical
+repairs, and **600/600 paired read-path samples**
+source-SHA-attested strict independent aggregation
+**SUCCESS**.
+
+Real software crash windows: partially written 80B
+WAL without marker, 256B full file fsync before
+marker, committed marker before ACK, changed same-seq
+replay (rejected) after committed marker before ACK,
+and complete gen51 checkpoint fsync+rename before
+WAL rotation after 49 source-committed exact events.
+New receiver OS processes physically replay owner
+events from two separately persisted source WALs;
+committed generation resumes idempotently without
+rewrites or duplicate mutation. An **uncommitted
+complete or truncated suffix** is now normalized
+BEFORE any next append or ACK by atomically replacing
+only the validated committed post-checkpoint WAL;
+old checkpoint-covered WAL prefix is deleted after
+matching its terminal checkpoint hash. No healthy WAL
+rewrite or spurious fsync. Corrupted COMMITTED
+markers/transactions reject without repair.
+
+**Decision: B1B1B1_B1B1A_CRASHCUT_TAIL_REPAIR_RESEARCH_ACCEPT**,
+not a whole crash-consistent distributed protocol.
+Observed logical file payload repeatedly read on
+each nonmutating BF receiver reload at gen51:
+**4,608B N256** or **1,049,088B N65536**.
+Across 15 independent hosted n20 per-run nearest-rank
+p95: N256 **0.023–0.035ms**, N65536
+**0.310–0.951ms**. This is *Linux page-cached
+receiver rebuild*, NOT device block I/O, real WAN,
+nor comparable hot exact-versus-guard p95.
+The alternate cached hot-state length access is
+an unequal-work reference, not speedup proof.
+
+D64 solved the frozen O(N) full-receipt WRITE
+anti-pattern but **did not solve O(N) receiver
+rehydration READ/CPU per query**. Next #109
+B1B1B1-B1B1-B must keep correctly materialized
+hot state between queries, persist identical
+two-owner transaction WAL and compare DeltaGuard
+guard-only SAFE/UNKNOWN, guarded RESOLVED and an
+**equally durable maintained exact** on same
+owner/query process lifetime, with cold Q1/Q10/Q100,
+real fsync/device CPU/RSS and per-worker n20 p95.
+Do not overinterpret this narrow bug fix as
+a DeltaGuard advantage.
+
+**NO SYSTEM_PRODUCT_GO**, no public/Snapshot v1
+edits. D60 warm-N256 guard NO-GO and near-T
+resolved STOP still binding. Parent #109/#107/
+#105/#103/#101/#99/#97/#92 and separate
+#86/#69 security/lifecycle remain OPEN.
+Canonical evidence:
+docs/research/DELTAGUARD-B1B1B1-B1B1A-EVIDENCE.md.
