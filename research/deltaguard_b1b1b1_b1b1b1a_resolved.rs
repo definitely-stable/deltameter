@@ -190,7 +190,9 @@ fn bj_fixture(worker: usize, lane: usize, rep: usize) {
     }
     let tickdelta = ticks[0]+ticks[1]-peer.initial_ticks[0]-peer.initial_ticks[1];
     println!("B1B1B1_B1B1B1A_SESSION worker={worker} lane={lane} rep={rep} N={n} d={d} mbps={mbps} delay={delay} Q={qmax} direct_bytes={prefix_full} resolved_bytes={prefix_resolved} under={under} direct_p95_ns={} resolved_p95_ns={} local_p95_ns={} source_build_ns={} source_ticks={tickdelta} source_rss={} receiver_rss={} cold_exact_bytes={cold} source_event_bytes={event} receiver_write={write} receiver_sync={sync} quit_bytes={quit} exact=1",
-        bj_p95(&direct_times),bj_p95(&resolved_times),bj_p95(&local_times),
+        bj_p95(&direct_times[..qmax.min(20)]),
+        bj_p95(&resolved_times[..qmax.min(20)]),
+        bj_p95(&local_times[..qmax.min(20)]),
         peer.build[0]+peer.build[1],rss[0].max(rss[1]),b11_rss());
     assert_eq!(under,if d==48 {qmax} else {0},
         "named fixtures d57 must stay UNKNOWN for this exact test");
