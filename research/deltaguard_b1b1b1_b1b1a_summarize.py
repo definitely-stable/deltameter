@@ -8,7 +8,7 @@ import math
 import re
 from pathlib import Path
 
-PROOF="c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59d9e935"
+PROOF="c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59a6f5f36a0d95f51d9e935"
 CASES=("partial_wal","full_wal_fsync","commit_synced",
        "commit_conflict","checkpoint_synced")
 NS=(256,65536)
