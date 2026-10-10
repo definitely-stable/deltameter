@@ -248,6 +248,47 @@ fn bf_commit(root: &Path, prev: &BFState, next: &BEReceipt,
     }
     cost
 }
+// Crash-recovery normalization for a SINGLE WRITER: a valid committed
+// watermark proves the only accepted prefix. Uncommitted bytes may survive
+// SIGKILL; blindly appending beyond them corrupts the next committed prefix.
+// Normal healthy WAL needs NO extra fsync; repair uses atomic replacement.
+fn bf_canonicalize_wal(root: &Path, state: &BFState)
+    -> Result<usize, &'static str>
+{
+    let g = state.receipt.seq[0];
+    if state.receipt.seq[1] != g || state.checkpoint_gen > g {
+        return Err("receiver-wal-canonicalization-generation");
+    }
+    let expected = (g - state.checkpoint_gen) * BF_TX;
+    let actual = std::fs::metadata(root.join("receiver.wal"))
+        .map_err(|_| "receiver-wal-missing")?.len() as usize;
+    if actual == expected { return Ok(0); }
+    // The caller obtained state through bf_load, which independently
+    // validated the checkpoint, committed marker, old checkpoint-covered
+    // prefix terminal hash and every committed post-checkpoint record.
+    let bytes = std::fs::read(root.join("receiver.wal"))
+        .map_err(|_| "receiver-wal-unreadable")?;
+    let mut skip = 0;
+    for entry in bytes.as_chunks::<BF_TX>().0 {
+        let seq = u64::from_le_bytes(entry[8..16].try_into().unwrap()) as usize;
+        if seq <= state.checkpoint_gen { skip += BF_TX; } else { break; }
+    }
+    if bytes.len() < skip + expected {
+        return Err("receiver-wal-canonicalization-prefix-short");
+    }
+    let committed = bytes[skip..skip + expected].to_vec();
+    bd_atomic(root, "receiver.wal", &committed);
+    let repaired = bf_load(root)?;
+    if repaired.receipt.seq != state.receipt.seq ||
+        repaired.receipt.heads != state.receipt.heads ||
+        repaired.receipt.last != state.receipt.last ||
+        repaired.receipt.lists != state.receipt.lists ||
+        repaired.tx_head != state.tx_head ||
+        repaired.checkpoint_gen != state.checkpoint_gen {
+        return Err("receiver-wal-repair-changed-committed-exact-state");
+    }
+    Ok(actual - expected)
+}
 fn bf_accept(root: &Path, listener: &std::net::TcpListener,
     seq: usize, stop_after_ack1: bool) -> (usize, BFCost)
 {
@@ -258,7 +299,7 @@ fn bf_accept(root: &Path, listener: &std::net::TcpListener,
     // or a published checkpoint may precede WAL rotation. Do not append
     // a NEW generation behind those uncommitted bytes, nor ACK a duplicate
     // until the stored prefix has a canonical bounded on-disk layout.
-    bg_canonicalize_wal(root, &before)
+    bf_canonicalize_wal(root, &before)
         .expect("canonical WAL recovery before either owner ACK");
     let (next, fresh) = be_validate_transition(&before.receipt, &events, &frames, seq)
         .expect("fully bound source event / receipt hash transition");
