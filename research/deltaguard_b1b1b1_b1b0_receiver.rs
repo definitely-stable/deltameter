@@ -254,6 +254,12 @@ fn bf_accept(root: &Path, listener: &std::net::TcpListener,
     use std::io::Write;
     let (mut sockets, events, frames, mut wire) = be_read_pair(listener);
     let before = bf_load(root).expect("must reconstruct canonical receiver from disk WAL");
+    // The committed marker may precede a torn/uncommitted WAL suffix,
+    // or a published checkpoint may precede WAL rotation. Do not append
+    // a NEW generation behind those uncommitted bytes, nor ACK a duplicate
+    // until the stored prefix has a canonical bounded on-disk layout.
+    bg_canonicalize_wal(root, &before)
+        .expect("canonical WAL recovery before either owner ACK");
     let (next, fresh) = be_validate_transition(&before.receipt, &events, &frames, seq)
         .expect("fully bound source event / receipt hash transition");
     let cost = if fresh {
