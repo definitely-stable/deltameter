@@ -114,7 +114,7 @@ each outcome, source/receiver exact oracle, no source
 gen changes without valid event, WAL repair bytes and
 positive read-path sample counts. 24-profile B2A
 proof SHA256 fixed at
-`c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59d9e935`.
+`c9bdb9d185be29dd66335d5dfbe456fa562ccaf5c59a6f5f36a0d95f51d9e935`.
 
 ## Exit
 
