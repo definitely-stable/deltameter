@@ -323,6 +323,57 @@ small-T stochastic-order proof, then independently certified
 decision cutoffs, not more binary64 fitting or untargeted
 m reduction. Key/adaptive threat issue #86 remains open.
 
+## DeltaGuard B1B1B1-B1B1-B1A — same-capability exact reconstruction, STOP current stateless guard→FULL
+
+Parent #109, PR #112; frozen-before-measurement protocol
+`docs/research/DELTAGUARD-B1B1B1-B1B1B1A-PROTOCOL.md`,
+mathematical [analytical note](research/DELTAGUARD-B1B1B1-B1B1B1A-ANALYTIC.md),
+research [evidence](research/DELTAGUARD-B1B1B1-B1B1B1A-EVIDENCE.md),
+decision D67. **90/90** two-owner private fsync source
+OS sessions, **4,815/4,815** physically paired actual
+exact-output guard→FULL and direct FULL TCP queries,
+**210/210** Q1/Q10/Q100 traffic prefixes, 5/5
+GitHub-hosted workers and independent SHA-fixed
+source/receiver oracle all PASS. Rates 1/10/100Mbps,
+app delays 0/10/50ms, fixed N256/N65536 and
+d48/d57. Slow N65536/1Mbps measured at Q1 only;
+do NOT invent its Q10/Q100 tail latency.
+
+The *current* B2A guard yields only parity S,
+**not exact difference token IDs**, even when
+S<=48. Thus exact-output receiver MUST request
+FULL after guard. Actual physical protocol
+adds exactly **736B extra per exact question**
+vs direct full; **3,543,840B more** across
+all 4815 physically checked pairs. This
+compositional identity is not a novel theorem
+or lower bound for other exact sketches.
+At N256 app-paced 10Mbps/10ms n20 p95,
+direct FULL 11.868–11.983ms versus
+guard→FULL 22.329–22.567ms; hosted scheduling
+outliers in other lanes preclude universal
+latency ordering. Privately maintained exact
+pays full cold bootstrap plus WAL+sync to
+answer later hot exact questions offline;
+it can share all D64/D65 durability fixes.
+
+**D67: STOP_STATELESS_GUARD_FOR_EXACT_V1**,
+narrow exact service negative,
+**NO SYSTEM_PRODUCT_GO**. Stop re-running
+sketch decoder tweaks to try to make current
+stateless guard+mandatory full a network
+winner. A genuinely exact-capable new sketch
+is outside this no-go. Separate **cold
+S-only screening** is a different service
+contract and may merit research into
+predictive value, false-pass/adaptive
+query key reuse, honest source CPU/sync
+costs and opportunity distribution;
+#86 threat and #69 API release still
+independently block all public changes.
+Do not close parent #109/#107/#105/#103
+or announce public crate GO.
+
 ## DeltaGuard B1B1B1-B1B1-B0 — persisted-source hot query contracts and cold accounting
 
 Open #109, research PR #111, decision D66; frozen-before-samples
