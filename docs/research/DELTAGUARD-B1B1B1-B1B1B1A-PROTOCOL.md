@@ -41,7 +41,7 @@ private WAL/snapshot/commit/ACK chain is built before ALL query modes.
 | E | 65,536 | 57 | 100 | 10 | 10 |
 | F | 65,536 | 57 | 1 | 50 | 1 |
 
-= **90 long-lived source sessions, 1,605 physically paired
+= **90 long-lived source sessions, 4,815 physically paired
 fully exact-output rounds**, including 100-repetition Q prefixes
 at Q1/10/100 where feasible. Each paired round does three REAL
 two-source TCP interactions: one direct exact FULL query and,
