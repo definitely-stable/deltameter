@@ -100,11 +100,11 @@ two-owner B2A bitmap per query =
 2*(32+16+64+256)=**736B**.
 Two-owner full gen2 per query =
 2*(32+16+64)+8*(|owner1|+|owner2|)
-=224+16*(N+1) = **240+16N**.
+=224+8*(2N+(d mod 2)+2) = **240+16N+8*(d mod 2)**.
 Cold gen1 FULL physical bootstrap includes
 two 1B owner hellos and identical request/ACK/
-frame, so **226+16N**.
-Physical gen2 WAL event/reconnection from two
+frame, so **226+16N+8*(d mod 2)**.
+For odd d=57 the second source has N+1 elements: the existing\nfixture uses N-floor(d/2) shared elements and ceil(d/2) distinct\nelements. Each FULL frame therefore carries 8B more than d48.\nTwo receiver exact inventory snapshots combined add 16B\nto its cold serialized receiver write cost. This correctness\nerratum was added after the first incomplete CI run halted\non the d57 source-length assertion; **no d57 timing/result\nwas accepted before correction**, and matrix/threshold unchanged.\nPhysical gen2 WAL event/reconnection from two
 fsync'd source children is **356B** (same
 common event maintenance for exact/guard but
 receiver WAL 304B logical + 3 sync calls is
