@@ -22,7 +22,7 @@ mod lab {
             Some("--send") => be_sender(args),
             Some("--bj-owner") => bj_owner(args),
             Some(worker) => {
-                assert_eq!(args.len(),1);
+                assert_eq!(args.len(), 1);
                 bj_worker(worker.parse().expect("GitHub worker 1..5"));
             }
             None => panic!("worker or private source owner role required"),
