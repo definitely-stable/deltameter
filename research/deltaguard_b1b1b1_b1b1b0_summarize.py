@@ -31,7 +31,7 @@ def sample(line):
     n=(256,65536)[ni];d=(48,57)[di]
     assert x["N"]==n and x["d"]==d
     assert x["mbps"]==100 and x["delay"]==0
-    assert x["guard_bytes"]==736 and x["full_bytes"]==240+16*n
+    assert x["guard_bytes"]==736 and x["full_bytes"]==240+16*n+8*(d%2)
     assert x["hot_exact_bytes"]==0 and x["odd"]<=d
     assert x["under"]==int(x["odd"]<=48)
     assert x["exact"]==1
@@ -42,12 +42,12 @@ def finish(line):
     assert 1<=x["worker"]<=5 and x["ni"] in (0,1) and x["di"] in (0,1) and x["rep"] in range(3)
     n=(256,65536)[x["ni"]];d=(48,57)[x["di"]]
     assert x["N"]==n and x["d"]==d
-    assert x["cold_exact_bytes"]==226+16*n
+    assert x["cold_exact_bytes"]==226+16*n+8*(d%2)
     assert x["shared_source_event_bytes"]==356
-    assert x["exact_receiver_write"]==1256+32*n
+    assert x["exact_receiver_write"]==1256+32*n+16*(d%2)
     assert x["exact_receiver_sync"]==11
     assert x["guard_total"]==14720
-    assert x["full_total"]==20*(240+16*n)
+    assert x["full_total"]==20*(240+16*n+8*(d%2))
     assert 0<=x["under_cutoff"]<=20
     assert x["owner1_rss"]>0 and x["owner2_rss"]>0 and x["receiver_rss"]>0
     assert x["quit_bytes"]==128 and x["exact"]==1
