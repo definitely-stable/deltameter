@@ -202,10 +202,10 @@ fn bj_fixture(worker: usize, lane: usize, rep: usize) {
 fn bj_worker(worker: usize) {
     assert!((1..=5).contains(&worker));
     let mut queries=0;
-    for lane in 0..BJ_LANES.len() {
+    for (lane, config) in BJ_LANES.iter().enumerate() {
         for rep in 0..3 {
             bj_fixture(worker,lane,rep);
-            queries+=BJ_LANES[lane].4;
+            queries+=config.4;
         }
     }
     assert_eq!(queries,963);
