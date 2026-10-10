@@ -163,16 +163,16 @@ fn bh_finish(peers: &mut [BBPeer; 2]) -> ([u64; 2], [u64; 2], usize) {
     for p in peers.iter_mut() { assert!(p.child.wait().unwrap().success()); }
     (rss, ticks, 2 * (BB_CMD + BB_ACK + 16))
 }
-fn bh_guard_odd(packets: &[Vec<u8>; 2], seq: usize, exact: &[Vec<u64>; 2]) -> u32 {
+fn bh_guard_odd(packets: &[Vec<u8>; 2], seq: usize, expected: u32) -> u32 {
     let words_a = b11_as_words(b1_decode(
         &packets[0], 1, B1_GUARD, B1_EPOCH, seq as u64).unwrap());
     let words_b = b11_as_words(b1_decode(
         &packets[1], 2, B1_GUARD, B1_EPOCH, seq as u64).unwrap());
     let xor: Vec<u64> = words_a.iter().zip(&words_b)
         .map(|(a, b)| a ^ b).collect();
-    let k = NearFullGuard::new(11, 64, &MASTER_KEY).key;
-    assert_eq!(xor, b1b_reference_diff(&exact[0], &exact[1], &k));
-    xor.iter().map(|v| v.count_ones()).sum()
+    let observed: u32 = xor.iter().map(|v| v.count_ones()).sum();
+    assert_eq!(observed,expected,"independent precomputed exact XOR truth");
+    observed
 }
 fn bh_setup(worker: usize, n: usize, d: usize, rep: usize,
     root: &Path, peers: &mut BHPeers) -> (usize, usize, usize, usize, [Vec<u64>;2])
@@ -189,11 +189,11 @@ fn bh_setup(worker: usize, n: usize, d: usize, rep: usize,
     assert_eq!(a, truth_a);
     assert_eq!(b, truth_b);
     assert_eq!(cold_wire, 224 + 16 * n);
-    be_save_receipt(root, &[a.clone(), b.clone()], [1, 1], [
-        be_source_load(&bd_dir(root,1),1).unwrap().log
-            .get(..0).map(|_|be_genesis(1,&std::fs::read(bd_dir(root,1).join("base.snap")).unwrap())).unwrap(),
-        be_genesis(2,&std::fs::read(bd_dir(root,2).join("base.snap")).unwrap()),
-    ], [[0_u8; BE_REC];2]);
+    let heads = [1_u8,2_u8].map(|owner|
+        be_genesis(owner,&std::fs::read(bd_dir(root,owner)
+            .join("base.snap")).unwrap()));
+    be_save_receipt(root, &[a.clone(), b.clone()], [1, 1],
+        heads, [[0_u8; BE_REC];2]);
     let initial_checkpoint = bf_init(root);
     // Gen2 source state was already durably committed by two separate writer
     // OS processes; transmit/replay it with actual TCP and receiver fsync.
@@ -227,6 +227,9 @@ fn bh_fixture(worker: usize, ni: usize, di: usize, rep: usize) {
         bh_setup(worker,n,d,rep,&root,&mut peers);
     let true_d = b0_diff(&exact[0],&exact[1]).len();
     assert_eq!(true_d,d);
+    let expected_odd: u32 = b1b_reference_diff(
+        &exact[0],&exact[1],&NearFullGuard::new(11,64,&MASTER_KEY).key)
+        .iter().map(|v|v.count_ones()).sum();
     let mut guard_total = 0_usize;
     let mut full_total = 0_usize;
     let mut guard_times = Vec::new();
@@ -243,7 +246,7 @@ fn bh_fixture(worker: usize, ni: usize, di: usize, rep: usize) {
             let start = Instant::now();
             let (packets, wire, _round_ns) = bb_round(&mut peers.sources, kind, 2);
             if kind == B1_GUARD {
-                let odd = bh_guard_odd(&packets,2,&exact);
+                let odd = bh_guard_odd(&packets,2,expected_odd);
                 measured_guard = (odd,wire,start.elapsed().as_nanos());
             } else {
                 let a = b11_as_words(b1_decode(&packets[0],1,B1_FULL,B1_EPOCH,2).unwrap());
